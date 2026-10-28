@@ -57,7 +57,8 @@ export async function POST(req: Request) {
 
   const resendKey = process.env.RESEND_API_KEY;
   const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // Publishable Key reicht: RLS erlaubt der Website nur das Anlegen von Anfragen.
+  const supabaseKey = process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!resendKey && !(supabaseUrl && supabaseKey)) {
     console.error("Anfrage erhalten, aber weder Resend noch Supabase sind konfiguriert.");
