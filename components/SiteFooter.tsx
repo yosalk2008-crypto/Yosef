@@ -34,7 +34,7 @@ export function SiteFooter() {
         <div>
           <h3 className="text-sm font-semibold text-white">Seiten</h3>
           <ul className="mt-4 space-y-2 text-sm">
-            <li><Link href="/#pakete" className="hover:text-white">Pakete & Preise</Link></li>
+            <li><Link href="/#pakete" className="hover:text-white">Pakete</Link></li>
             <li><Link href="/musterwebsite" className="hover:text-white">Musterwebsite</Link></li>
             <li><Link href="/impressum" className="hover:text-white">Impressum</Link></li>
             <li><Link href="/datenschutz" className="hover:text-white">Datenschutz</Link></li>

@@ -107,7 +107,7 @@ export default function Home() {
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70">
               Modernes Design, Domain, Hosting, SSL-Sicherheit und ein schneller Service für
-              Änderungen und Updates – alles zu einem festen Monatspreis. Keine hohen Einmalkosten,
+              Änderungen und Updates – alles in einem monatlichen Abo. Keine hohen Einmalkosten,
               keine Technik-Probleme.
             </p>
             <div className="mt-9 flex flex-wrap gap-3">
@@ -119,7 +119,7 @@ export default function Home() {
               </Link>
             </div>
             <ul className="mt-10 flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/70">
-              {["Ab " + pakete[0].preis + " € / Monat", "Domain & Hosting inklusive", "Änderungen in 1–2 Werktagen"].map((t) => (
+              {["Individuelles Angebot", "Domain & Hosting inklusive", "Änderungen in 1–2 Werktagen"].map((t) => (
                 <li key={t} className="flex items-center gap-2">
                   <Check className="text-emerald-400" /> {t}
                 </li>
@@ -204,7 +204,7 @@ export default function Home() {
         <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-5 py-10 text-center md:grid-cols-4">
           {[
             ["Keine", "hohen Startkosten"],
-            ["1 Preis", "fest jeden Monat"],
+            ["1 Abo", "planbar jeden Monat"],
             ["1–2 Tage", "für Änderungen"],
             ["100 %", "Service aus einer Hand"],
           ].map(([v, l]) => (
@@ -283,7 +283,7 @@ export default function Home() {
       {/* Pakete */}
       <section id="pakete" className="py-24">
         <div className="mx-auto max-w-6xl px-5">
-          <SectionHead eyebrow="Pakete & Preise" title="Ein fester Preis. Alles drin." text="Wählen Sie das Paket, das zu Ihrem Unternehmen passt. Domain, Hosting und SSL sind immer inklusive." center />
+          <SectionHead eyebrow="Pakete" title="Ein Abo. Alles drin." text="Jedes Unternehmen ist anders – deshalb erhalten Sie Ihr Angebot individuell auf Anfrage. Domain, Hosting und SSL sind immer inklusive." center />
           <div className="mt-14 grid items-stretch gap-6 lg:grid-cols-3">
             {pakete.map((p) => (
               <div
@@ -301,10 +301,7 @@ export default function Home() {
                 )}
                 <h3 className="text-xl font-semibold">{p.name}</h3>
                 <p className={`mt-2 text-sm leading-relaxed ${p.highlight ? "text-white/65" : "text-muted"}`}>{p.beschreibung}</p>
-                <p className="mt-6 flex items-baseline gap-1.5">
-                  <span className="text-5xl font-bold tracking-tight">{p.preis} €</span>
-                  <span className={p.highlight ? "text-white/60" : "text-muted"}>/ Monat</span>
-                </p>
+                <p className="mt-6 text-2xl font-bold tracking-tight">Preis auf Anfrage</p>
                 <ul className="mt-8 flex-1 space-y-3.5 text-sm">
                   {p.features.map((f) => (
                     <li key={f} className="flex gap-3">
@@ -321,7 +318,7 @@ export default function Home() {
                       : "bg-surface text-ink hover:bg-brand-soft"
                   }`}
                 >
-                  {p.name} anfragen
+                  Angebot anfordern
                 </Link>
               </div>
             ))}

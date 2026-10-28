@@ -12,7 +12,6 @@ export const site = {
 export type Paket = {
   id: string;
   name: string;
-  preis: number;
   beschreibung: string;
   features: string[];
   highlight?: boolean;
@@ -22,7 +21,6 @@ export const pakete: Paket[] = [
   {
     id: "start",
     name: "Start",
-    preis: 49,
     beschreibung: "Der professionelle Auftritt für Selbstständige und kleine Betriebe.",
     features: [
       "Onepager mit bis zu 5 Sektionen",
@@ -36,7 +34,6 @@ export const pakete: Paket[] = [
   {
     id: "business",
     name: "Business",
-    preis: 89,
     beschreibung: "Für Unternehmen, die mehr zeigen und mehr Anfragen gewinnen wollen.",
     features: [
       "Bis zu 8 Unterseiten",
@@ -51,7 +48,6 @@ export const pakete: Paket[] = [
   {
     id: "premium",
     name: "Premium",
-    preis: 149,
     beschreibung: "Der Rundum-Service für Firmen mit größerem Angebot.",
     features: [
       "Unbegrenzte Unterseiten",

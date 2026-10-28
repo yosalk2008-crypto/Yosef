@@ -78,7 +78,7 @@ export function AnfrageForm() {
             <option value="beratung">Noch unsicher – bitte beraten</option>
             {pakete.map((p) => (
               <option key={p.id} value={p.name}>
-                {p.name} – {p.preis} € / Monat
+                {p.name}
               </option>
             ))}
           </select>
