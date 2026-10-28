@@ -8,15 +8,15 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "sw
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: "Firmengrafik – Professionelle Websites im Abo",
+    default: "Firmengrafik – Websites, KI-Chatbots & Terminbuchung",
     template: "%s · Firmengrafik",
   },
   description:
-    "Moderne, professionelle Websites im Abo-Modell: Design, Domain, Hosting, SSL und schneller Änderungsservice – alles zu einem festen Monatspreis.",
+    "Professionelle Websites im Abo, KI-Chatbots, KI-Telefonassistenten und Online-Terminbuchung für Unternehmen – alles aus einer Hand.",
   openGraph: {
-    title: "Firmengrafik – Professionelle Websites im Abo",
+    title: "Firmengrafik – Websites, KI-Chatbots & Terminbuchung",
     description:
-      "Design, Domain, Hosting, SSL und schneller Änderungsservice – alles zu einem festen Monatspreis.",
+      "Websites im Abo, KI-Chatbots, KI-Telefonassistenten und Online-Terminbuchung – alles aus einer Hand.",
     locale: "de_DE",
     type: "website",
   },

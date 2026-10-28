@@ -1,9 +1,9 @@
 # Firmengrafik
 
-Website von Firmengrafik – professionelle Websites im Abo. Next.js 15 + Tailwind CSS, gehostet auf Vercel.
+Website von Firmengrafik – Websites im Abo, KI-Chatbots, KI-Telefonassistenten und Terminbuchung. Next.js 15 + Tailwind CSS, gehostet auf Vercel.
 
-- `/` – Startseite mit Leistungen, Paketen, Ablauf, FAQ und Online-Anfrageformular
-- `/musterwebsite` – Musterwebsite (Fahrschule) mit Unterseiten
+- `/` – Startseite mit Leistungen, KI-Bereich, Vorteilen, Ablauf und FAQ
+- `/kontakt` – Online-Anfrageformular
 - `/impressum`, `/datenschutz`
 
 ## Anfrageformular (Resend + Supabase)

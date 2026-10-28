@@ -6,9 +6,8 @@ import { Logo } from "./Logo";
 
 const links = [
   { href: "/#leistungen", label: "Leistungen" },
-  { href: "/#pakete", label: "Pakete" },
   { href: "/#ablauf", label: "Ablauf" },
-  { href: "/musterwebsite", label: "Musterwebsite" },
+  { href: "/#vorteile", label: "Vorteile" },
   { href: "/#faq", label: "FAQ" },
 ];
 
@@ -44,7 +43,7 @@ export function SiteHeader() {
             </Link>
           ))}
           <Link
-            href="/#anfrage"
+            href="/kontakt"
             className="ml-3 rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:bg-brand-soft"
           >
             Anfrage stellen
@@ -75,7 +74,7 @@ export function SiteHeader() {
             </Link>
           ))}
           <Link
-            href="/#anfrage"
+            href="/kontakt"
             onClick={() => setOpen(false)}
             className="mt-4 block rounded-full bg-white py-3 text-center font-semibold text-ink"
           >

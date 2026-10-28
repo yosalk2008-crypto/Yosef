@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { pakete, site } from "@/lib/site";
+import { leistungen, site } from "@/lib/site";
 
 type Status = "idle" | "sending" | "success" | "error";
 
@@ -13,13 +13,15 @@ export function AnfrageForm() {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
+    const fd = new FormData(form);
+    const payload = { ...Object.fromEntries(fd), interesse: fd.getAll("interesse").join(", ") };
     setStatus("sending");
     setError("");
     try {
       const res = await fetch("/api/anfrage", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(Object.fromEntries(new FormData(form))),
+        body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Die Anfrage konnte nicht gesendet werden.");
@@ -73,19 +75,25 @@ export function AnfrageForm() {
         <Field label="Telefon" htmlFor="telefon">
           <input id="telefon" name="telefon" type="tel" maxLength={60} autoComplete="tel" className="input" />
         </Field>
-        <Field label="Gewünschtes Paket" htmlFor="paket">
-          <select id="paket" name="paket" className="input" defaultValue="beratung">
-            <option value="beratung">Noch unsicher – bitte beraten</option>
-            {pakete.map((p) => (
-              <option key={p.id} value={p.name}>
-                {p.name}
-              </option>
+        <div className="sm:col-span-2">
+          <Field label="Aktuelle Website (falls vorhanden)" htmlFor="website">
+            <input id="website" name="website" maxLength={200} placeholder="www.ihre-firma.de" className="input" />
+          </Field>
+        </div>
+        <fieldset className="sm:col-span-2">
+          <legend className="mb-2 text-sm font-medium">Wofür interessieren Sie sich?</legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {leistungen.map((l) => (
+              <label
+                key={l.id}
+                className="flex cursor-pointer items-center gap-3 rounded-xl border border-line px-4 py-3 text-sm transition has-[:checked]:border-brand has-[:checked]:bg-brand-soft"
+              >
+                <input type="checkbox" name="interesse" value={l.kurz} className="h-4 w-4 accent-brand" />
+                {l.title}
+              </label>
             ))}
-          </select>
-        </Field>
-        <Field label="Aktuelle Website (falls vorhanden)" htmlFor="website">
-          <input id="website" name="website" maxLength={200} placeholder="www.ihre-firma.de" className="input" />
-        </Field>
+          </div>
+        </fieldset>
         <div className="sm:col-span-2">
           <Field label="Ihre Nachricht *" htmlFor="nachricht">
             <textarea
@@ -94,7 +102,7 @@ export function AnfrageForm() {
               required
               rows={5}
               maxLength={4000}
-              placeholder="Erzählen Sie uns kurz von Ihrem Unternehmen und was Ihre neue Website können soll."
+              placeholder="Erzählen Sie uns kurz von Ihrem Unternehmen und wobei wir Sie unterstützen können."
               className="input resize-y"
             />
           </Field>

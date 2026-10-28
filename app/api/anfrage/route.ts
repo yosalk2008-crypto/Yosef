@@ -7,7 +7,7 @@ type Anfrage = {
   firma: string;
   email: string;
   telefon: string;
-  paket: string;
+  interesse: string;
   website: string;
   nachricht: string;
 };
@@ -17,7 +17,7 @@ const LIMITS: Record<keyof Anfrage, number> = {
   firma: 160,
   email: 200,
   telefon: 60,
-  paket: 60,
+  interesse: 400,
   website: 200,
   nachricht: 4000,
 };
@@ -92,7 +92,7 @@ async function sendMail(apiKey: string, a: Anfrage) {
     ["Firma", a.firma],
     ["E-Mail", a.email],
     ["Telefon", a.telefon],
-    ["Paket", a.paket],
+    ["Interesse", a.interesse],
     ["Website", a.website],
   ];
   const html = `
