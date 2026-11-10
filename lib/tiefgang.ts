@@ -1,31 +1,65 @@
 import { BY_ID, COUNTRIES, CONTINENTS, SUBREGION_DE, norm, type Country } from "./data/countries";
+import { BEKANNTHEIT } from "./data/bekanntheit";
+import { KATALOG, cleanAnswers } from "./data/tiefgang-katalog";
 import { makeRng, type Rng } from "./rng";
 
 /**
  * Tiefgang: reverse trivia. Every valid answer is worth 10–100 points; the less well-known
  * the answer, the more points. 1 point = 10 metres of diving depth.
+ * Rarity was rated by AI (Claude) in advance: per country (lib/data/bekanntheit.ts) and per
+ * answer for the curated prompts (lib/data/tiefgang-katalog.ts). Exactly one answer per prompt –
+ * the rarest – is the "Tiefseeperle".
  */
 
-export type Answer = { id: string; name: string; alt: string[]; pts: number };
+export type Answer = { id: string; name: string; alt: string[]; pts: number; perle?: boolean };
+
+export type Tier = { key: string; name: string; desc: string; color: string };
+export const TIERS: Tier[] = [
+  { key: "perle", name: "Tiefseeperle", desc: "Die seltenste Antwort überhaupt – es gibt nur eine pro Frage.", color: "#f3d272" },
+  { key: "tiefsee", name: "Tiefsee", desc: "Daran denkt kaum jemand.", color: "#c3aaf6" },
+  { key: "selten", name: "Selten", desc: "Ziemlich ausgefallen.", color: "#f0a0bf" },
+  { key: "schwarm", name: "Schwarm", desc: "Solide – du schwimmst mit dem Schwarm.", color: "#8ec5f0" },
+  { key: "plankton", name: "Plankton", desc: "Richtig, aber darauf kommen sehr viele.", color: "#9fd06f" },
+];
+export function tierOf(a: { pts: number; perle?: boolean }): Tier {
+  if (a.perle) return TIERS[0];
+  if (a.pts >= 80) return TIERS[1];
+  if (a.pts >= 55) return TIERS[2];
+  if (a.pts >= 30) return TIERS[3];
+  return TIERS[4];
+}
+
+/** Marks the single rarest answer as Tiefseeperle (100 points); everything else is capped at 95. */
+function withPerle(list: Answer[]): Answer[] {
+  let best = 0;
+  list.forEach((a, k) => {
+    if (a.pts > list[best].pts) best = k;
+  });
+  return list
+    .map((a, k) => (k === best ? { ...a, pts: 100, perle: true } : { ...a, pts: Math.min(95, a.pts) }))
+    .sort((a, b) => a.pts - b.pts);
+}
 export type Question = { key: string; text: string; hint: string; answers: Answer[] };
 
 export const ROUNDS = 7;
 export const SECONDS = 25;
 export const MAX_PTS = 100;
 
-/** How well-known a country is: population, economy and tourism on a log scale. */
+/** How well-known a country is, rated by AI (0–100). */
 function fame(c: Country) {
-  const pop = c.pop ?? 1e4;
-  // missing economic data should not make a famous country look obscure
-  const gdp = c.gdp ?? pop * 3000;
-  const tour = c.tour ?? pop * 0.05;
-  return 0.45 * Math.log10(pop) + 0.35 * Math.log10(gdp) + 0.2 * Math.log10(tour + 1e4);
+  return BEKANNTHEIT[c.id] ?? 30;
 }
 
 function scored(items: { id: string; name: string; alt: string[]; fame: number }[]): Answer[] {
-  const sorted = [...items].sort((a, b) => b.fame - a.fame);
+  const sorted = [...items].sort((a, b) => b.fame - a.fame || a.name.localeCompare(b.name, "de"));
   const n = sorted.length;
-  return sorted.map((x, r) => ({ id: x.id, name: x.name, alt: x.alt, pts: Math.round(10 + 90 * Math.pow(n > 1 ? r / (n - 1) : 1, 0.85)) }));
+  // mix of rank within the question and absolute fame, so "Andorra" stays rare even in a short list
+  const list = sorted.map((x, r) => {
+    const rank = n > 1 ? r / (n - 1) : 1;
+    const abs = 1 - x.fame / 100;
+    return { id: x.id, name: x.name, alt: x.alt, pts: Math.round(10 + 85 * (0.6 * Math.pow(rank, 0.9) + 0.4 * abs)) };
+  });
+  return withPerle(list);
 }
 
 const countryAnswers = (list: Country[]) => scored(list.map((c) => ({ id: c.id, name: c.n, alt: c.alt, fame: fame(c) })));
@@ -80,7 +114,7 @@ const TEMPLATES: Template[] = [
         key: "cap:" + cont,
         text: `Nenne eine Hauptstadt ${CONT_TEXT[cont]}.`,
         hint: "Nur die Hauptstadt eines Landes zählt, nicht das Land selbst.",
-        answers: scored(list.map((c) => ({ id: "cap-" + c.id, name: c.cap!, alt: c.capAlt, fame: fame(c) + 0.3 * Math.log10(c.capPop ?? 1e5) }))),
+        answers: scored(list.map((c) => ({ id: "cap-" + c.id, name: c.cap!, alt: c.capAlt, fame: fame(c) }))),
       };
     },
   },
@@ -100,20 +134,37 @@ const TEMPLATES: Template[] = [
   { key: "big", make: () => ({ key: "big", text: "Nenne ein Land, das größer ist als 1 Million km².", hint: "Deutschland hat etwa 357.000 km².", answers: countryAnswers(COUNTRIES.filter((c) => c.area > 1e6)) }) },
 ];
 
+const CURATED: Question[] = KATALOG.map((p) => {
+  const seen = new Set<string>();
+  const answers: Answer[] = [];
+  for (const line of cleanAnswers(p.answers)) {
+    const [name, r, ...alt] = line.split("|");
+    const keys = [name, ...alt].map(norm);
+    if (keys.some((k) => seen.has(k))) continue;
+    keys.forEach((k) => seen.add(k));
+    answers.push({ id: p.key + ":" + norm(name), name, alt, pts: Math.max(10, Math.min(100, +r)) });
+  }
+  return { key: "k:" + p.key, text: p.text, hint: p.hint, answers: withPerle(answers) };
+});
+
 function pickQuestions(rng: Rng, n: number): Question[] {
-  const out: Question[] = [];
+  // 4 curated prompts + 3 country prompts, mixed
+  const curated = rng.sample(CURATED, Math.min(4, CURATED.length));
+  const out: Question[] = [...curated];
   const usedTypes = new Set<string>();
   let guard = 0;
   while (out.length < n && guard++ < 500) {
     const t = rng.pick(TEMPLATES);
-    if (usedTypes.has(t.key) && usedTypes.size < TEMPLATES.length) continue;
+    if (usedTypes.has(t.key)) continue;
     const q = t.make(rng);
     if (!q || q.answers.length < 5 || out.some((o) => o.key === q.key)) continue;
     usedTypes.add(t.key);
     out.push(q);
   }
-  return out;
+  return rng.shuffle(out);
 }
+
+export const ALL_CURATED = CURATED;
 
 export function dailyQuestions(day: string): Question[] {
   return pickQuestions(makeRng(`${day}:tiefgang`), ROUNDS);
@@ -149,7 +200,7 @@ export function check(q: Question, input: string): Verdict {
   if (exact) return { ok: true, answer: exact };
   // "Niger" must not be read as a typo of "Nigeria"
   const exactOther = COUNTRIES.find((c) => [c.n, ...c.alt].some((n) => norm(n) === x) || (c.cap && norm(c.cap) === x));
-  if (exactOther) return { ok: false, reason: `„${input.trim()}“ passt nicht zu dieser Frage.` };
+  if (exactOther && !q.key.startsWith("k:")) return { ok: false, reason: `„${input.trim()}“ passt nicht zu dieser Frage.` };
   let best: { a: Answer; d: number } | null = null;
   for (const a of q.answers) {
     for (const name of [a.name, ...a.alt]) {
@@ -166,10 +217,12 @@ export function check(q: Question, input: string): Verdict {
   return { ok: false, reason: `„${input.trim()}“ kennen wir nicht als gültige Antwort.` };
 }
 
-export function emojiFor(pts: number) {
+export function emojiFor(pts: number, perle = false) {
+  if (perle) return "🦪";
   if (pts >= 80) return "🦑";
-  if (pts >= 50) return "🐡";
-  if (pts > 0) return "🐠";
+  if (pts >= 55) return "🐙";
+  if (pts >= 30) return "🐟";
+  if (pts > 0) return "🦐";
   return "🫧";
 }
 

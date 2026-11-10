@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { dayNumber, msUntilNextDay } from "@/lib/daily";
 import { useDaily } from "@/lib/useDaily";
-import { MAX_PTS, ROUNDS, SECONDS, check, dailyQuestions, emojiFor, meters, randomQuestions, type Question } from "@/lib/tiefgang";
+import { MAX_PTS, ROUNDS, SECONDS, check, dailyQuestions, emojiFor, meters, randomQuestions, tierOf, type Question } from "@/lib/tiefgang";
+import { AnswerExplorer } from "./AnswerExplorer";
+import { Creature } from "./Creatures";
 
-type Result = { input: string; pts: number; answer?: string; reason?: string };
+type Result = { input: string; pts: number; answer?: string; id?: string; perle?: boolean; reason?: string };
 type S = { results: Result[]; pending?: number };
 
 const MAX_M = ROUNDS * MAX_PTS * 10;
@@ -76,7 +78,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
         score: pts,
         max: ROUNDS * MAX_PTS,
         label: `${nf.format(meters(pts))} m`,
-        share: `Tiefgang #${dayNumber(daily.day)} · ${nf.format(meters(pts))} m\n${r.map((x) => emojiFor(x.pts)).join("")}`,
+        share: `Tiefgang #${dayNumber(daily.day)} · ${nf.format(meters(pts))} m\n${r.map((x) => emojiFor(x.pts, x.perle)).join("")}${r.some((x) => x.perle) ? " – Tiefseeperle gefunden!" : ""}`,
         state: { results: r, pending },
       });
     },
@@ -100,7 +102,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
       if (timedOut) r = { input: text, pts: 0, reason: "Die Zeit ist abgelaufen." };
       else {
         const v = check(quest, text);
-        r = v.ok ? { input: text, pts: v.answer.pts, answer: v.answer.name } : { input: text, pts: 0, reason: v.reason };
+        r = v.ok ? { input: text, pts: v.answer.pts, answer: v.answer.name, id: v.answer.id, perle: v.answer.perle } : { input: text, pts: 0, reason: v.reason };
       }
       const next = [...results, r];
       setResults(next);
@@ -176,6 +178,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
                       <li>Du bekommst {ROUNDS} Fragen und hast pro Frage {SECONDS} Sekunden für eine Antwort.</li>
                       <li>Jede richtige Antwort bringt 10 bis 100 Punkte. Bekannte Antworten bringen wenig, seltene viel.</li>
                       <li>Ein Punkt sind 10 Meter Tauchtiefe – maximal {nf.format(MAX_M)} m.</li>
+                      <li>Jede Antwort landet in einer Stufe: Plankton, Schwarm, Selten oder Tiefsee. Die eine seltenste Antwort jeder Frage ist die <strong>Tiefseeperle</strong> – es gibt pro Frage nur eine.</li>
                       <li>Falsche Antworten oder abgelaufene Zeit bringen 0 Meter. Kleine Tippfehler verzeihen wir.</li>
                     </ul>
                   </>
@@ -232,27 +235,34 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
               <div className="pop rounded-[28px] bg-white/95 p-5 text-ink shadow-[0_6px_0_rgb(0_0_0_/_0.25)] sm:p-7">
                 <p className="font-display font-semibold text-ink/60">{shownQ.text}</p>
                 {last.pts > 0 ? (
-                  <>
-                    <p className="mt-2 font-display text-5xl font-semibold text-[#0f4c8a]">+{nf.format(meters(last.pts))} m</p>
-                    <p className="mt-1 text-lg font-semibold">
-                      {last.answer} – {last.pts} von {MAX_PTS} Punkten {emojiFor(last.pts)}
-                    </p>
-                    <p className="mt-1 text-sm text-ink/70">{last.pts >= 80 ? "Sehr selten – stark!" : last.pts >= 50 ? "Ziemlich ausgefallen." : "Richtig, aber das kennen viele."}</p>
-                  </>
+                  <div className="mt-3 flex items-center gap-4">
+                    <Creature tier={tierOf(last).key} className={`shrink-0 ${last.perle ? "h-24 w-24" : "h-20 w-20"}`} />
+                    <div>
+                      <p className="inline-block rounded-full px-3 py-1 font-display text-lg font-semibold" style={{ background: tierOf(last).color }}>
+                        {tierOf(last).name}
+                      </p>
+                      <p className="mt-1 font-display text-4xl font-semibold text-[#0f4c8a] sm:text-5xl">+{nf.format(meters(last.pts))} m</p>
+                      <p className="text-lg font-semibold">
+                        {last.answer} – {last.pts} von {MAX_PTS} Punkten
+                      </p>
+                      <p className="text-sm text-ink/70">{tierOf(last).desc}</p>
+                    </div>
+                  </div>
                 ) : (
-                  <>
-                    <p className="mt-2 font-display text-5xl font-semibold text-bad">0 m</p>
-                    <p className="mt-1 text-lg font-semibold">{last.reason}</p>
-                  </>
+                  <div className="mt-3 flex items-center gap-4">
+                    <Creature tier="none" className="h-16 w-16 shrink-0" />
+                    <div>
+                      <p className="font-display text-4xl font-semibold text-bad">0 m</p>
+                      <p className="text-lg font-semibold">{last.reason}</p>
+                    </div>
+                  </div>
                 )}
-                <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
-                  <p className="rounded-2xl bg-paper p-3">
-                    <span className="font-bold">Naheliegend:</span> {shownQ.answers.slice(0, 3).map((a) => a.name).join(", ")}
-                  </p>
-                  <p className="rounded-2xl bg-paper p-3">
-                    <span className="font-bold">Selten:</span> {shownQ.answers.slice(-3).map((a) => a.name).join(", ")}
-                  </p>
-                </div>
+                <details className="mt-4 rounded-2xl bg-paper p-3">
+                  <summary className="cursor-pointer font-display font-semibold">Alle {shownQ.answers.length} gültigen Antworten ansehen</summary>
+                  <div className="mt-3">
+                    <AnswerExplorer q={shownQ} mine={last.id} />
+                  </div>
+                </details>
                 <button type="button" onClick={() => (results.length >= ROUNDS ? setPhase("done") : start())} className="btn-primary mt-5 w-full bg-[#0f4c8a] shadow-[0_4px_0_#08294b] hover:bg-[#13599f] sm:w-auto sm:px-8" autoFocus>
                   {results.length >= ROUNDS ? "Ergebnis ansehen" : "Nächste Frage"}
                 </button>
@@ -324,7 +334,7 @@ function Done({ results, questions, mode, share, onRestart, totalM }: { results:
     const id = setInterval(tick, 30000);
     return () => clearInterval(id);
   }, []);
-  const text = share || `Tiefgang · ${nf.format(totalM)} m\n${results.map((r) => emojiFor(r.pts)).join("")}`;
+  const text = share || `Tiefgang · ${nf.format(totalM)} m\n${results.map((r) => emojiFor(r.pts, r.perle)).join("")}`;
   const copy = async () => {
     try {
       const t = text + "\nfirmengrafik.de/tiefgang";
@@ -338,19 +348,40 @@ function Done({ results, questions, mode, share, onRestart, totalM }: { results:
     <div className="pop rounded-[28px] bg-white/95 p-5 text-ink shadow-[0_6px_0_rgb(0_0_0_/_0.3)] sm:p-7">
       <p className="font-display text-lg font-semibold text-ink/60">Deine Tauchtiefe</p>
       <p className="font-display text-6xl font-semibold text-[#0f4c8a]">{nf.format(totalM)} m</p>
+      {results.some((r) => r.perle) && (
+        <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-[#f3d272] px-3 py-1.5 font-display font-semibold">
+          <Creature tier="perle" className="h-7 w-7" /> Du hast eine Tiefseeperle gefunden!
+        </p>
+      )}
+      <DiveLog results={results} />
       <ul className="mt-5 space-y-2">
-        {results.map((r, k) => (
-          <li key={k} className="flex items-center justify-between gap-3 rounded-2xl bg-paper px-3 py-2.5">
-            <span className="min-w-0">
-              <span className="block text-sm text-ink/60">{questions[k]?.text}</span>
-              <span className="font-semibold">{r.answer || (r.input ? `„${r.input}“` : "keine Antwort")}</span>
-            </span>
-            <span className="shrink-0 font-display text-lg font-semibold tabular-nums">
-              {emojiFor(r.pts)} {nf.format(meters(r.pts))} m
-            </span>
-          </li>
-        ))}
+        {results.map((r, k) => {
+          const t = r.pts > 0 ? tierOf(r) : null;
+          return (
+            <li key={k} className="rounded-2xl bg-paper px-3 py-2.5">
+              <details>
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <Creature tier={t ? t.key : "none"} className="h-9 w-9 shrink-0" />
+                    <span className="min-w-0">
+                      <span className="block text-sm text-ink/60">{questions[k]?.text}</span>
+                      <span className="font-semibold">{r.answer || (r.input ? `„${r.input}“` : "keine Antwort")}</span>
+                      {t && <span className="ml-2 rounded-full px-2 py-0.5 text-xs font-bold" style={{ background: t.color }}>{t.name}</span>}
+                    </span>
+                  </span>
+                  <span className="shrink-0 font-display text-lg font-semibold tabular-nums">{nf.format(meters(r.pts))} m</span>
+                </summary>
+                {questions[k] && (
+                  <div className="mt-3 rounded-2xl bg-white p-3">
+                    <AnswerExplorer q={questions[k]} mine={r.id} />
+                  </div>
+                )}
+              </details>
+            </li>
+          );
+        })}
       </ul>
+      <p className="mt-2 text-sm text-ink/60">Tippe auf eine Frage, um alle gültigen Antworten und die Tiefseeperle zu sehen.</p>
       <pre className="mt-4 whitespace-pre-wrap rounded-2xl bg-paper p-3 font-sans text-sm font-semibold">{text}</pre>
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" onClick={copy} className="btn-primary bg-[#0f4c8a] shadow-[0_4px_0_#08294b] hover:bg-[#13599f]">
@@ -370,6 +401,41 @@ function Done({ results, questions, mode, share, onRestart, totalM }: { results:
         </Link>
       </div>
       {mode === "daily" && <p className="mt-4 text-sm text-ink/60">Neue Fragen in {left} Stunden.</p>}
+    </div>
+  );
+}
+
+/** Seven dives as vertical lines, each sinking to the depth reached. */
+function DiveLog({ results }: { results: Result[] }) {
+  const H = 150;
+  return (
+    <div className="mt-5 rounded-2xl bg-[#0b2a55] p-4 text-white">
+      <p className="font-display font-semibold">Tauch-Logbuch</p>
+      <svg viewBox={`0 0 ${ROUNDS * 40 + 44} ${H + 30}`} className="mt-2 w-full" role="img" aria-label="Tiefe je Frage">
+        {[0, 0.5, 1].map((f) => (
+          <g key={f}>
+            <line x1="0" x2={ROUNDS * 40} y1={10 + f * H} y2={10 + f * H} stroke="rgb(255 255 255 / 0.15)" strokeDasharray="3 4" />
+            <text x={ROUNDS * 40 + 42} y={13 + f * H} textAnchor="end" fontSize="9" fill="rgb(255 255 255 / 0.6)">
+              {f * 1000} m
+            </text>
+          </g>
+        ))}
+        {Array.from({ length: ROUNDS }).map((_, k) => {
+          const r = results[k];
+          const y = 10 + ((r?.pts ?? 0) / MAX_PTS) * H;
+          const x = 20 + k * 40;
+          const c = r && r.pts > 0 ? tierOf(r).color : "#94a3b8";
+          return (
+            <g key={k}>
+              <line x1={x} x2={x} y1={10} y2={y} stroke={c} strokeWidth="3" strokeLinecap="round" />
+              <circle cx={x} cy={y} r={r?.perle ? 8 : 6} fill={c} stroke="#fff" strokeWidth="2" />
+              <text x={x} y={H + 26} textAnchor="middle" fontSize="10" fill="rgb(255 255 255 / 0.75)">
+                {k + 1}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
     </div>
   );
 }
