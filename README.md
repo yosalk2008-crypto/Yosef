@@ -1,19 +1,24 @@
-# Firmengrafik
+# Geografik – firmengrafik.de
 
-Website von Firmengrafik – Websites im Abo, KI-Chatbots, KI-Telefonassistenten und Terminbuchung. Next.js 15 + Tailwind CSS, gehostet auf Vercel.
+Tägliche Geografie-Rätsel und unbegrenzte Länder-Quizze. Next.js (App Router), Tailwind CSS, d3-geo.
 
-- `/` – Startseite mit Leistungen, KI-Bereich, Vorteilen, Ablauf und FAQ
-- `/kontakt` – Online-Anfrageformular
-- `/impressum`, `/datenschutz`
+## Tagesspiele (`/taeglich/<spiel>`)
 
-## Anfrageformular (Resend + Supabase)
+Länderjagd, Maßstab, Viererbande, Höher oder tiefer, Spitzenplatz, Farbecht, Grenzgang, Zeitreise.
+Jedes Rätsel wird aus dem UTC-Datum deterministisch erzeugt (`lib/rng.ts`), daher sieht jeder am selben
+Tag dasselbe Rätsel und das Archiv (`/archiv`, ab 1. 1. 2024) braucht keinen Server.
+Spielstände und Serien liegen nur im Local Storage des Browsers (`lib/daily.ts`).
 
-Das Formular sendet an `/api/anfrage`. Benötigte Umgebungsvariablen in Vercel: siehe `.env.example`.
+## Quizze (`/quiz`)
 
-- **Resend**: `RESEND_API_KEY` setzen → Anfragen kommen per E-Mail an `firmengrafik@gmail.com` (Antworten gehen direkt an den Kunden).
-- **Supabase**: SQL aus `supabase/migrations/` ausführen, dann `SUPABASE_URL` und `SUPABASE_KEY` (Publishable Key) setzen.
+Flaggen, Hauptstädte, Umrisse, Auf der Karte, Alle nennen – für Welt, Kontinente, US-Staaten,
+deutsche Bundesländer, Schweizer Kantone und österreichische Bundesländer.
 
-Ist mindestens einer der beiden Dienste eingerichtet, funktioniert das Formular.
+## Daten
+
+`scripts/data/build.js` erzeugt `lib/data/countries.json`, `public/geo/*.json` und `public/flags/*.svg`
+aus Weltbank, Wikidata, mledoze/countries, Natural Earth und flag-icons (Quellen: `/quellen`).
+`npx tsx scripts/check-puzzles.tsx` prüft, dass alle Tagesrätsel bis ein Jahr in die Zukunft gültig sind.
 
 ## Entwicklung
 
@@ -21,3 +26,5 @@ Ist mindestens einer der beiden Dienste eingerichtet, funktioniert das Formular.
 npm install
 npm run dev
 ```
+
+Die frühere Firmengrafik-Website liegt im Branch `backup/firmengrafik-fahrschul-seite`.

@@ -1,0 +1,75 @@
+import raw from "./countries.json";
+
+export type Country = {
+  id: string; // ISO 3166-1 alpha-3 (Kosovo: XKX)
+  iso2: string;
+  n: string; // German name
+  alt: string[];
+  cont: Continent;
+  sub: string;
+  cap: string | null;
+  capAlt: string[];
+  capPop: number | null;
+  ll: [number, number];
+  area: number;
+  pop: number | null;
+  gdppc: number | null;
+  gdp: number | null;
+  life: number | null;
+  mil: number | null;
+  tour: number | null;
+  forest: number | null;
+  urban: number | null;
+  borders: string[];
+  landlocked: boolean;
+  flag: { colors: string[]; simple: boolean };
+  shape: boolean;
+};
+
+export type Continent = "Europa" | "Asien" | "Afrika" | "Nordamerika" | "Südamerika" | "Ozeanien";
+
+export const COUNTRIES = raw as unknown as Country[];
+export const BY_ID: Record<string, Country> = Object.fromEntries(COUNTRIES.map((c) => [c.id, c]));
+export const CONTINENTS: Continent[] = ["Europa", "Asien", "Afrika", "Nordamerika", "Südamerika", "Ozeanien"];
+
+export const SUBREGION_DE: Record<string, string> = {
+  "Western Europe": "Westeuropa",
+  "Northern Europe": "Nordeuropa",
+  "Southern Europe": "Südeuropa",
+  "Eastern Europe": "Osteuropa",
+  "Southeast Europe": "Südosteuropa",
+  "Central Europe": "Mitteleuropa",
+  "Western Asia": "Westasien",
+  "Central Asia": "Zentralasien",
+  "Southern Asia": "Südasien",
+  "Eastern Asia": "Ostasien",
+  "South-Eastern Asia": "Südostasien",
+  "Northern Africa": "Nordafrika",
+  "Western Africa": "Westafrika",
+  "Eastern Africa": "Ostafrika",
+  "Middle Africa": "Zentralafrika",
+  "Southern Africa": "Südliches Afrika",
+  Caribbean: "Karibik",
+  "Central America": "Mittelamerika",
+  "North America": "Nordamerika",
+  "South America": "Südamerika",
+  "Australia and New Zealand": "Australien & Neuseeland",
+  Melanesia: "Melanesien",
+  Micronesia: "Mikronesien",
+  Polynesia: "Polynesien",
+};
+
+export function flagUrl(iso2: string) {
+  return `/flags/${iso2}.svg`;
+}
+
+/** Lower-case, strip accents and punctuation for forgiving text matching. */
+export function norm(s: string) {
+  return s
+    .toLowerCase()
+    .replace(/ß/g, "ss")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
