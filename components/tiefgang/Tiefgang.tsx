@@ -8,6 +8,7 @@ import { MAX_PTS, ROUNDS, SECONDS, check, dailyQuestions, emojiFor, meters, rand
 import { AnswerExplorer } from "./AnswerExplorer";
 import { Creature } from "./Creatures";
 import { OceanScene } from "./OceanScene";
+import type { Impact } from "./OceanFx";
 
 type Result = { input: string; pts: number; answer?: string; id?: string; perle?: boolean; reason?: string };
 type S = { results: Result[]; pending?: number };
@@ -46,6 +47,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
   const [results, setResults] = useState<Result[]>([]);
   const [phase, setPhase] = useState<"intro" | "countdown" | "question" | "sinking" | "reveal" | "done">("intro");
   const [count, setCount] = useState(3);
+  const [impact, setImpact] = useState<Impact | null>(null);
   const [left, setLeft] = useState(SECONDS);
   const [input, setInput] = useState("");
   const deadline = useRef(0);
@@ -99,7 +101,11 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
       camRef.current = v;
       setCam(v);
       if (k < 1) raf = requestAnimationFrame(step);
-      else if (sinking) setTimeout(() => setPhase("reveal"), 350);
+      else if (sinking) {
+        const last = results[results.length - 1];
+        setImpact({ at: Date.now(), kind: last ? (tierOf(last).key as Impact["kind"]) : "plankton" });
+        setTimeout(() => setPhase("reveal"), 450);
+      }
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
@@ -158,6 +164,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
       const next = [...results, r];
       setResults(next);
       setPhase(r.pts > 0 ? "sinking" : "reveal");
+      if (r.pts <= 0) setImpact({ at: Date.now(), kind: "miss" });
       save(next);
     },
     [questions, results, save]
@@ -192,7 +199,13 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
 
   return (
     <div className="relative h-[calc(100dvh-64px)] min-h-[560px] overflow-hidden text-white sm:h-[calc(100dvh-72px)]">
-      <OceanScene cam={cam} results={results} questions={questions} sinking={sinkingAnswer} base={sinkBase} />
+      <OceanScene cam={cam} results={results} questions={questions} sinking={sinkingAnswer} base={sinkBase} impact={impact} />
+      {phase === "countdown" && count > 0 && (
+        <div key={count} className="countdown-num pointer-events-none absolute inset-x-0 top-[22%] z-30 text-center font-display text-[120px] font-semibold leading-none text-white drop-shadow-[0_6px_0_rgb(0_0_0_/_0.35)]" aria-hidden="true">
+          {count}
+        </div>
+      )}
+      <style>{`@keyframes cd { 0% { transform: scale(1.8); opacity: 0 } 25% { transform: scale(1); opacity: 1 } 80% { opacity: 1 } 100% { transform: scale(.7); opacity: 0 } } .countdown-num { animation: cd .9s ease-out forwards } @media (prefers-reduced-motion: reduce) { .countdown-num { animation: none } }`}</style>
 
       {/* HUD */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-[#051a3a]/70 to-transparent px-4 pb-6 pt-3">

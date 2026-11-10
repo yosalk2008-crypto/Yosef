@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { meters, tierOf, type Question } from "@/lib/tiefgang";
+import { OceanFx, type Impact } from "./OceanFx";
 
 type Result = { input: string; pts: number; answer?: string; id?: string; perle?: boolean };
 
@@ -45,7 +46,7 @@ function waterGradient() {
   return `linear-gradient(180deg, #bfe6fb 0px, #93d1f3 ${SKY - 4}px, ${stops.map(([m, c]) => `${c} ${Math.round(y(m))}px`).join(", ")})`;
 }
 
-export function OceanScene({ cam, results, questions, sinking, base }: { cam: number; results: Result[]; questions: Question[]; sinking: Result | null; base: number }) {
+export function OceanScene({ cam, results, questions, sinking, base, impact }: { cam: number; results: Result[]; questions: Question[]; sinking: Result | null; base: number; impact: Impact | null }) {
   const ref = useRef<HTMLDivElement>(null);
   const [vh, setVh] = useState(700);
   useEffect(() => {
@@ -57,7 +58,22 @@ export function OceanScene({ cam, results, questions, sinking, base }: { cam: nu
     return () => ro.disconnect();
   }, []);
   void questions;
-  const offset = y(cam) - vh * 0.34;
+  const anchor = vh * 0.34;
+  const offset = y(cam) - anchor;
+  const darkness = Math.min(0.88, Math.max(0, (cam - 250) / 2600));
+  const [shake, setShake] = useState(false);
+  const [flash, setFlash] = useState(false);
+  useEffect(() => {
+    if (!impact) return;
+    setShake(true);
+    if (impact.kind === "perle") setFlash(true);
+    const a = setTimeout(() => setShake(false), 500);
+    const b = setTimeout(() => setFlash(false), 700);
+    return () => {
+      clearTimeout(a);
+      clearTimeout(b);
+    };
+  }, [impact]);
 
   // cumulative landing depths of previous answers
   let acc = 0;
@@ -68,8 +84,13 @@ export function OceanScene({ cam, results, questions, sinking, base }: { cam: nu
   const showLines = true;
 
   return (
-    <div ref={ref} className="absolute inset-0 overflow-hidden" aria-hidden="true">
-      <div className="absolute inset-x-0 top-0 will-change-transform" style={{ height: WORLD, transform: `translate3d(0, ${-offset}px, 0)`, background: waterGradient() }}>
+    <div ref={ref} className={`absolute inset-0 overflow-hidden ${shake ? (impact?.kind === "perle" ? "shake-big" : "shake-small") : ""}`} aria-hidden="true">
+      <div className="absolute inset-x-0 top-0" style={{ height: WORLD, transform: `translate3d(0, ${-offset}px, 0)`, background: waterGradient() }} />
+      {/* far parallax layer */}
+      <div className="absolute inset-x-0 top-0 will-change-transform" style={{ height: WORLD, transform: `translate3d(0, ${-offset * 0.55 + anchor * 0.45}px, 0)` }}>
+        <FarLayer />
+      </div>
+      <div className="absolute inset-x-0 top-0 will-change-transform" style={{ height: WORLD, transform: `translate3d(0, ${-offset}px, 0)` }}>
         {/* sky */}
         <Sun />
         <Cloud x="12%" top={40} s={1} />
@@ -113,8 +134,8 @@ export function OceanScene({ cam, results, questions, sinking, base }: { cam: nu
 
         {/* facts */}
         {FACTS.map(([m, t]) => (
-          <p key={m} className="absolute left-4 max-w-[60%] text-[11px] font-bold text-white/55 sm:left-[12%] sm:text-xs" style={{ top: y(m) - 8 }}>
-            {nf.format(m)} m · {t}
+          <p key={m} className="absolute left-3 max-w-[62%] rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-bold text-white/70 backdrop-blur-[2px] sm:left-[12%] sm:text-xs" style={{ top: y(m) - 12 }}>
+            <span className="text-[#7fe3d2]">{nf.format(m)} m</span> {t}
           </p>
         ))}
 
@@ -147,8 +168,11 @@ export function OceanScene({ cam, results, questions, sinking, base }: { cam: nu
               <span className="sink-bubble absolute -top-10 left-3 h-3 w-3 rounded-full border-2 border-white/70" />
               <span className="sink-bubble absolute -top-16 left-10 h-2 w-2 rounded-full border-2 border-white/60" style={{ animationDelay: "0.3s" }} />
               <span className="sink-bubble absolute -top-8 right-4 h-4 w-4 rounded-full border-2 border-white/50" style={{ animationDelay: "0.6s" }} />
-              <span className="block -rotate-2 rounded-xl border-[3px] border-ink bg-[#f3d272] px-3 py-1.5 font-display text-lg font-semibold text-ink shadow-[0_4px_0_rgb(0_0_0_/_0.35)]">
-                {sinking.answer} ▼
+              <span className="absolute -inset-6 rounded-full bg-[#f3d272]/30 blur-xl" />
+              <span className="sink-wobble relative block rounded-xl border-[3px] border-ink bg-[#f3d272] px-4 py-2 font-display text-xl font-semibold text-ink shadow-[0_5px_0_rgb(0_0_0_/_0.35)]">
+                {sinking.answer}
+                <span className="absolute -bottom-3 left-1/2 h-3 w-1 -translate-x-1/2 bg-ink" />
+                <span className="absolute -bottom-6 left-1/2 h-3 w-5 -translate-x-1/2 rounded-b-full border-[3px] border-ink bg-[#9a8f84]" />
               </span>
             </div>
           </div>
@@ -159,6 +183,10 @@ export function OceanScene({ cam, results, questions, sinking, base }: { cam: nu
           <Bell />
         </div>
       </div>
+      {/* the deeper, the darker – only a lamp around you stays lit */}
+      <div className="pointer-events-none absolute inset-0" style={{ background: `radial-gradient(circle at 50% ${anchor}px, transparent 0, transparent 110px, rgba(2,6,20,${darkness}) 260px)` }} />
+      <OceanFx cam={cam} sinking={!!sinking} impact={impact} anchorY={anchor} />
+      {flash && <div className="perle-flash pointer-events-none absolute inset-0" />}
       <style>{`
         @keyframes sinkBubble { 0% { transform: translateY(0); opacity: .9 } 100% { transform: translateY(-60px); opacity: 0 } }
         .sink-bubble { animation: sinkBubble 1.1s ease-out infinite; }
@@ -168,9 +196,38 @@ export function OceanScene({ cam, results, questions, sinking, base }: { cam: nu
         .swim { animation: swim 14s ease-in-out infinite; }
         @keyframes bob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-4px) } }
         .bob { animation: bob 3s ease-in-out infinite; }
-        @media (prefers-reduced-motion: reduce) { .sink-bubble, .kelp, .swim, .bob { animation: none } }
+        @keyframes wobble { 0%,100% { transform: rotate(-4deg) } 50% { transform: rotate(4deg) } }
+        .sink-wobble { animation: wobble 0.9s ease-in-out infinite; }
+        @keyframes shakeS { 0%,100% { transform: translate(0,0) } 25% { transform: translate(-3px,2px) } 75% { transform: translate(3px,-2px) } }
+        @keyframes shakeB { 0%,100% { transform: translate(0,0) } 20% { transform: translate(-8px,4px) } 40% { transform: translate(7px,-5px) } 60% { transform: translate(-5px,3px) } 80% { transform: translate(4px,-2px) } }
+        .shake-small { animation: shakeS 0.35s ease-in-out; }
+        .shake-big { animation: shakeB 0.5s ease-in-out; }
+        @keyframes perleFlash { 0% { opacity: 0 } 15% { opacity: .85 } 100% { opacity: 0 } }
+        .perle-flash { background: radial-gradient(circle at 50% 34%, #fff8d6, rgba(243,210,114,.6) 40%, transparent 75%); animation: perleFlash .7s ease-out forwards; }
+        @media (prefers-reduced-motion: reduce) { .sink-bubble, .kelp, .swim, .bob, .sink-wobble, .shake-small, .shake-big { animation: none } }
       `}</style>
     </div>
+  );
+}
+
+/** Distant silhouettes that move slower than the foreground (parallax). */
+function FarLayer() {
+  return (
+    <>
+      <svg className="absolute left-0 w-full opacity-30" style={{ top: y(260) }} height="160" viewBox="0 0 400 160" preserveAspectRatio="none">
+        <path d="M0 160V90l30-30 24 20 30-50 40 60 30-30 30 40V160zM260 160V100l26-40 30 30 24-50 30 60 30-20V160z" fill="#0b3466" />
+      </svg>
+      <svg className="swim absolute left-[8%] opacity-40" style={{ top: y(820), width: 220 }} viewBox="0 0 220 70">
+        <path d="M10 40c30-26 110-34 160-14 14-10 28-18 40-18-6 10-8 18-6 26 4 6 8 12 14 18-14 0-26-6-38-14-48 22-130 22-170 2z" fill="#082a55" />
+        <path d="M70 52c4 8 0 14-8 16" fill="none" stroke="#082a55" strokeWidth="6" strokeLinecap="round" />
+      </svg>
+      <svg className="absolute right-[6%] opacity-30" style={{ top: y(2200), width: 140 }} viewBox="0 0 140 160">
+        <path d="M70 0c20 30 40 50 40 90s-20 70-40 70-40-30-40-70S50 30 70 0z" fill="#061d40" />
+      </svg>
+      <svg className="absolute left-0 w-full opacity-40" style={{ top: y(6500) }} height="300" viewBox="0 0 400 300" preserveAspectRatio="none">
+        <path d="M0 300V120l40-40 30 50 40-90 50 110 40-60 40 70 40-100 50 120 30-40 40 60V300z" fill="#050f26" />
+      </svg>
+    </>
   );
 }
 
