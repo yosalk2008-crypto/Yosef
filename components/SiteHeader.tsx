@@ -93,6 +93,17 @@ export function SiteHeader() {
                 Alle Quizze
               </Link>
             </div>
+            <nav className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-muted" aria-label="Rechtliches">
+              <Link href="/impressum" className="hover:text-ink">
+                Impressum
+              </Link>
+              <Link href="/datenschutz" className="hover:text-ink">
+                Datenschutz
+              </Link>
+              <Link href="/quellen" className="hover:text-ink">
+                Datenquellen
+              </Link>
+            </nav>
           </nav>
         </div>
       )}
