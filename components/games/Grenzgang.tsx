@@ -146,7 +146,7 @@ export function Grenzgang() {
             </div>
           )}
           {shapes ? (
-            <MapView shapes={shapes.list} fit={fitIds.map((id) => shapes.byId[id]).filter(Boolean)} fill={colorOf} dots={(id) => fitIds.includes(id) || guesses.includes(id)} label="Karte mit Start, Ziel und deinen Tipps" />
+            <MapView showBorders={false} shapes={shapes.list} fit={fitIds.map((id) => shapes.byId[id]).filter(Boolean)} fill={colorOf} dots={(id) => id === route.a || id === route.b || guesses.includes(id) || (over && solution.includes(id))} label="Karte mit Start, Ziel und deinen Tipps" />
           ) : (
             <div className="aspect-video animate-pulse rounded-2xl bg-sea" />
           )}
@@ -177,8 +177,8 @@ function Endpoint({ id, label, right }: { id: string; label: string; right?: boo
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={flagUrl(c.iso2)} alt="" className="h-8 w-auto rounded border border-line sm:h-9" />
       <div className="min-w-0">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted sm:text-xs">{label}</p>
-        <p className="font-extrabold leading-tight break-words [hyphens:auto]">{c.n}</p>
+        <p className="text-[11px] font-semibold text-muted sm:text-xs">{label}</p>
+        <p className="font-display font-semibold leading-tight break-words [hyphens:auto]">{c.n}</p>
       </div>
     </div>
   );

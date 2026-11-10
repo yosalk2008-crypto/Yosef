@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function QuizPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 pb-16 pt-8 sm:pt-12">
-      <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Unbegrenzte Quizze</h1>
+      <h1 className="text-3xl font-display font-semibold tracking-tight sm:text-4xl">Unbegrenzte Quizze</h1>
       <p className="mt-2 text-muted">Wähle Spielart, Region und Länge – so oft du willst.</p>
       <Suspense>
         <QuizSetup />

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { LAUNCH, allResults, dayNumber, formatDay, useStoreVersion, utcDate } from "@/lib/daily";
 import { GAMES } from "@/lib/games";
 import { Icon } from "./Icon";
+import { GameArt } from "./GameArt";
 
 const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
@@ -93,7 +94,7 @@ export function Archive() {
       {sel && (
         <div className="card p-5">
           <p className="text-sm font-semibold text-muted">Rätsel #{dayNumber(sel)}</p>
-          <p className="text-xl font-extrabold">{formatDay(sel)}</p>
+          <p className="text-xl font-display font-semibold">{formatDay(sel)}</p>
           <ul className="mt-4 space-y-1.5">
             {GAMES.map((g) => {
               const r = res[sel]?.[g.key];
@@ -101,8 +102,8 @@ export function Archive() {
                 <li key={g.key}>
                   <Link href={`/taeglich/${g.key}${sel === today ? "" : `?tag=${sel}`}`} className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-surface">
                     <span className="flex items-center gap-2.5 font-semibold">
-                      <span className={`grid h-7 w-7 place-items-center rounded-lg text-white ${g.color}`}>
-                        <Icon d={g.icon} className="h-4 w-4" />
+                      <span className="grid h-9 w-11 place-items-center rounded-xl" style={{ background: g.bg }}>
+                        <GameArt game={g.key} className="h-7 w-9" />
                       </span>
                       {g.title}
                     </span>

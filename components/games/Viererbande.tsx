@@ -3,11 +3,9 @@
 import { useMemo, useState } from "react";
 import { BY_ID, COUNTRIES, SUBREGION_DE, flagUrl, norm, type Country } from "@/lib/data/countries";
 import { dayNumber } from "@/lib/daily";
-import { useShapes } from "@/lib/geo";
 import { makeRng, type Rng } from "@/lib/rng";
 import { useDaily } from "@/lib/useDaily";
 import { GameShell, ResultCard } from "../GameShell";
-import { ShapeOutline } from "../Shape";
 
 type Cat = { key: string; label: string; diff: number; test: (c: Country) => boolean };
 
@@ -20,31 +18,18 @@ function categories(): Cat[] {
     if (x.borders.length >= 5) cats.push({ key: "nb:" + x.id, label: `Grenzt an ${x.n}`, diff: 2, test: (c) => c.borders.includes(x.id) });
   cats.push({ key: "landlocked", label: "Hat keinen Zugang zum Meer", diff: 2, test: (c) => c.landlocked });
   cats.push({ key: "island", label: "Hat keine Landgrenze", diff: 2, test: (c) => c.borders.length === 0 });
-  for (const L of "ABCDKLMNPST")
-    cats.push({ key: "cap:" + L, label: `Hauptstadt beginnt mit „${L}“`, diff: 3, test: (c) => !!c.cap && c.cap.toUpperCase().startsWith(L) });
-  for (const L of "BGKMNS") cats.push({ key: "nm:" + L, label: `Name beginnt mit „${L}“`, diff: 2, test: (c) => c.n.toUpperCase().startsWith(L) });
   cats.push({ key: "stan", label: "Name endet auf „-stan“", diff: 1, test: (c) => c.n.endsWith("stan") });
-  cats.push({ key: "land", label: "Name endet auf „-land“", diff: 2, test: (c) => c.n.endsWith("land") });
-  cats.push({ key: "ien", label: "Name endet auf „-ien“", diff: 2, test: (c) => c.n.endsWith("ien") });
   cats.push({ key: "pop100", label: "Über 100 Mio. Einwohner", diff: 2, test: (c) => (c.pop ?? 0) > 1e8 });
   cats.push({ key: "pop1", label: "Unter 1 Mio. Einwohner", diff: 3, test: (c) => c.pop != null && c.pop < 1e6 });
   cats.push({ key: "rich", label: "BIP pro Kopf über 50.000 $", diff: 3, test: (c) => (c.gdppc ?? 0) > 50000 });
   cats.push({ key: "big", label: "Fläche über 2 Mio. km²", diff: 2, test: (c) => c.area > 2e6 });
-  cats.push({ key: "forest", label: "Mehr als 60 % Wald", diff: 4, test: (c) => (c.forest ?? 0) > 60 });
-  cats.push({ key: "flag2", label: "Flagge hat genau zwei Farben", diff: 4, test: (c) => c.flag.colors.length === 2 });
-  cats.push({
-    key: "capname",
-    label: "Hauptstadt heißt (fast) wie das Land",
-    diff: 3,
-    test: (c) => !!c.cap && norm(c.cap).slice(0, 5) === norm(c.n).slice(0, 5),
-  });
+  cats.push({ key: "tiny", label: "Kleiner als 1.000 km²", diff: 3, test: (c) => c.area < 1000 });
+  cats.push({ key: "capname", label: "Hauptstadt heißt (fast) wie das Land", diff: 3, test: (c) => !!c.cap && norm(c.cap).slice(0, 5) === norm(c.n).slice(0, 5) });
   return cats;
 }
 
 const CATS = categories();
-const TILE_POOL = COUNTRIES.filter((c) => c.shape && (c.pop ?? 0) >= 300000);
-const MODES = ["name", "flag", "shape", "capital"] as const;
-type Mode = (typeof MODES)[number];
+const TILE_POOL = COUNTRIES.filter((c) => (c.pop ?? 0) >= 50000);
 const COLORS = [
   { bg: "bg-yellow-300", text: "text-yellow-950", emoji: "🟨" },
   { bg: "bg-green-400", text: "text-green-950", emoji: "🟩" },
@@ -52,7 +37,7 @@ const COLORS = [
   { bg: "bg-violet-400", text: "text-violet-950", emoji: "🟪" },
 ];
 
-type Puzzle = { groups: { cat: Cat; ids: string[] }[]; tiles: { id: string; mode: Mode }[] };
+type Puzzle = { groups: { cat: Cat; ids: string[] }[]; tiles: { id: string }[] };
 
 function build(rng: Rng): Puzzle | null {
   const chosen: Cat[] = [];
@@ -74,7 +59,7 @@ function build(rng: Rng): Puzzle | null {
     groups.push({ cat, ids });
   }
   groups.sort((a, b) => a.cat.diff - b.cat.diff);
-  const tiles = rng.shuffle(groups.flatMap((g) => g.ids)).map((id) => ({ id, mode: rng.pick(MODES) }));
+  const tiles = rng.shuffle(groups.flatMap((g) => g.ids)).map((id) => ({ id }));
   return { groups, tiles };
 }
 
@@ -93,7 +78,6 @@ type S = { guesses: string[][] };
 export function Viererbande() {
   const { day, isToday, loaded, saved, persist } = useDaily<S>("viererbande");
   const puzzle = useMemo(() => makePuzzle(day), [day]);
-  const shapes = useShapes("world");
   const [local, setLocal] = useState<string[][] | null>(null);
   const guesses = local ?? saved?.state?.guesses ?? [];
   const [sel, setSel] = useState<string[]>([]);
@@ -108,7 +92,6 @@ export function Viererbande() {
   const won = solved.length === 4;
   const over = won || mistakes >= MAX_MISTAKES;
   const tileIds = (order ?? puzzle.tiles.map((t) => t.id)).filter((id) => !solved.includes(groupOf(id)));
-  const modeOf = (id: string) => puzzle.tiles.find((t) => t.id === id)!.mode;
 
   const toggle = (id: string) => {
     if (over) return;
@@ -163,15 +146,13 @@ export function Viererbande() {
       isToday={isToday}
       rules={
         <>
-          <p>
-            Die 16 Kacheln zeigen Länder – mal als Name, mal als <strong>Flagge</strong>, <strong>Umriss</strong> oder <strong>Hauptstadt</strong>.
-          </p>
-          <p>Finde vier Gruppen aus je vier Ländern, die etwas gemeinsam haben. Wähle vier Kacheln und tippe auf „Prüfen“.</p>
+          <p>Auf den 16 Kacheln stehen Länder. Finde <strong>vier Gruppen aus je vier Ländern</strong>, die etwas gemeinsam haben – etwa die Region, ein gemeinsames Nachbarland oder ihre Größe.</p>
+          <p>Wähle vier Kacheln und tippe auf „Prüfen“.</p>
           <p>Du darfst dir {MAX_MISTAKES} Fehler erlauben. Vorsicht: Manche Länder passen scheinbar in mehrere Gruppen.</p>
         </>
       }
     >
-      {!loaded || !shapes ? (
+      {!loaded ? (
         <div className="h-96 animate-pulse rounded-2xl bg-line" />
       ) : (
         <>
@@ -181,7 +162,7 @@ export function Viererbande() {
               const c = COLORS[gi];
               return (
                 <div key={gi} className={`pop rounded-xl p-3 text-center ${c.bg} ${c.text}`}>
-                  <p className="font-extrabold">{g.cat.label}</p>
+                  <p className="font-display font-semibold">{g.cat.label}</p>
                   <p className="text-sm font-medium">{g.ids.map((id) => BY_ID[id].n).join(" · ")}</p>
                 </div>
               );
@@ -190,7 +171,7 @@ export function Viererbande() {
           {!over && (
             <div className={`mt-2 grid grid-cols-4 gap-2 ${shake ? "shake" : ""}`}>
               {tileIds.map((id) => (
-                <Tile key={id} id={id} mode={modeOf(id)} selected={sel.includes(id)} onClick={() => toggle(id)} shape={shapes.byId[id]} />
+                <Tile key={id} id={id} selected={sel.includes(id)} onClick={() => toggle(id)} />
               ))}
             </div>
           )}
@@ -233,34 +214,18 @@ export function Viererbande() {
   );
 }
 
-function Tile({ id, mode, selected, onClick, shape }: { id: string; mode: Mode; selected: boolean; onClick: () => void; shape?: import("@/lib/geo").Shape }) {
+function Tile({ id, selected, onClick }: { id: string; selected: boolean; onClick: () => void }) {
   const c = BY_ID[id];
-  const base = `relative grid aspect-square place-items-center overflow-hidden rounded-xl border-2 p-1.5 text-center transition active:scale-95 sm:aspect-[4/3] ${
-    selected ? "border-ink bg-ink text-white" : "border-transparent bg-white text-ink shadow-sm hover:border-line"
-  }`;
-  let content: React.ReactNode;
-  let label = c.n;
-  if (mode === "flag") {
-    // eslint-disable-next-line @next/next/no-img-element
-    content = <img src={flagUrl(c.iso2)} alt="" className={`max-h-[70%] w-[85%] object-contain ${selected ? "opacity-90" : ""}`} draggable={false} />;
-    label = "Flagge";
-  } else if (mode === "shape" && shape) {
-    content = <ShapeOutline shape={shape} fill={selected ? "#ffffff" : "#334155"} className="h-[85%] w-[85%]" />;
-    label = "Umriss";
-  } else if (mode === "capital") {
-    content = (
-      <span>
-        <span className={`block text-[9px] font-semibold uppercase tracking-wide sm:text-[10px] ${selected ? "text-slate-300" : "text-muted"}`}>Hauptstadt</span>
-        <span className="block text-[12px] font-bold leading-tight break-words [hyphens:auto] sm:text-sm">{c.cap}</span>
-      </span>
-    );
-    label = `Hauptstadt ${c.cap}`;
-  } else {
-    content = <span className="text-[12px] font-bold leading-tight break-words [hyphens:auto] sm:text-sm">{c.n}</span>;
-  }
   return (
-    <button type="button" className={base} onClick={onClick} aria-pressed={selected} aria-label={mode === "name" || mode === "capital" ? label : `${label} (Kachel)`}>
-      {content}
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`tile-btn flex aspect-square flex-col items-center justify-center gap-1.5 p-1.5 text-center sm:aspect-[4/3] ${selected ? "tile-selected" : ""}`}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={flagUrl(c.iso2)} alt="" className="h-6 w-auto rounded-[3px] shadow-sm sm:h-8" draggable={false} />
+      <span className="text-[12px] font-bold leading-tight break-words [hyphens:auto] sm:text-[15px]">{c.n}</span>
     </button>
   );
 }

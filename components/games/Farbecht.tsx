@@ -17,7 +17,7 @@ function rounds(day: string) {
 }
 
 function points(guess: string, truth: string) {
-  return Math.max(0, Math.round((10 - deltaE(guess, truth) / 4) * 10) / 10);
+  return Math.max(0, Math.round((10 - deltaE(guess, truth) / 7) * 10) / 10);
 }
 const emoji = (p: number) => (p >= 8 ? "🟩" : p >= 5 ? "🟨" : p > 0 ? "🟧" : "🟥");
 
@@ -163,7 +163,7 @@ export function Farbecht() {
                   <span className="h-12 w-8" style={{ background: guesses[reveal] }} />
                   <span className="h-12 w-8" style={{ background: plan[reveal].color }} />
                 </span>
-                <p className="text-2xl font-extrabold">{pts[reveal].toLocaleString("de-DE")} / 10</p>
+                <p className="text-2xl font-display font-semibold">{pts[reveal].toLocaleString("de-DE")} / 10</p>
               </div>
               {round < ROUNDS ? (
                 <button

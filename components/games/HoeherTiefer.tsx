@@ -133,7 +133,7 @@ export function HoeherTiefer() {
                 </div>
               ) : (
                 <div className="pop mt-4 flex items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm">
-                  <p className={`text-lg font-extrabold ${ok ? "text-ok" : "text-bad"}`}>{ok ? "Richtig!" : "Falsch!"}</p>
+                  <p className={`text-lg font-display font-semibold ${ok ? "text-ok" : "text-bad"}`}>{ok ? "Richtig!" : "Falsch!"}</p>
                   <button type="button" onClick={() => setLast(null)} className="btn-primary">
                     {over ? "Ergebnis" : "Weiter"}
                   </button>
@@ -157,8 +157,8 @@ function Panel({ id, value, metric, tone }: { id: string; value: string; metric:
     <div className={`card flex flex-col items-center p-4 text-center ${ring}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={flagUrl(c.iso2)} alt="" className="h-16 w-auto rounded-md border border-line shadow-sm sm:h-24" />
-      <p className="mt-3 text-lg font-extrabold leading-tight">{c.n}</p>
-      <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-muted">{metric}</p>
+      <p className="mt-3 text-lg font-display font-semibold leading-tight">{c.n}</p>
+      <p className="mt-2 text-xs font-semibold text-muted">{metric}</p>
       <p className="text-xl font-bold sm:text-2xl">{value}</p>
     </div>
   );

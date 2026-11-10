@@ -23,10 +23,10 @@ function plan(day: string): HistEvent[] {
 
 function score(e: HistEvent, year: number, place: string) {
   const dy = Math.abs(year - e.year);
-  const yearPts = Math.max(0, 5 - dy / 8);
+  const yearPts = Math.max(0, 5 - dy / 20);
   const ok = e.at.includes(place);
   const km = ok ? 0 : Math.min(...e.at.map((id) => distanceKm(BY_ID[place].ll, BY_ID[id].ll)));
-  const placePts = ok ? 5 : Math.max(0, 5 * (1 - km / 3000));
+  const placePts = ok ? 5 : Math.max(0, 5 * (1 - km / 5000));
   return { yearPts: Math.round(yearPts * 10) / 10, placePts: Math.round(placePts * 10) / 10, km, ok, dy };
 }
 const emoji = (p: number) => (p >= 8 ? "🟩" : p >= 5 ? "🟨" : p > 0 ? "🟧" : "🟥");
@@ -86,7 +86,7 @@ export function Zeitreise() {
       rules={
         <>
           <p>Jede Runde beschreibt ein historisches Ereignis. Tippe auf der Karte auf das <strong>Land, in dem es stattfand</strong> (heutige Grenzen), und stell das <strong>Jahr</strong> ein.</p>
-          <p>Bis zu 5 Punkte für den Ort (weniger, je weiter du daneben liegst) und 5 Punkte für das Jahr (pro 8 Jahre Abweichung ein Punkt weniger).</p>
+          <p>Bis zu 5 Punkte für den Ort (weniger, je weiter du daneben liegst) und 5 Punkte für das Jahr (pro 20 Jahre Abweichung ein Punkt weniger).</p>
           <p>{ROUNDS} Runden, maximal {ROUNDS * 10} Punkte.</p>
         </>
       }
@@ -120,7 +120,7 @@ export function Zeitreise() {
                   <label htmlFor="year" className="text-sm font-semibold">
                     Jahr
                   </label>
-                  <span className="text-2xl font-extrabold tabular-nums">{year}</span>
+                  <span className="text-2xl font-display font-semibold tabular-nums">{year}</span>
                 </div>
                 <input id="year" type="range" min={YEAR_MIN} max={YEAR_MAX} value={year} onChange={(ev) => setYear(+ev.target.value)} className="slider bg-gradient-to-r from-orange-100 to-orange-400" />
                 <div className="mt-2 flex items-center justify-between gap-2">
@@ -143,7 +143,7 @@ export function Zeitreise() {
 
           {reveal != null && r && (
             <div className="card pop mt-3 p-4">
-              <p className="text-2xl font-extrabold">{(r.yearPts + r.placePts).toLocaleString("de-DE")} / 10 Punkte</p>
+              <p className="text-2xl font-display font-semibold">{(r.yearPts + r.placePts).toLocaleString("de-DE")} / 10 Punkte</p>
               <p className="mt-1 text-sm text-muted">
                 {e.year} in {e.at.map((id) => BY_ID[id].n).join(" / ")}. Du: {guesses[reveal].year} ({r.dy === 0 ? "genau" : `${r.dy} Jahre daneben`}), {BY_ID[guesses[reveal].place].n}
                 {r.ok ? " ✓" : ` (${new Intl.NumberFormat("de-DE").format(Math.round(r.km / 10) * 10)} km entfernt)`}

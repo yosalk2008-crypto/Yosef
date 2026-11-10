@@ -124,8 +124,8 @@ export function ChoiceQuiz({ typ }: { typ: QuizType }) {
             )}
             {typ === "umrisse" && shapes?.byId[q.e.id] && <ShapeOutline shape={shapes.byId[q.e.id]} fill="#0f766e" className="h-56 w-56" size={300} label="Gesuchter Umriss" />}
             {typ === "hauptstaedte" && (
-              <p className="text-center text-2xl font-extrabold sm:text-3xl">
-                <span className="mb-1 block text-sm font-semibold uppercase tracking-wider text-muted">Hauptstadt von</span>
+              <p className="text-center text-2xl font-display font-semibold sm:text-3xl">
+                <span className="mb-1 block text-sm font-semibold text-muted">Hauptstadt von</span>
                 {q.e.name}
               </p>
             )}
@@ -144,7 +144,7 @@ export function ChoiceQuiz({ typ }: { typ: QuizType }) {
                     type="button"
                     onClick={() => choose(o.id)}
                     disabled={answered}
-                    className={`flex min-h-[56px] items-center gap-3 rounded-xl border-2 border-line bg-white px-4 py-3 text-left font-semibold transition hover:border-ink disabled:hover:border-current ${state}`}
+                    className={`tile-btn flex min-h-[60px] items-center gap-3 border-2 border-transparent px-4 py-3 text-left font-display text-lg font-semibold ${state}`}
                   >
                     <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-surface text-xs font-bold text-muted">{k + 1}</span>
                     {label(o)}

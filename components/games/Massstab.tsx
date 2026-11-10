@@ -34,7 +34,7 @@ const toSlider = (a: number) => (Math.log10(a) - Math.log10(MIN_A)) / (Math.log1
 
 function scoreFor(guess: number, truth: number) {
   const f = Math.sqrt(guess / truth); // linear scale factor of the outline
-  return Math.max(0, Math.round((10 - Math.abs(f - 1) * 15) * 10) / 10);
+  return Math.max(0, Math.round((10 - Math.abs(f - 1) * 10) * 10) / 10);
 }
 const emoji = (p: number) => (p >= 8 ? "🟩" : p >= 5 ? "🟨" : p > 0 ? "🟧" : "🟥");
 
@@ -149,7 +149,7 @@ export function Massstab() {
           {reveal != null && (
             <div className="card pop mt-4 flex flex-wrap items-center justify-between gap-3 p-4">
               <div>
-                <p className="text-2xl font-extrabold">{points[reveal].toLocaleString("de-DE")} / 10 Punkte</p>
+                <p className="text-2xl font-display font-semibold">{points[reveal].toLocaleString("de-DE")} / 10 Punkte</p>
                 <p className="text-sm text-muted">
                   Dein Tipp: {fmt(guesses[reveal])} · echt: {fmt(target.area)} ({Math.round((target.area / BY_ID[REF].area) * 100)} % von Deutschland)
                 </p>

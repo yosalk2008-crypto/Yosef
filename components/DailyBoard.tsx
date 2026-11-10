@@ -1,78 +1,92 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { allResults, dayNumber, streak, useStoreVersion, utcDate, type DailyResult, type GameKey } from "@/lib/daily";
+import { LAUNCH, addDays, allResults, dayNumber, msUntilNextDay, useStoreVersion, utcDate, type DailyResult, type GameKey } from "@/lib/daily";
 import { GAMES } from "@/lib/games";
-import { Icon } from "./Icon";
+import { GameArt } from "./GameArt";
+
+function useCountdown() {
+  const [left, setLeft] = useState("");
+  useEffect(() => {
+    const tick = () => {
+      const ms = msUntilNextDay();
+      const h = Math.floor(ms / 3600000);
+      const m = Math.floor((ms % 3600000) / 60000);
+      const s = Math.floor((ms % 60000) / 1000);
+      setLeft(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+  return left;
+}
 
 export function DailyBoard() {
   const v = useStoreVersion();
-  const [today, setToday] = useState<string | null>(null);
+  const router = useRouter();
   const [res, setRes] = useState<Partial<Record<GameKey, DailyResult>>>({});
-  const [st, setSt] = useState({ current: 0, best: 0 });
+  const left = useCountdown();
   useEffect(() => {
     const d = utcDate();
-    setToday(d);
     setRes(allResults()[d] || {});
-    setSt(streak());
   }, [v]);
-  const done = GAMES.filter((g) => res[g.key]?.done).length;
+
+  const randomDay = (game: GameKey) => {
+    const t = utcDate();
+    const span = dayNumber(t) - 1;
+    const day = addDays(LAUNCH, Math.floor(Math.random() * span));
+    router.push(`/taeglich/${game}?tag=${day}`);
+  };
 
   return (
     <>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Tagesspiele {today && <span className="text-muted">#{dayNumber(today)}</span>}</h2>
-          <p className="mt-1 text-muted">
-            {done === 0 ? "Acht Rätsel warten auf dich." : done === GAMES.length ? "Alles geschafft – stark! Morgen gibt es neue Rätsel." : `${done} von ${GAMES.length} geschafft.`}
+      <div className="flex items-end justify-between gap-4">
+        <h2 className="text-[28px] font-semibold leading-none sm:text-4xl">Tägliche Spiele</h2>
+        <div className="text-right">
+          <p className="text-sm font-semibold text-muted">Neue Spiele in</p>
+          <p className="flex items-center justify-end gap-1.5 font-display text-2xl font-semibold tabular-nums sm:text-[28px]">
+            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true">
+              <circle cx="12" cy="13" r="8" />
+              <path d="M12 9v4l2.5 2M10 2h4" />
+            </svg>
+            {left || "--:--:--"}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Stat label="Serie" value={`${st.current} ${st.current === 1 ? "Tag" : "Tage"}`} icon="M12 3c1 3 4 4.5 4 8.5a4 4 0 01-8 0c0-1.6.7-2.7 1.5-3.5.2 1.5 1 2.5 2 2.5-1-3 .5-5.5.5-7.5z" />
-          <Stat label="Rekord" value={`${st.best}`} icon="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" />
-        </div>
       </div>
-      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-line" role="progressbar" aria-valuemin={0} aria-valuemax={GAMES.length} aria-valuenow={done} aria-label="Fortschritt heute">
-        <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${(done / GAMES.length) * 100}%` }} />
-      </div>
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+
+      <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 sm:gap-x-5 lg:grid-cols-4">
         {GAMES.map((g) => {
           const r = res[g.key];
+          const style = { background: g.bg, ["--edge" as string]: g.edge };
           return (
-            <Link key={g.key} href={`/taeglich/${g.key}`} className="card group relative flex flex-col p-5 transition hover:-translate-y-0.5 hover:shadow-md">
-              <div className="flex items-center justify-between">
-                <span className={`grid h-10 w-10 place-items-center rounded-xl text-white ${g.color}`}>
-                  <Icon d={g.icon} className="h-5 w-5" />
-                </span>
-                {r?.done ? (
-                  <span className="rounded-full bg-brand-soft px-2.5 py-1 text-sm font-bold text-brand">✓ {r.label}</span>
-                ) : (
-                  <span className="rounded-full bg-surface px-2.5 py-1 text-xs font-semibold text-muted">Offen</span>
+            <div key={g.key}>
+              <Link href={`/taeglich/${g.key}`} className="chunk relative flex aspect-[1.15] flex-col items-center justify-center gap-2 px-2 text-center" style={style}>
+                {r?.done && (
+                  <span className="absolute left-3 top-3 rounded-full bg-ink px-2.5 py-1 font-display text-xs font-semibold text-white sm:text-sm">✓ {r.label}</span>
                 )}
+                <GameArt game={g.key} className="h-[42%] w-auto" />
+                <span className="font-display text-[19px] font-semibold leading-tight sm:text-2xl">{g.title}</span>
+              </Link>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <button type="button" onClick={() => randomDay(g.key)} className="chunk grid h-12 place-items-center !rounded-2xl" style={style} aria-label={`${g.title}: zufälliges Rätsel aus dem Archiv`} title="Zufälliges Rätsel">
+                  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M3 7h3c4 0 6 10 10 10h4M17 14l3 3-3 3M3 17h3c1.6 0 2.8-1.4 3.8-3M17 4l3 3-3 3M14 10c.8-1.6 1.6-3 3-3h3" />
+                  </svg>
+                </button>
+                <Link href={`/archiv?spiel=${g.key}`} className="chunk grid h-12 place-items-center !rounded-2xl" style={style} aria-label={`${g.title}: Archiv`} title="Archiv">
+                  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="4" y="5" width="16" height="15" rx="2" />
+                    <path d="M4 10h16M9 3v4M15 3v4" />
+                  </svg>
+                </Link>
               </div>
-              <p className="mt-4 text-lg font-bold">{g.title}</p>
-              <p className="mt-1 flex-1 text-sm leading-snug text-muted">{g.tagline}</p>
-              <p className="mt-4 text-sm font-semibold text-ink group-hover:underline">{r?.done ? "Ergebnis ansehen →" : "Spielen →"}</p>
-            </Link>
+            </div>
           );
         })}
       </div>
-      <p className="mt-5 text-sm text-muted">
-        Ein Tag verpasst? Im <Link href="/archiv" className="font-semibold text-brand hover:underline">Archiv</Link> findest du alle bisherigen Rätsel.
-      </p>
     </>
-  );
-}
-
-function Stat({ label, value, icon }: { label: string; value: string; icon: string }) {
-  return (
-    <div className="card flex items-center gap-2.5 px-3.5 py-2">
-      <Icon d={icon} className="h-5 w-5 text-orange" />
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted">{label}</p>
-        <p className="text-sm font-bold leading-tight">{value}</p>
-      </div>
-    </div>
   );
 }

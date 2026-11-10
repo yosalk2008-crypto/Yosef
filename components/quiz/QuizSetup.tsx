@@ -25,6 +25,11 @@ export function QuizSetup() {
   useEffect(() => {
     const t = sp.get("typ");
     if (t && QUIZ_TYPES.some((q) => q.key === t)) setTyp(t as QuizType);
+    const r = sp.get("region");
+    if (r && REGIONS.some((x) => x.key === r)) {
+      setRegion(r as RegionKey);
+      if (REGIONS.find((x) => x.key === r)!.kind === "states" && (!t || t === "flaggen")) setTyp("karte");
+    }
   }, [sp]);
 
   const info = QUIZ_TYPES.find((q) => q.key === typ)!;
@@ -48,7 +53,7 @@ export function QuizSetup() {
   return (
     <div className="mt-8 space-y-8">
       <fieldset>
-        <legend className="mb-3 text-sm font-bold uppercase tracking-wider text-muted">1 · Spielart</legend>
+        <legend className="mb-3 text-sm font-bold text-muted">1 · Spielart</legend>
         <div className="grid gap-2 sm:grid-cols-5">
           {QUIZ_TYPES.map((q) => (
             <button
@@ -66,7 +71,7 @@ export function QuizSetup() {
       </fieldset>
 
       <fieldset>
-        <legend className="mb-3 text-sm font-bold uppercase tracking-wider text-muted">2 · Region</legend>
+        <legend className="mb-3 text-sm font-bold text-muted">2 · Region</legend>
         <div className="flex flex-wrap gap-2">
           {regions.map((r) => (
             <button key={r.key} type="button" aria-pressed={region === r.key} onClick={() => setRegion(r.key)} className="chip">
@@ -79,7 +84,7 @@ export function QuizSetup() {
 
       {typ !== "alle-nennen" ? (
         <fieldset>
-          <legend className="mb-3 text-sm font-bold uppercase tracking-wider text-muted">3 · Anzahl Fragen</legend>
+          <legend className="mb-3 text-sm font-bold text-muted">3 · Anzahl Fragen</legend>
           <div className="flex flex-wrap gap-2">
             {LENGTHS.map((l) => (
               <button key={l.v} type="button" aria-pressed={n === l.v} onClick={() => setN(l.v)} className="chip min-w-14 justify-center" disabled={l.v !== "alle" && +l.v > count}>
@@ -97,7 +102,7 @@ export function QuizSetup() {
 
       {typ === "karte" && (
         <fieldset>
-          <legend className="mb-3 text-sm font-bold uppercase tracking-wider text-muted">Optionen</legend>
+          <legend className="mb-3 text-sm font-bold text-muted">Optionen</legend>
           <div className="flex flex-wrap gap-2">
             <button type="button" className="chip" aria-pressed={borders} onClick={() => setBorders(true)}>
               Grenzen anzeigen
@@ -113,7 +118,7 @@ export function QuizSetup() {
       )}
       {typ === "hauptstaedte" && (
         <fieldset>
-          <legend className="mb-3 text-sm font-bold uppercase tracking-wider text-muted">Antworten</legend>
+          <legend className="mb-3 text-sm font-bold text-muted">Antworten</legend>
           <div className="flex flex-wrap gap-2">
             <button type="button" className="chip" aria-pressed={input === "auswahl"} onClick={() => setInput("auswahl")}>
               4 Antworten zur Auswahl

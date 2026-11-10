@@ -91,10 +91,10 @@ export function Laenderjagd() {
           )}
 
           {guesses.length > 0 && (
-            <div className="overflow-x-auto rounded-2xl border border-line bg-white">
+            <div className="card overflow-x-auto">
               <table className="w-full min-w-[680px] text-sm">
                 <thead>
-                  <tr className="border-b border-line text-left text-xs uppercase tracking-wider text-muted">
+                  <tr className="border-b border-line text-left text-xs text-muted">
                     <th className="px-3 py-2.5 font-semibold">Land</th>
                     <th className="px-2 py-2.5 font-semibold">Kontinent</th>
                     <th className="px-2 py-2.5 font-semibold">Einwohner</th>

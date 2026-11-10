@@ -102,7 +102,7 @@ export function NameAllQuiz() {
         </Link>{" "}
         / {params.region.label}
       </p>
-      <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Alle nennen</h1>
+      <h1 className="text-2xl font-display font-semibold tracking-tight sm:text-3xl">Alle nennen</h1>
 
       <div className="sticky top-16 z-20 mt-4 rounded-2xl bg-ink p-3 text-white shadow-lg">
         <div className="flex items-center gap-3">
@@ -134,7 +134,7 @@ export function NameAllQuiz() {
             </button>
           )}
           <div className="text-right tabular-nums">
-            <p className="text-xl font-extrabold leading-none">
+            <p className="text-xl font-display font-semibold leading-none">
               {found.length}/{total}
             </p>
             <p className={`text-sm ${left < 30 && phase === "running" ? "text-rose-300" : "text-slate-400"}`}>{phase === "ready" ? `${params.region.minutes}:00` : `${mm}:${ss}`}</p>
@@ -166,8 +166,8 @@ export function NameAllQuiz() {
 
       {phase === "over" && (
         <section className="card pop mt-6 p-6" aria-live="polite">
-          <p className="text-sm font-semibold uppercase tracking-wider text-muted">{found.length === total ? "Alle gefunden!" : "Zeit um"}</p>
-          <p className="mt-1 text-5xl font-extrabold tracking-tight">
+          <p className="text-sm font-semibold text-muted">{found.length === total ? "Alle gefunden!" : "Zeit um"}</p>
+          <p className="mt-1 text-5xl font-display font-semibold tracking-tight">
             {found.length} / {total}
           </p>
           {best != null && <p className="mt-1 text-muted">Dein Rekord: {best} %</p>}

@@ -93,14 +93,14 @@ export function Spitzenplatz() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={flagUrl(current.iso2)} alt="" className="h-14 w-auto rounded-md border border-line" />
               <div className="flex-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted">
+                <p className="text-xs font-semibold text-muted">
                   Land {i + 1} von {ids.length}
                 </p>
-                <p className="text-2xl font-extrabold">{current.n}</p>
+                <p className="text-2xl font-display font-semibold">{current.n}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted">Punkte</p>
-                <p className="text-2xl font-extrabold">{total}</p>
+                <p className="text-xs font-semibold text-muted">Punkte</p>
+                <p className="text-2xl font-display font-semibold">{total}</p>
               </div>
             </div>
           )}
@@ -132,7 +132,7 @@ export function Spitzenplatz() {
                     )}
                   </span>
                   {r != null && (
-                    <span className={`shrink-0 rounded-lg px-2.5 py-1 text-sm font-extrabold ${r <= 10 ? "bg-green-100 text-green-800" : r <= 30 ? "bg-yellow-100 text-yellow-900" : r <= 70 ? "bg-orange-100 text-orange-900" : "bg-red-100 text-red-800"}`}>
+                    <span className={`shrink-0 rounded-lg px-2.5 py-1 text-sm font-display font-semibold ${r <= 10 ? "bg-green-100 text-green-800" : r <= 30 ? "bg-yellow-100 text-yellow-900" : r <= 70 ? "bg-orange-100 text-orange-900" : "bg-red-100 text-red-800"}`}>
                       Platz {r}
                     </span>
                   )}

@@ -76,7 +76,7 @@ export function QuizHeader({ title, region, done, total, score }: { title: strin
             </Link>{" "}
             / {region.label}
           </p>
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{title}</h1>
+          <h1 className="text-2xl font-display font-semibold tracking-tight sm:text-3xl">{title}</h1>
         </div>
         <p className="text-sm font-semibold">
           {Math.min(done + 1, total)} / {total} · <span className="text-ok">{score} richtig</span>
@@ -109,8 +109,8 @@ export function QuizEnd({
   useEffect(() => setBest(saveBest(bestKey, pct)), [bestKey, pct]);
   return (
     <section className="card pop p-6" aria-live="polite">
-      <p className="text-sm font-semibold uppercase tracking-wider text-muted">Geschafft</p>
-      <p className="mt-1 text-5xl font-extrabold tracking-tight">
+      <p className="text-sm font-semibold text-muted">Geschafft</p>
+      <p className="mt-1 text-5xl font-display font-semibold tracking-tight">
         {score} / {total}
       </p>
       <p className="mt-1 text-muted">

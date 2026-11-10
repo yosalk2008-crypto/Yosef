@@ -36,7 +36,7 @@ export function MapView({
   projection = "world",
   rotate = 0,
   fill,
-  stroke = "#ffffff",
+  stroke = "#6da5e4",
   showBorders = true,
   onPick,
   dots,
