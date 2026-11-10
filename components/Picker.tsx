@@ -32,9 +32,9 @@ export function Picker({
     [options]
   );
 
-  const matches = useMemo(() => {
+  const { matches, typo } = useMemo(() => {
     const nq = norm(q);
-    if (!nq) return [];
+    if (!nq) return { matches: [] as PickOption[], typo: false };
     const starts: PickOption[] = [];
     const contains: PickOption[] = [];
     for (const { o, keys } of index) {
@@ -46,9 +46,9 @@ export function Picker({
     if (!starts.length && !contains.length && nq.length >= 4) {
       // nothing starts with it: offer the name it is a small typo of ("Deutshcland", "Kuwait-Stadt")
       const fz = bestMatch(q, index.filter(({ o }) => !disabled.includes(o.id)).map(({ o }) => ({ item: o, names: [o.label, ...(o.alt || [])] })));
-      if (fz) return [fz];
+      if (fz) return { matches: [fz], typo: true };
     }
-    return [...starts, ...contains].slice(0, 8);
+    return { matches: [...starts, ...contains].slice(0, 8), typo: false };
   }, [q, index, disabled]);
 
   const choose = (o?: PickOption) => {
@@ -115,7 +115,7 @@ export function Picker({
                 onMouseEnter={() => setActive(i)}
                 className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-[15px] ${i === active ? "bg-brand-soft text-ink" : "text-ink"}`}
               >
-                <span>{o.label}</span>
+                <span>{typo ? <>Meintest du <strong>{o.label}</strong>?</> : o.label}</span>
                 {o.hint && <span className="text-xs text-muted">{o.hint}</span>}
               </button>
             </li>

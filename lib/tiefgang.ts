@@ -192,13 +192,19 @@ function lev(a: string, b: string) {
   return dp[b.length];
 }
 
-export type Verdict = { ok: true; answer: Answer } | { ok: false; reason: string };
+export type Verdict = { ok: true; answer: Answer } | { ok: false; reason: string; suggest?: string };
 
-export function check(q: Question, input: string): Verdict {
+/** `suggested`: the player already saw a "Meintest du …?" for this input and kept it, so typos now count as wrong. */
+export function check(q: Question, input: string, suggested = false): Verdict {
   const x = canon(input);
   if (!x) return { ok: false, reason: "Keine Antwort eingegeben." };
-  const exact = q.answers.find((a) => [a.name, ...a.alt].some((n) => canon(n) === x));
+  const nx = norm(input);
+  const exact = q.answers.find((a) => [a.name, ...a.alt].some((n) => norm(n) === nx));
   if (exact) return { ok: true, answer: exact };
+  const typo = (a: Answer): Verdict =>
+    suggested ? { ok: false, reason: `„${input.trim()}“ ist nicht richtig geschrieben – gemeint war wohl ${a.name}.` } : { ok: false, reason: "", suggest: a.name };
+  const near = q.answers.find((a) => [a.name, ...a.alt].some((n) => canon(n) === x));
+  if (near) return typo(near);
   // "Niger" must not be read as a typo of "Nigeria"
   const exactOther = COUNTRIES.find((c) => [c.n, ...c.alt].some((n) => canon(n) === x) || (c.cap && canon(c.cap) === x));
   if (exactOther && !q.key.startsWith("k:")) return { ok: false, reason: `„${input.trim()}“ passt nicht zu dieser Frage.` };
@@ -211,7 +217,7 @@ export function check(q: Question, input: string): Verdict {
       if (d <= tol && (!best || d < best.d)) best = { a, d };
     }
   }
-  if (best) return { ok: true, answer: best.a };
+  if (best) return typo(best.a);
   // a real country/capital that does not fit this question?
   const other = COUNTRIES.find((c) => [c.n, ...c.alt].some((n) => canon(n) === x) || (c.cap && canon(c.cap) === x));
   if (other) return { ok: false, reason: `„${input.trim()}“ passt nicht zu dieser Frage.` };

@@ -34,7 +34,8 @@ export function fuzzyMatch(typed: string, names: string[]): boolean {
   if (!t) return false;
   return names.some((n) => {
     const c = canon(n);
-    return c === t || distance(t, c) <= tolerance(c.length);
+    // only one right answer here, so even short names may have one typo ("Dohaa", "Romm")
+    return c === t || distance(t, c) <= Math.max(c.length >= 3 ? 1 : 0, tolerance(c.length));
   });
 }
 

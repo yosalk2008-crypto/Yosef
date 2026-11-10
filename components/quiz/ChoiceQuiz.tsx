@@ -8,6 +8,7 @@ import type { QuizType } from "@/lib/games";
 import { useShapes } from "@/lib/geo";
 import { randomRng } from "@/lib/rng";
 import { ShapeOutline } from "../Shape";
+import { Suggestion } from "../Suggestion";
 import { QuizEnd, QuizHeader, questionCount, useEntities, useQuizParams } from "./common";
 
 type Q = { e: Entity; options: Entity[] };
@@ -83,11 +84,14 @@ export function ChoiceQuiz({ typ }: { typ: QuizType }) {
     record(id === q.e.id);
   };
 
-  const submitTyped = (text: string) => {
-    if (answered || !q || !text.trim()) return;
-    const ok = fuzzyMatch(text, [q.e.capital!, ...q.e.capitalAlt]);
-    setTyped({ text, ok });
-    record(ok);
+  /** Exact name counts; a small typo, another spelling or a missing "-Stadt" gets a suggestion first. */
+  const submitTyped = (text: string, suggested: string | null): string | null => {
+    if (answered || !q || !text.trim()) return null;
+    const exact = norm(text) === norm(q.e.capital!);
+    if (!exact && suggested == null && fuzzyMatch(text, [q.e.capital!, ...q.e.capitalAlt])) return q.e.capital!;
+    setTyped({ text, ok: exact });
+    record(exact);
+    return null;
   };
 
   useEffect(() => {
@@ -133,7 +137,7 @@ export function ChoiceQuiz({ typ }: { typ: QuizType }) {
           </div>
 
           {params.typing && typ === "hauptstaedte" ? (
-            <TypeAnswer key={i} onSubmit={submitTyped} result={typed} correct={q.e.capital!} />
+            <TypeAnswer key={i} onSubmit={submitTyped} result={typed} />
           ) : (
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {q.options.map((o, k) => {
@@ -171,20 +175,26 @@ export function ChoiceQuiz({ typ }: { typ: QuizType }) {
   );
 }
 
-function TypeAnswer({ onSubmit, result, correct }: { onSubmit: (t: string) => void; result: { text: string; ok: boolean } | null; correct: string }) {
+function TypeAnswer({ onSubmit, result }: { onSubmit: (t: string, suggested: string | null) => string | null; result: { text: string; ok: boolean } | null }) {
   const [t, setT] = useState("");
-  void correct;
+  const [sug, setSug] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   return (
+    <>
     <form
       className="mt-4 flex gap-2"
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit(t);
+        setSug(onSubmit(t, sug));
       }}
     >
       <input
+        ref={inputRef}
         value={t}
-        onChange={(e) => setT(e.target.value)}
+        onChange={(e) => {
+          setT(e.target.value);
+          setSug(null);
+        }}
         disabled={!!result}
         autoFocus
         placeholder="Hauptstadt eintippen …"
@@ -197,5 +207,8 @@ function TypeAnswer({ onSubmit, result, correct }: { onSubmit: (t: string) => vo
         Prüfen
       </button>
     </form>
+    {sug && !result && <Suggestion name={sug} onTake={() => { setT(sug); setSug(null); inputRef.current?.focus(); }} />}
+    </>
   );
 }
+

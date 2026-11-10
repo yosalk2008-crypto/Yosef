@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { dayNumber, msUntilNextDay, utcDate } from "@/lib/daily";
 import { useDaily } from "@/lib/useDaily";
 import { LeaderboardJoin } from "../LeaderboardJoin";
+import { Suggestion } from "../Suggestion";
 import { MAX_PTS, ROUNDS, SECONDS, check, dailyQuestions, emojiFor, meters, randomQuestions, tierOf, type Question } from "@/lib/tiefgang";
 import { AnswerExplorer } from "./AnswerExplorer";
 import { Creature } from "./Creatures";
@@ -51,6 +52,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
   const [impact, setImpact] = useState<Impact | null>(null);
   const [left, setLeft] = useState(SECONDS);
   const [input, setInput] = useState("");
+  const [sug, setSug] = useState<string | null>(null);
   const deadline = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const restored = useRef(false);
@@ -135,6 +137,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
   // "Die Uhr startet in 3 … 2 … 1", then the 25-second timer runs
   const start = () => {
     setInput("");
+    setSug(null);
     setLeft(SECONDS);
     setCount(3);
     setPhase("countdown");
@@ -159,7 +162,11 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
       let r: Result;
       if (timedOut) r = { input: text, pts: 0, reason: "Die Zeit ist abgelaufen." };
       else {
-        const v = check(quest, text);
+        const v = check(quest, text, sug != null);
+        if (!v.ok && v.suggest) {
+          setSug(v.suggest);
+          return;
+        }
         r = v.ok ? { input: text, pts: v.answer.pts, answer: v.answer.name, id: v.answer.id, perle: v.answer.perle } : { input: text, pts: 0, reason: v.reason };
       }
       const next = [...results, r];
@@ -168,7 +175,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
       if (r.pts <= 0) setImpact({ at: Date.now(), kind: "miss" });
       save(next);
     },
-    [questions, results, save]
+    [questions, results, save, sug]
   );
 
   useEffect(() => {
@@ -292,7 +299,10 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
                   <input
                     ref={inputRef}
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      setSug(null);
+                    }}
                     className="input min-w-0 flex-1 text-ink"
                     placeholder="Eine Antwort …"
                     aria-label="Antwort"
@@ -304,6 +314,17 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
                     Tauchen
                   </button>
                 </form>
+              )}
+              {phase === "question" && sug && (
+                <Suggestion
+                  dark
+                  name={sug}
+                  onTake={() => {
+                    setInput(sug);
+                    setSug(null);
+                    inputRef.current?.focus();
+                  }}
+                />
               )}
             </div>
           )}
