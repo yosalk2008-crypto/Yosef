@@ -8,6 +8,7 @@ import { distanceKm, useShapes } from "@/lib/geo";
 import { makeRng } from "@/lib/rng";
 import { useDaily } from "@/lib/useDaily";
 import { GameShell, ResultCard } from "../GameShell";
+import { SolutionRow, Solutions } from "../Solutions";
 import { MapView } from "../MapView";
 
 const ROUNDS = 5;
@@ -163,18 +164,25 @@ export function Zeitreise() {
           )}
 
           {over && reveal == null && (
-            <ResultCard title="Dein Ergebnis" score={`${total.toLocaleString("de-DE")} / ${ROUNDS * 10}`} share={saved?.share || ""} isToday={isToday} current="zeitreise">
-              <ul className="space-y-1.5">
-                {events.map((ev, i) => (
-                  <li key={ev.text} className="flex justify-between gap-3">
-                    <span>
-                      {emoji(results[i].yearPts + results[i].placePts)} {ev.text} ({ev.year})
-                    </span>
-                    <span className="shrink-0 font-semibold text-ink">{(results[i].yearPts + results[i].placePts).toLocaleString("de-DE")}</span>
-                  </li>
-                ))}
-              </ul>
-            </ResultCard>
+            <>
+              <Solutions>
+                {events.map((ev, i) => {
+                  const r = results[i];
+                  const g = guesses[i];
+                  const p = r.yearPts + r.placePts;
+                  return (
+                    <SolutionRow
+                      key={ev.text}
+                      title={`„${ev.text}“`}
+                      right={`${ev.year} in ${ev.at.map((id) => BY_ID[id].n).join(" / ")}`}
+                      yours={`${g.year} (${r.dy === 0 ? "genau richtig" : `${r.dy} ${r.dy === 1 ? "Jahr" : "Jahre"} daneben`}), ${BY_ID[g.place].n}${r.ok ? " ✓" : ` (${new Intl.NumberFormat("de-DE").format(Math.round(r.km / 10) * 10)} km entfernt)`}`}
+                      badge={{ text: `${p.toLocaleString("de-DE")} / 10`, pts: p, max: 10 }}
+                    />
+                  );
+                })}
+              </Solutions>
+              <ResultCard title="Dein Ergebnis" score={`${total.toLocaleString("de-DE")} / ${ROUNDS * 10}`} share={saved?.share || ""} isToday={isToday} current="zeitreise" />
+            </>
           )}
         </>
       )}

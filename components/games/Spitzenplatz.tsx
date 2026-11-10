@@ -7,6 +7,7 @@ import { METRICS, globalRank, val, type MetricKey } from "@/lib/metrics";
 import { makeRng } from "@/lib/rng";
 import { useDaily } from "@/lib/useDaily";
 import { GameShell, ResultCard } from "../GameShell";
+import { SolutionRow, Solutions } from "../Solutions";
 
 const CATS: MetricKey[] = ["area", "pop", "gdppc", "mil", "life", "tour", "forest", "capPop"];
 const POOL = COUNTRIES.filter((c) => (c.pop ?? 0) >= 2000000 && CATS.every((k) => val(c, k) != null));
@@ -19,17 +20,32 @@ function pickCountries(day: string) {
   return rng.shuffle([...big, ...rest]).map((c) => c.id);
 }
 
-/** Best possible total (minimum sum of ranks) via DP over category subsets. */
-function optimum(ids: string[]) {
+/** Best possible total (minimum sum of ranks) and the assignment that reaches it, via DP over category subsets. */
+function optimum(ids: string[]): { total: number; plan: MetricKey[] } {
   const n = ids.length;
   const dp = new Array(1 << n).fill(Infinity);
+  const from = new Array<number>(1 << n).fill(-1);
   dp[0] = 0;
   for (let mask = 0; mask < 1 << n; mask++) {
     const i = popcount(mask);
     if (i >= n || dp[mask] === Infinity) continue;
-    for (let c = 0; c < n; c++) if (!(mask & (1 << c))) dp[mask | (1 << c)] = Math.min(dp[mask | (1 << c)], dp[mask] + globalRank(CATS[c], ids[i]));
+    for (let c = 0; c < n; c++) {
+      if (mask & (1 << c)) continue;
+      const v = dp[mask] + globalRank(CATS[c], ids[i]);
+      if (v < dp[mask | (1 << c)]) {
+        dp[mask | (1 << c)] = v;
+        from[mask | (1 << c)] = c;
+      }
+    }
   }
-  return dp[(1 << n) - 1];
+  const plan: MetricKey[] = new Array(n);
+  let mask = (1 << n) - 1;
+  for (let i = n - 1; i >= 0; i--) {
+    const c = from[mask];
+    plan[i] = CATS[c];
+    mask &= ~(1 << c);
+  }
+  return { total: dp[(1 << n) - 1], plan };
 }
 function popcount(x: number) {
   let c = 0;
@@ -46,7 +62,8 @@ type S = { picks: MetricKey[] };
 export function Spitzenplatz() {
   const { day, isToday, loaded, saved, persist } = useDaily<S>("spitzenplatz");
   const ids = useMemo(() => pickCountries(day), [day]);
-  const best = useMemo(() => optimum(ids), [ids]);
+  const opt = useMemo(() => optimum(ids), [ids]);
+  const best = opt.total;
   const [local, setLocal] = useState<MetricKey[] | null>(null);
   const picks = local ?? saved?.state?.picks ?? [];
   const i = picks.length;
@@ -141,9 +158,34 @@ export function Spitzenplatz() {
             })}
           </div>
           {over && (
-            <ResultCard title="Deine Punkte" score={`${total}`} share={saved?.share || ""} isToday={isToday} current="spitzenplatz">
-              Die bestmögliche Verteilung hätte <strong className="text-ink">{best} Punkte</strong> ergeben.
-            </ResultCard>
+            <>
+              <Solutions note={<>Die bestmögliche Verteilung ergibt <strong className="text-ink">{best} Punkte</strong>, du hast {total}. Weniger ist besser.</>}>
+                {ids.map((id, j) => {
+                  const c = BY_ID[id];
+                  const mine = picks[j];
+                  const ideal = opt.plan[j];
+                  const top = [...CATS].sort((x, y) => globalRank(x, id) - globalRank(y, id))[0];
+                  return (
+                    <SolutionRow
+                      key={id}
+                      iso2={c.iso2}
+                      title={c.n}
+                      rightLabel="Optimal"
+                      right={`${METRICS[ideal].label} (Platz ${globalRank(ideal, id)})`}
+                      yours={`${METRICS[mine].label} (Platz ${globalRank(mine, id)})`}
+                      extra={
+                        top !== ideal ? (
+                          <p className="text-sm text-muted">
+                            Stärkste Kategorie: {METRICS[top].label} (Platz {globalRank(top, id)})
+                          </p>
+                        ) : null
+                      }
+                    />
+                  );
+                })}
+              </Solutions>
+              <ResultCard title="Deine Punkte" score={`${total}`} share={saved?.share || ""} isToday={isToday} current="spitzenplatz" />
+            </>
           )}
         </>
       )}

@@ -8,6 +8,7 @@ import { useShapes, type Shape } from "@/lib/geo";
 import { makeRng } from "@/lib/rng";
 import { useDaily } from "@/lib/useDaily";
 import { GameShell, ResultCard } from "../GameShell";
+import { SolutionRow, Solutions } from "../Solutions";
 
 const ROUNDS = 5;
 const REF = "DEU";
@@ -163,18 +164,18 @@ export function Massstab() {
           )}
 
           {over && (reveal == null || reveal === ROUNDS - 1) && (
-            <ResultCard title="Dein Ergebnis" score={`${total.toLocaleString("de-DE")} / ${ROUNDS * 10}`} share={saved?.share || ""} isToday={isToday} current="massstab">
-              <ul className="space-y-1">
-                {ids.map((id, i) => (
-                  <li key={id} className="flex justify-between gap-3">
-                    <span>
-                      {emoji(points[i])} {BY_ID[id].n}
-                    </span>
-                    <span className="font-semibold text-ink">{points[i].toLocaleString("de-DE")}</span>
-                  </li>
-                ))}
-              </ul>
-            </ResultCard>
+            <>
+              <Solutions note="Flächen im Vergleich zu Deutschland (357.114 km²).">
+                {ids.map((id, i) => {
+                  const c = BY_ID[id];
+                  const km = (a: number) => `${new Intl.NumberFormat("de-DE").format(Math.round(a))} km² (${new Intl.NumberFormat("de-DE").format(Math.round((a / BY_ID[REF].area) * 100))} % von Deutschland)`;
+                  return (
+                    <SolutionRow key={id} iso2={c.iso2} title={c.n} right={km(c.area)} yours={km(guesses[i])} badge={{ text: `${points[i].toLocaleString("de-DE")} / 10`, pts: points[i], max: 10 }} />
+                  );
+                })}
+              </Solutions>
+              <ResultCard title="Dein Ergebnis" score={`${total.toLocaleString("de-DE")} / ${ROUNDS * 10}`} share={saved?.share || ""} isToday={isToday} current="massstab" />
+            </>
           )}
         </>
       )}

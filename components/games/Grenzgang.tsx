@@ -7,6 +7,7 @@ import { useShapes } from "@/lib/geo";
 import { makeRng } from "@/lib/rng";
 import { useDaily } from "@/lib/useDaily";
 import { GameShell, ResultCard } from "../GameShell";
+import { SolutionRow, Solutions } from "../Solutions";
 import { MapView } from "../MapView";
 import { Picker } from "../Picker";
 
@@ -160,9 +161,47 @@ export function Grenzgang() {
             </div>
           )}
           {over && (
-            <ResultCard title={won ? "Verbindung gefunden!" : "Leider keine Verbindung"} score={won ? `${guesses.length} Tipps` : "–"} share={saved?.share || ""} isToday={isToday} current="grenzgang">
-              Ein kürzester Weg: {[route.a, ...solution, route.b].map((id) => BY_ID[id].n).join(" → ")}
-            </ResultCard>
+            <>
+              <Solutions>
+                <SolutionRow
+                  title={`Von ${BY_ID[route.a].n} nach ${BY_ID[route.b].n}`}
+                  rightLabel="Ein kürzester Weg"
+                  right={
+                    <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                      {[route.a, ...solution, route.b].map((id, k) => (
+                        <span key={id} className="inline-flex items-center gap-1.5">
+                          {k > 0 && <span className="text-muted">→</span>}
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2 py-0.5 text-sm font-semibold">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={flagUrl(BY_ID[id].iso2)} alt="" className="h-3.5 w-auto rounded-sm" />
+                            {BY_ID[id].n}
+                          </span>
+                        </span>
+                      ))}
+                    </span>
+                  }
+                  extra={(() => {
+                    const others = COUNTRIES.filter((c) => c.id !== route.a && c.id !== route.b && !solution.includes(c.id) && quality(c.id) === "on").map((c) => c.n).slice(0, 12);
+                    return (
+                      <>
+                        <p className="mt-1 text-sm text-muted">Kürzester Weg: {route.d - 1} {route.d - 1 === 1 ? "Land" : "Länder"} dazwischen.{others.length > 0 && ` Ebenfalls auf einem kürzesten Weg: ${others.join(", ")}.`}</p>
+                        <p className="mt-2 flex flex-wrap gap-1.5">
+                          {guesses.map((g) => {
+                            const q = quality(g);
+                            return (
+                              <span key={g} className="rounded-full bg-white px-2.5 py-0.5 text-sm font-semibold">
+                                {q === "on" ? "🟩" : q === "near" ? "🟧" : "🟥"} {BY_ID[g].n}
+                              </span>
+                            );
+                          })}
+                        </p>
+                      </>
+                    );
+                  })()}
+                />
+              </Solutions>
+              <ResultCard title={won ? "Verbindung gefunden!" : "Leider keine Verbindung"} score={won ? `${guesses.length} Tipps` : "–"} share={saved?.share || ""} isToday={isToday} current="grenzgang" />
+            </>
           )}
         </>
       )}

@@ -8,6 +8,7 @@ import { METRICS } from "@/lib/metrics";
 import { makeRng } from "@/lib/rng";
 import { useDaily } from "@/lib/useDaily";
 import { GameShell, ResultCard } from "../GameShell";
+import { SolutionRow, Solutions } from "../Solutions";
 import { MapView } from "../MapView";
 import { Picker } from "../Picker";
 
@@ -121,21 +122,36 @@ export function Laenderjagd() {
           </div>
 
           {over && (
+            <Solutions>
+              <SolutionRow
+                iso2={target.iso2}
+                title={`Gesucht war ${target.n}`}
+                right={`${target.cont}, Hauptstadt ${target.cap}`}
+                yours={
+                  <span className="mt-1 flex flex-wrap gap-1.5">
+                    {guesses.map((g) => {
+                      const km = g === target.id ? 0 : distanceKm(BY_ID[g].ll, target.ll);
+                      return (
+                        <span key={g} className="rounded-full bg-white px-2.5 py-0.5 text-sm font-semibold text-ink">
+                          {heat(km).emoji} {BY_ID[g].n}
+                          {km > 0 && <span className="text-muted"> · {new Intl.NumberFormat("de-DE").format(Math.round(km / 10) * 10)} km</span>}
+                        </span>
+                      );
+                    })}
+                  </span>
+                }
+                ok={won}
+              />
+            </Solutions>
+          )}
+          {over && (
             <ResultCard
               title={won ? "Gefunden!" : "Leider nicht geschafft"}
               score={won ? `${guesses.length}/${MAX}` : `X/${MAX}`}
               share={saved?.share || ""}
               isToday={isToday}
               current="laenderjagd"
-            >
-              <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={flagUrl(target.iso2)} alt="" className="h-8 w-auto rounded border border-line" />
-                <span>
-                  Gesucht war <strong className="text-ink">{target.n}</strong> ({target.cont}, Hauptstadt {target.cap}).
-                </span>
-              </div>
-            </ResultCard>
+            />
           )}
         </>
       )}

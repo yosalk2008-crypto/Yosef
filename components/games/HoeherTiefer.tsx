@@ -7,6 +7,7 @@ import { METRICS, val, type MetricKey } from "@/lib/metrics";
 import { makeRng } from "@/lib/rng";
 import { useDaily } from "@/lib/useDaily";
 import { GameShell, ResultCard } from "../GameShell";
+import { SolutionRow, Solutions } from "../Solutions";
 
 const LIVES = 3;
 const KEYS: MetricKey[] = ["pop", "area", "gdppc", "life", "forest", "tour", "capPop", "mil"];
@@ -142,7 +143,28 @@ export function HoeherTiefer() {
             </>
           ) : null}
           {over && !revealed && (
-            <ResultCard title="Keine Leben mehr" score={`${correct} richtig`} share={saved?.share || ""} isToday={isToday} current="hoeher-tiefer" />
+            <>
+              <Solutions note="Alle Vergleiche, die du heute gespielt hast.">
+                {picks.map((p, i) => {
+                  const st = steps[i];
+                  const a = BY_ID[st.a];
+                  const b = BY_ID[st.b];
+                  const M = METRICS[st.m];
+                  const higher = val(b, st.m)! > val(a, st.m)!;
+                  return (
+                    <SolutionRow
+                      key={i}
+                      iso2={b.iso2}
+                      title={`${b.n} vs. ${a.n}`}
+                      right={`${M.label}: ${b.n} ${M.fmt(val(b, st.m)!)} – ${a.n} ${M.fmt(val(a, st.m)!)}, also ${higher ? "höher" : "tiefer"}`}
+                      yours={p === "hi" ? "höher" : "tiefer"}
+                      ok={results[i]}
+                    />
+                  );
+                })}
+              </Solutions>
+              <ResultCard title="Keine Leben mehr" score={`${correct} richtig`} share={saved?.share || ""} isToday={isToday} current="hoeher-tiefer" />
+            </>
           )}
         </>
       )}

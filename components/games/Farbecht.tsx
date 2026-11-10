@@ -7,6 +7,7 @@ import { deltaE, hslToHex, isNeutral, recolorSvg, svgDataUrl } from "@/lib/color
 import { makeRng } from "@/lib/rng";
 import { useDaily } from "@/lib/useDaily";
 import { GameShell, ResultCard } from "../GameShell";
+import { SolutionRow, Solutions } from "../Solutions";
 
 const ROUNDS = 5;
 const POOL = COUNTRIES.filter((c) => c.flag.simple && c.flag.colors.some((h) => !isNeutral(h)) && (c.pop ?? 0) >= 500000);
@@ -185,22 +186,22 @@ export function Farbecht() {
           )}
 
           {over && reveal == null && (
-            <ResultCard title="Dein Ergebnis" score={`${total.toLocaleString("de-DE")} / ${ROUNDS * 10}`} share={saved?.share || ""} isToday={isToday} current="farbecht">
-              <ul className="space-y-1">
-                {plan.map((p, i) => (
-                  <li key={p.id} className="flex items-center justify-between gap-3">
-                    <span className="flex items-center gap-2">
-                      <span className="flex overflow-hidden rounded" aria-hidden="true">
-                        <span className="h-4 w-4" style={{ background: guesses[i] }} />
-                        <span className="h-4 w-4" style={{ background: p.color }} />
-                      </span>
-                      {BY_ID[p.id].n}
+            <>
+              <Solutions>
+                {plan.map((p, i) => {
+                  const sw = (hex: string) => (
+                    <span className="inline-flex items-center gap-1.5 align-middle">
+                      <span className="inline-block h-5 w-9 rounded-md border-2 border-ink/70" style={{ background: hex }} aria-hidden="true" />
+                      <span className="font-mono text-sm uppercase">{hex}</span>
                     </span>
-                    <span className="font-semibold text-ink">{pts[i].toLocaleString("de-DE")}</span>
-                  </li>
-                ))}
-              </ul>
-            </ResultCard>
+                  );
+                  return (
+                    <SolutionRow key={p.id} iso2={BY_ID[p.id].iso2} title={BY_ID[p.id].n} right={sw(p.color)} yours={guesses[i] ? sw(guesses[i]) : "–"} badge={{ text: `${pts[i].toLocaleString("de-DE")} / 10`, pts: pts[i], max: 10 }} />
+                  );
+                })}
+              </Solutions>
+              <ResultCard title="Dein Ergebnis" score={`${total.toLocaleString("de-DE")} / ${ROUNDS * 10}`} share={saved?.share || ""} isToday={isToday} current="farbecht" />
+            </>
           )}
         </>
       )}
