@@ -7,6 +7,7 @@ import { useDaily } from "@/lib/useDaily";
 import { MAX_PTS, ROUNDS, SECONDS, check, dailyQuestions, emojiFor, meters, randomQuestions, tierOf, type Question } from "@/lib/tiefgang";
 import { AnswerExplorer } from "./AnswerExplorer";
 import { Creature } from "./Creatures";
+import { OceanScene } from "./OceanScene";
 
 type Result = { input: string; pts: number; answer?: string; id?: string; perle?: boolean; reason?: string };
 type S = { results: Result[]; pending?: number };
@@ -43,7 +44,8 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
   );
 
   const [results, setResults] = useState<Result[]>([]);
-  const [phase, setPhase] = useState<"intro" | "question" | "reveal" | "done">("intro");
+  const [phase, setPhase] = useState<"intro" | "countdown" | "question" | "sinking" | "reveal" | "done">("intro");
+  const [count, setCount] = useState(3);
   const [left, setLeft] = useState(SECONDS);
   const [input, setInput] = useState("");
   const deadline = useRef(0);
@@ -58,6 +60,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
     if (!s) return;
     const r = [...s.results];
     if (s.pending != null && s.pending === r.length) r.push({ input: "", pts: 0, reason: "Seite während der Frage verlassen." });
+    jump.current = true;
     setResults(r);
     if (r.length >= ROUNDS) setPhase("done");
     else if (r.length > 0) setPhase("intro");
@@ -67,6 +70,42 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
   const q = questions[Math.min(phase === "reveal" ? i - 1 : i, ROUNDS - 1)];
   const totalPts = results.reduce((s, r) => s + r.pts, 0);
   const totalM = meters(totalPts);
+
+  // camera depth: glides to the current total; while an answer sinks, the camera follows it
+  const [cam, setCam] = useState(0);
+  const camRef = useRef(0);
+  const jump = useRef(true);
+  useEffect(() => {
+    const from = camRef.current;
+    const to = totalM;
+    if (jump.current && phase !== "sinking") {
+      jump.current = false;
+      camRef.current = to;
+      setCam(to);
+      return;
+    }
+    if (from === to) {
+      if (phase === "sinking") setPhase("reveal");
+      return;
+    }
+    const sinking = phase === "sinking";
+    const dur = sinking ? Math.min(4800, 1400 + Math.abs(to - from) * 3.2) : 700;
+    const t0 = performance.now();
+    let raf = 0;
+    const ease = (x: number) => (sinking ? 1 - Math.pow(1 - x, 2.4) : 1 - Math.pow(1 - x, 3));
+    const step = (t: number) => {
+      const k = Math.min(1, (t - t0) / dur);
+      const v = from + (to - from) * ease(k);
+      camRef.current = v;
+      setCam(v);
+      if (k < 1) raf = requestAnimationFrame(step);
+      else if (sinking) setTimeout(() => setPhase("reveal"), 350);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalM, phase === "sinking"]);
+  const sinkBase = phase === "sinking" && results.length ? totalM - meters(results[results.length - 1].pts) : totalM;
 
   const save = useCallback(
     (r: Result[], pending?: number) => {
@@ -86,14 +125,26 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
     [mode, daily.day, daily.persist]
   );
 
+  // "Die Uhr startet in 3 … 2 … 1", then the 25-second timer runs
   const start = () => {
     setInput("");
-    deadline.current = Date.now() + SECONDS * 1000;
     setLeft(SECONDS);
-    setPhase("question");
-    save(results, results.length);
-    setTimeout(() => inputRef.current?.focus(), 30);
+    setCount(3);
+    setPhase("countdown");
   };
+  useEffect(() => {
+    if (phase !== "countdown") return;
+    if (count <= 0) {
+      deadline.current = Date.now() + SECONDS * 1000;
+      setPhase("question");
+      save(results, results.length);
+      setTimeout(() => inputRef.current?.focus(), 30);
+      return;
+    }
+    const t = setTimeout(() => setCount((c) => c - 1), 900);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, count]);
 
   const finish = useCallback(
     (text: string, timedOut = false) => {
@@ -106,7 +157,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
       }
       const next = [...results, r];
       setResults(next);
-      setPhase("reveal");
+      setPhase(r.pts > 0 ? "sinking" : "reveal");
       save(next);
     },
     [questions, results, save]
@@ -126,113 +177,125 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
   }, [phase, finish]);
 
   const restart = () => {
+    jump.current = true;
     setSeed((x) => x + 1);
     setResults([]);
     setPhase("intro");
   };
 
-  const depthF = totalM / MAX_M;
-  const bgTop = oceanAt(depthF * 0.9);
-  const bgBottom = oceanAt(Math.min(1, depthF + 0.25));
-  const dark = true;
   const last = phase === "reveal" ? results[results.length - 1] : null;
   const shownQ = phase === "reveal" ? questions[results.length - 1] : questions[i];
 
-  if (mode === "daily" && !daily.loaded) return <div className="min-h-[80vh] animate-pulse" style={{ background: oceanAt(0.05) }} />;
+  if (mode === "daily" && !daily.loaded) return <div className="h-[calc(100dvh-64px)] animate-pulse" style={{ background: oceanAt(0.05) }} />;
+
+  const sinkingAnswer = phase === "sinking" ? results[results.length - 1] : null;
 
   return (
-    <div className="relative min-h-[calc(100vh-64px)] overflow-hidden transition-[background] duration-1000" style={{ background: `linear-gradient(180deg, ${bgTop}, ${bgBottom})` }}>
-      <Bubbles />
-      <div className={`relative mx-auto flex max-w-5xl gap-6 px-4 pb-16 pt-6 sm:pt-10 ${dark ? "text-white" : "text-ink"}`}>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className="text-3xl font-semibold sm:text-4xl">Tiefgang{mode === "daily" ? ` #${dayNumber(daily.day)}` : " – Endlos"}</h1>
-              <p className={`font-semibold ${dark ? "text-white/75" : "text-ink/70"}`}>Je seltener deine richtige Antwort, desto tiefer tauchst du.</p>
-            </div>
-            <div className="flex gap-2">
-              <Link href={mode === "daily" ? "/tiefgang/endlos" : "/tiefgang"} className="rounded-2xl bg-white/15 px-4 py-2.5 font-display font-semibold backdrop-blur hover:bg-white/25">
-                {mode === "daily" ? "Endlos-Modus" : "Tagesrunde"}
-              </Link>
+    <div className="relative h-[calc(100dvh-64px)] min-h-[560px] overflow-hidden text-white sm:h-[calc(100dvh-72px)]">
+      <OceanScene cam={cam} results={results} questions={questions} sinking={sinkingAnswer} base={sinkBase} />
+
+      {/* HUD */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-[#051a3a]/70 to-transparent px-4 pb-6 pt-3">
+        <div className="mx-auto flex max-w-3xl items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold text-white/70">Tiefe</p>
+            <p className="font-display text-2xl font-semibold tabular-nums sm:text-3xl">{nf.format(Math.round(cam))} m</p>
+          </div>
+          <div className="pt-1 text-center">
+            <p className="font-display text-sm font-semibold">
+              Tiefgang{mode === "daily" ? ` #${dayNumber(daily.day)}` : " – Endlos"}
+            </p>
+            <div className="mt-1 flex justify-center gap-1" aria-label={`Frage ${Math.min(i + 1, ROUNDS)} von ${ROUNDS}`}>
+              {Array.from({ length: ROUNDS }).map((_, k) => {
+                const r = results[k];
+                const c = r ? (r.pts > 0 ? tierOf(r).color : "#d6453d") : k === i ? "#ffffff" : "rgb(255 255 255 / 0.25)";
+                return <span key={k} className="h-2.5 w-4 rounded-sm" style={{ background: c }} />;
+              })}
             </div>
           </div>
-
-          {/* mobile depth bar */}
-          <div className="mt-5 md:hidden">
-            <div className="flex items-baseline justify-between font-display font-semibold">
-              <span>Tiefe</span>
-              <span className="text-2xl tabular-nums">{nf.format(totalM)} m</span>
-            </div>
-            <div className="mt-1.5 h-3 overflow-hidden rounded-full bg-white/20">
-              <div className="h-full rounded-full bg-[#7fe3d2] transition-all duration-700" style={{ width: `${depthF * 100}%` }} />
-            </div>
+          <div className="text-right">
+            <p className="text-xs font-bold text-white/70">Punkte</p>
+            <p className="font-display text-2xl font-semibold tabular-nums sm:text-3xl">{Math.round(cam / 10)}</p>
           </div>
+        </div>
+      </div>
+      <div className="absolute right-3 top-20 z-30">
+        <Link href={mode === "daily" ? "/tiefgang/endlos" : "/tiefgang"} className="rounded-xl bg-white/15 px-3 py-1.5 text-sm font-bold backdrop-blur hover:bg-white/25">
+          {mode === "daily" ? "Endlos" : "Tagesrunde"}
+        </Link>
+      </div>
 
-          <div className="mt-6">
-            {phase === "intro" && (
-              <div className="pop rounded-[28px] bg-white/95 p-6 text-ink shadow-[0_6px_0_rgb(0_0_0_/_0.2)] sm:p-8">
-                {results.length === 0 ? (
-                  <>
-                    <h2 className="text-2xl font-semibold sm:text-3xl">So funktioniert&apos;s</h2>
-                    <ul className="mt-4 space-y-2 text-[17px] leading-relaxed text-ink/85">
-                      <li>Du bekommst {ROUNDS} Fragen und hast pro Frage {SECONDS} Sekunden für eine Antwort.</li>
-                      <li>Jede richtige Antwort bringt 10 bis 100 Punkte. Bekannte Antworten bringen wenig, seltene viel.</li>
-                      <li>Ein Punkt sind 10 Meter Tauchtiefe – maximal {nf.format(MAX_M)} m.</li>
-                      <li>Jede Antwort landet in einer Stufe: Plankton, Schwarm, Selten oder Tiefsee. Die eine seltenste Antwort jeder Frage ist die <strong>Tiefseeperle</strong> – es gibt pro Frage nur eine.</li>
-                      <li>Falsche Antworten oder abgelaufene Zeit bringen 0 Meter. Kleine Tippfehler verzeihen wir.</li>
-                    </ul>
-                  </>
-                ) : (
-                  <>
-                    <h2 className="text-2xl font-semibold">Frage {i + 1} von {ROUNDS}</h2>
-                    <p className="mt-2 text-ink/80">Bisher {nf.format(totalM)} m. Bereit für den nächsten Tauchgang?</p>
-                  </>
-                )}
-                <button type="button" onClick={start} className="btn-primary mt-6 w-full bg-[#0f4c8a] text-lg shadow-[0_4px_0_#08294b] hover:bg-[#13599f] sm:w-auto sm:px-10">
-                  {results.length === 0 ? "Abtauchen" : "Weiter tauchen"}
-                </button>
+      {/* foreground panels */}
+      <div className="absolute inset-x-0 bottom-0 top-24 z-20 overflow-y-auto px-4 pb-6">
+        <div className="mx-auto flex min-h-full max-w-xl flex-col justify-end">
+          {phase === "intro" && (
+            <div className="pop mb-2 rounded-[28px] bg-[#082650]/85 p-6 shadow-[0_6px_0_rgb(0_0_0_/_0.3)] backdrop-blur-sm sm:p-7">
+              {results.length === 0 ? (
+                <>
+                  <h1 className="text-3xl font-semibold">Tiefgang</h1>
+                  <p className="mt-1 text-lg font-semibold text-white/85">Je seltener deine richtige Antwort, desto tiefer sinkt sie.</p>
+                  <ul className="mt-4 space-y-1.5 text-[15px] leading-relaxed text-white/85">
+                    <li>{ROUNDS} Fragen, je {SECONDS} Sekunden, eine Antwort pro Frage.</li>
+                    <li>Bekannte Antworten bringen 10 Punkte, seltene bis zu 100. 1 Punkt = 10 Meter.</li>
+                    <li>Stufen: Plankton, Schwarm, Selten, Tiefsee – und pro Frage genau eine <strong>Tiefseeperle</strong>, die seltenste Antwort.</li>
+                    <li>Falsch oder zu spät = 0 Meter. Kleine Tippfehler verzeihen wir.</li>
+                  </ul>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-semibold">Frage {i + 1} von {ROUNDS}</h2>
+                  <p className="mt-1 text-white/80">Du bist bei {nf.format(totalM)} m. Bereit für den nächsten Tauchgang?</p>
+                </>
+              )}
+              <button type="button" onClick={start} className="btn-primary mt-5 w-full bg-[#f3d272] text-lg text-ink shadow-[0_4px_0_#b8962f] hover:bg-[#f7dc8a]">
+                {results.length === 0 ? "Abtauchen ▼" : "Weiter tauchen ▼"}
+              </button>
+            </div>
+          )}
+
+          {(phase === "countdown" || phase === "question") && shownQ && (
+            <div className="pop mb-2" key={"q" + i}>
+              <div className="rounded-[28px] bg-[#082650]/85 p-5 shadow-[0_6px_0_rgb(0_0_0_/_0.3)] backdrop-blur-sm sm:p-6">
+                <p className="text-sm font-bold text-[#7fe3d2]">
+                  Frage {i + 1} von {ROUNDS}
+                </p>
+                <h2 className="mt-1 text-[26px] font-semibold leading-snug sm:text-3xl">{shownQ.text}</h2>
+                <p className="mt-1 text-sm font-semibold text-white/65">{shownQ.hint} Seltenere Antworten sinken tiefer.</p>
               </div>
-            )}
-
-            {phase === "question" && shownQ && (
-              <div className="pop rounded-[28px] bg-white/95 p-5 text-ink shadow-[0_6px_0_rgb(0_0_0_/_0.25)] sm:p-7" key={i}>
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-display font-semibold text-ink/60">
-                      Frage {i + 1} von {ROUNDS}
-                    </p>
-                    <h2 className="mt-1 text-2xl font-semibold leading-snug sm:text-[28px]">{shownQ.text}</h2>
-                    <p className="mt-1 text-sm font-semibold text-ink/60">{shownQ.hint}</p>
-                  </div>
-                  <Timer left={left} />
-                </div>
+              {phase === "countdown" ? (
+                <p className="mt-4 text-center font-display text-lg font-semibold text-white/85" aria-live="polite">
+                  Abtauchen – die Uhr startet in {Math.max(1, count)} …
+                </p>
+              ) : (
                 <form
-                  className="mt-5 flex gap-2"
+                  className="mt-3 flex items-center gap-2"
                   onSubmit={(e) => {
                     e.preventDefault();
                     if (input.trim()) finish(input);
                   }}
                 >
+                  <Timer left={left} />
                   <input
                     ref={inputRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    className="input flex-1"
-                    placeholder="Deine seltene Antwort …"
+                    className="input min-w-0 flex-1 text-ink"
+                    placeholder="Eine Antwort …"
                     aria-label="Antwort"
                     autoComplete="off"
                     autoCorrect="off"
                     spellCheck={false}
                   />
-                  <button type="submit" className="btn-primary bg-[#0f4c8a] shadow-[0_4px_0_#08294b] hover:bg-[#13599f]" disabled={!input.trim()}>
-                    Antworten
+                  <button type="submit" className="btn-primary shrink-0 bg-[#f3d272] px-4 text-ink shadow-[0_4px_0_#b8962f] hover:bg-[#f7dc8a]" disabled={!input.trim()}>
+                    Tauchen
                   </button>
                 </form>
-              </div>
-            )}
+              )}
+            </div>
+          )}
 
             {phase === "reveal" && last && shownQ && (
-              <div className="pop rounded-[28px] bg-white/95 p-5 text-ink shadow-[0_6px_0_rgb(0_0_0_/_0.25)] sm:p-7">
+              <div className={`pop mb-2 rounded-[28px] bg-white/95 p-5 text-ink shadow-[0_6px_0_rgb(0_0_0_/_0.3)] sm:p-6 ${last.perle ? "ring-4 ring-[#f3d272] shadow-[0_0_60px_rgb(243_210_114_/_0.8)]" : ""}`}>
                 <p className="font-display font-semibold text-ink/60">{shownQ.text}</p>
                 {last.pts > 0 ? (
                   <div className="mt-3 flex items-center gap-4">
@@ -270,9 +333,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
             )}
 
             {phase === "done" && <Done results={results} questions={questions} mode={mode} share={daily.saved?.share} onRestart={restart} totalM={totalM} />}
-          </div>
         </div>
-        <DepthGauge meters={totalM} />
       </div>
     </div>
   );
@@ -290,35 +351,6 @@ function Timer({ left }: { left: number }) {
       </svg>
       <span className={`absolute inset-0 grid place-items-center font-display text-xl font-semibold ${danger ? "text-bad" : "text-ink"}`}>{left}</span>
     </div>
-  );
-}
-
-function DepthGauge({ meters: m }: { meters: number }) {
-  const f = m / MAX_M;
-  const ticks = [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000];
-  return (
-    <aside className="sticky top-24 hidden h-[70vh] w-24 shrink-0 md:block" aria-label={`Tauchtiefe ${nf.format(m)} Meter`}>
-      <div className="relative h-full">
-        <div className="absolute bottom-0 left-9 top-0 w-2 rounded-full bg-white/25" />
-        <div className="absolute left-9 top-0 w-2 rounded-full bg-[#7fe3d2] transition-all duration-700" style={{ height: `${f * 100}%` }} />
-        {ticks.map((t) => (
-          <div key={t} className="absolute left-0 flex -translate-y-1/2 items-center gap-1 text-xs font-bold text-white/70" style={{ top: `${(t / MAX_M) * 100}%` }}>
-            <span className="w-8 text-right tabular-nums">{t / 1000}k</span>
-          </div>
-        ))}
-        <div className="absolute left-[22px] -translate-y-1/2 transition-all duration-700" style={{ top: `${f * 100}%` }}>
-          <div className="flex items-center gap-1.5">
-            <span className="grid h-11 w-11 place-items-center rounded-full border-[3px] border-ink bg-[#f3d272] shadow-[0_3px_0_rgb(0_0_0_/_0.3)]" aria-hidden="true">
-              <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="#2c2a35" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round">
-                <rect x="4" y="7" width="16" height="9" rx="4" />
-                <path d="M9 16v3M15 16v3" />
-              </svg>
-            </span>
-          </div>
-          <p className="mt-1 whitespace-nowrap text-center font-display text-sm font-semibold text-white">{nf.format(m)} m</p>
-        </div>
-      </div>
-    </aside>
   );
 }
 
@@ -440,26 +472,4 @@ function DiveLog({ results }: { results: Result[] }) {
   );
 }
 
-function Bubbles() {
-  const b = [
-    [8, 14, 6],
-    [18, 9, 9],
-    [32, 18, 5],
-    [55, 11, 7],
-    [71, 16, 10],
-    [84, 12, 6],
-    [93, 20, 8],
-  ];
-  return (
-    <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-      <style>{`@keyframes rise{0%{transform:translateY(0);opacity:0}10%{opacity:.6}100%{transform:translateY(-110vh);opacity:0}}@media (prefers-reduced-motion: reduce){.bubble{animation:none!important;display:none}}`}</style>
-      {b.map(([x, d, s], k) => (
-        <span
-          key={k}
-          className="bubble absolute bottom-[-20px] rounded-full border-2 border-white/40"
-          style={{ left: `${x}%`, width: s * 3, height: s * 3, animation: `rise ${d}s linear ${k * 1.7}s infinite` }}
-        />
-      ))}
-    </div>
-  );
-}
+export { oceanAt };
