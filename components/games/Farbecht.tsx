@@ -17,7 +17,7 @@ function rounds(day: string) {
 }
 
 function points(guess: string, truth: string) {
-  return Math.max(0, Math.round((10 - deltaE(guess, truth) / 7) * 10) / 10);
+  return Math.max(0, Math.round((10 - deltaE(guess, truth) / 12) * 10) / 10);
 }
 const emoji = (p: number) => (p >= 8 ? "🟩" : p >= 5 ? "🟨" : p > 0 ? "🟧" : "🟥");
 

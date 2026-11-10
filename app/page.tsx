@@ -11,6 +11,25 @@ export default function Home() {
         <DailyBoard />
       </section>
 
+      <section className="mx-auto max-w-6xl px-4 pt-6">
+        <Link
+          href="/tiefgang"
+          className="chunk relative flex flex-col items-start gap-4 overflow-hidden px-6 py-6 text-white sm:flex-row sm:items-center sm:justify-between sm:px-8"
+          style={{ background: "linear-gradient(160deg, #3f96d6 0%, #16528f 55%, #0a2656 100%)", ["--edge" as string]: "#061a3d" }}
+        >
+          <span className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 rounded-full border-4 border-white/15" aria-hidden="true" />
+          <span className="pointer-events-none absolute bottom-3 right-24 h-10 w-10 rounded-full border-[3px] border-white/20" aria-hidden="true" />
+          <span className="relative">
+            <span className="inline-block rounded-full bg-[#f3d272] px-3 py-1 font-display text-sm font-semibold text-ink">Neu</span>
+            <span className="mt-2 block font-display text-3xl font-semibold sm:text-4xl">Tiefgang</span>
+            <span className="mt-1 block max-w-md text-lg font-semibold text-white/85">
+              Das Quiz der seltenen Antworten: Je unbekannter deine richtige Antwort, desto tiefer tauchst du.
+            </span>
+          </span>
+          <span className="relative btn-primary bg-[#f3d272] text-ink shadow-[0_4px_0_#b8962f] hover:bg-[#f7dc8a]">Jetzt abtauchen</span>
+        </Link>
+      </section>
+
       <section className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
         <div className="flex items-end justify-between gap-4">
           <h2 className="text-[28px] font-semibold leading-none sm:text-4xl">Quiz nach Region</h2>

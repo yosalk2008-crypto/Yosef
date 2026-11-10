@@ -14,15 +14,8 @@ const targets: Record<string, number> = {};
 const catUse: Record<string, number> = {};
 while (day <= end) {
   const p = makePuzzle(day);
-  const ids = p.groups.flatMap((g) => g.ids);
-  if (new Set(ids).size !== 16) throw new Error("dup tile " + day);
-  for (const g of p.groups) {
-    catUse[g.cat.label] = (catUse[g.cat.label] || 0) + 1;
-    for (const id of g.ids) {
-      const fits = p.groups.filter((o) => o.cat.test(BY_ID[id]));
-      if (fits.length !== 1) throw new Error(`ambiguous ${day} ${id}`);
-    }
-  }
+  if (new Set(p.tiles).size !== 16 || new Set(p.groups.map((g) => g.country)).size !== 4) throw new Error("bad puzzle " + day);
+  for (const g of p.groups) catUse[BY_ID[g.country].cont] = (catUse[BY_ID[g.country].cont] || 0) + 1;
   const r = makeRoute(day);
   routeLens[r.d] = (routeLens[r.d] || 0) + 1;
   const t = pickTarget(day);
@@ -31,5 +24,5 @@ while (day <= end) {
   n++;
 }
 console.log("days", n, "routes", routeLens, "distinct targets", Object.keys(targets).length);
-console.log("most used categories", Object.entries(catUse).sort((a, b) => b[1] - a[1]).slice(0, 8));
-console.log("today", makePuzzle(new Date().toISOString().slice(0, 10)).groups.map((g) => g.cat.label));
+console.log("continents", Object.entries(catUse).sort((a, b) => b[1] - a[1]).slice(0, 8));
+console.log("today", makePuzzle(new Date().toISOString().slice(0, 10)).groups.map((g) => BY_ID[g.country].n + ":" + g.fact));

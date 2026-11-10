@@ -7,6 +7,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "",
     "/quiz",
     "/archiv",
+    "/tiefgang",
+    "/tiefgang/endlos",
     ...GAMES.map((g) => `/taeglich/${g.key}`),
     ...QUIZ_TYPES.map((q) => `/quiz/${q.key}`),
     "/quellen",

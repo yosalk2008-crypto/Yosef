@@ -13,7 +13,8 @@ export type GameKey =
   | "spitzenplatz"
   | "farbecht"
   | "grenzgang"
-  | "zeitreise";
+  | "zeitreise"
+  | "tiefgang";
 
 export type DailyResult = {
   done: boolean;

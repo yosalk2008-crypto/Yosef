@@ -18,5 +18,5 @@ export async function generateMetadata({ params }: { params: Promise<{ spiel: st
 export default async function Page({ params }: { params: Promise<{ spiel: string }> }) {
   const { spiel } = await params;
   if (!GAME_BY_KEY[spiel as GameKey]) notFound();
-  return <DailyGame game={spiel as GameKey} />;
+  return <DailyGame game={spiel as Exclude<GameKey, "tiefgang">} />;
 }

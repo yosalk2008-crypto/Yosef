@@ -1,102 +1,103 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BY_ID, COUNTRIES, SUBREGION_DE, flagUrl, norm, type Country } from "@/lib/data/countries";
+import { BY_ID, COUNTRIES, CONTINENTS, flagUrl, type Country } from "@/lib/data/countries";
 import { dayNumber } from "@/lib/daily";
-import { makeRng, type Rng } from "@/lib/rng";
+import { useShapes, type Shape } from "@/lib/geo";
+import { fmtBig } from "@/lib/metrics";
+import { makeRng } from "@/lib/rng";
 import { useDaily } from "@/lib/useDaily";
 import { GameShell, ResultCard } from "../GameShell";
+import { ShapeOutline } from "../Shape";
 
-type Cat = { key: string; label: string; diff: number; test: (c: Country) => boolean };
+/**
+ * Viererbande: four countries, each shown four ways – flag, outline, capital and one fact.
+ * Find the four tiles that belong to the same country.
+ */
 
-function categories(): Cat[] {
-  const cats: Cat[] = [];
-  const subs = new Map<string, number>();
-  for (const c of COUNTRIES) subs.set(c.sub, (subs.get(c.sub) || 0) + 1);
-  for (const [sub, n] of subs) if (n >= 5 && SUBREGION_DE[sub]) cats.push({ key: "sub:" + sub, label: `Liegt in ${SUBREGION_DE[sub]}`, diff: 1, test: (c) => c.sub === sub });
-  for (const x of COUNTRIES)
-    if (x.borders.length >= 5) cats.push({ key: "nb:" + x.id, label: `Grenzt an ${x.n}`, diff: 2, test: (c) => c.borders.includes(x.id) });
-  cats.push({ key: "landlocked", label: "Hat keinen Zugang zum Meer", diff: 2, test: (c) => c.landlocked });
-  cats.push({ key: "island", label: "Hat keine Landgrenze", diff: 2, test: (c) => c.borders.length === 0 });
-  cats.push({ key: "stan", label: "Name endet auf „-stan“", diff: 1, test: (c) => c.n.endsWith("stan") });
-  cats.push({ key: "pop100", label: "Über 100 Mio. Einwohner", diff: 2, test: (c) => (c.pop ?? 0) > 1e8 });
-  cats.push({ key: "pop1", label: "Unter 1 Mio. Einwohner", diff: 3, test: (c) => c.pop != null && c.pop < 1e6 });
-  cats.push({ key: "rich", label: "BIP pro Kopf über 50.000 $", diff: 3, test: (c) => (c.gdppc ?? 0) > 50000 });
-  cats.push({ key: "big", label: "Fläche über 2 Mio. km²", diff: 2, test: (c) => c.area > 2e6 });
-  cats.push({ key: "tiny", label: "Kleiner als 1.000 km²", diff: 3, test: (c) => c.area < 1000 });
-  cats.push({ key: "capname", label: "Hauptstadt heißt (fast) wie das Land", diff: 3, test: (c) => !!c.cap && norm(c.cap).slice(0, 5) === norm(c.n).slice(0, 5) });
-  return cats;
+type Kind = "flag" | "shape" | "cap" | "fact";
+const KINDS: Kind[] = ["flag", "shape", "cap", "fact"];
+type FactKey = "pop" | "gdppc" | "tour" | "area" | "life";
+
+const nf = (d = 0) => new Intl.NumberFormat("de-DE", { maximumFractionDigits: d });
+function factText(c: Country, k: FactKey): { label: string; value: string } {
+  switch (k) {
+    case "pop":
+      return { label: "Einwohner", value: fmtBig(c.pop!) };
+    case "gdppc":
+      return { label: "BIP pro Kopf", value: nf().format(Math.round(c.gdppc! / 100) * 100) + " $" };
+    case "tour":
+      return { label: "Touristen pro Jahr", value: fmtBig(c.tour!) };
+    case "area":
+      return { label: "Fläche", value: nf().format(Math.round(c.area / 1000) * 1000) + " km²" };
+    case "life":
+      return { label: "Lebenserwartung", value: nf(1).format(c.life!) + " Jahre" };
+  }
 }
 
-const CATS = categories();
-const TILE_POOL = COUNTRIES.filter((c) => (c.pop ?? 0) >= 50000);
-const COLORS = [
-  { bg: "bg-yellow-300", text: "text-yellow-950", emoji: "🟨" },
-  { bg: "bg-green-400", text: "text-green-950", emoji: "🟩" },
-  { bg: "bg-sky-400", text: "text-sky-950", emoji: "🟦" },
-  { bg: "bg-violet-400", text: "text-violet-950", emoji: "🟪" },
-];
+const POOL = COUNTRIES.filter((c) => c.shape && c.cap && (c.pop ?? 0) >= 1000000 && c.gdppc != null);
 
-type Puzzle = { groups: { cat: Cat; ids: string[] }[]; tiles: { id: string }[] };
-
-function build(rng: Rng): Puzzle | null {
-  const chosen: Cat[] = [];
-  const types = new Set<string>();
-  for (const c of rng.shuffle(CATS)) {
-    const type = c.key.split(":")[0];
-    if (types.has(type)) continue;
-    chosen.push(c);
-    types.add(type);
-    if (chosen.length === 4) break;
-  }
-  const groups: Puzzle["groups"] = [];
-  const used = new Set<string>();
-  for (const cat of chosen) {
-    const cand = TILE_POOL.filter((c) => !used.has(c.id) && cat.test(c) && chosen.every((o) => o === cat || !o.test(c)));
-    if (cand.length < 4) return null;
-    const ids = rng.sample(cand, 4).map((c) => c.id);
-    ids.forEach((i) => used.add(i));
-    groups.push({ cat, ids });
-  }
-  groups.sort((a, b) => a.cat.diff - b.cat.diff);
-  const tiles = rng.shuffle(groups.flatMap((g) => g.ids)).map((id) => ({ id }));
-  return { groups, tiles };
-}
+type Group = { country: string; fact: FactKey };
+type Puzzle = { groups: Group[]; tiles: string[] };
 
 export function makePuzzle(day: string): Puzzle {
   const rng = makeRng(`${day}:viererbande`);
-  for (let i = 0; i < 500; i++) {
-    const p = build(rng);
-    if (p) return p;
+  // four countries from the same continent, so the tiles look alike
+  let picks: Country[] = [];
+  for (let i = 0; i < 50 && picks.length < 4; i++) {
+    const cont = rng.pick(CONTINENTS);
+    // the best-known countries of the continent (by population and economy)
+    const fame = (c: Country) => Math.log10(c.pop ?? 1) + Math.log10(c.gdp ?? 1);
+    const pool = POOL.filter((c) => c.cont === cont)
+      .sort((a, b) => fame(b) - fame(a))
+      .slice(0, 22);
+    if (pool.length >= 6) picks = rng.sample(pool, 4);
   }
-  throw new Error("no puzzle");
+  if (picks.length < 4) picks = rng.sample(POOL, 4);
+  // easiest (most populous) first: yellow, green, blue, purple
+  picks.sort((a, b) => (b.pop ?? 0) - (a.pop ?? 0));
+  const groups = picks.map((c) => {
+    const options: FactKey[] = ["pop", "gdppc", "area", ...(c.tour ? (["tour"] as FactKey[]) : []), ...(c.life ? (["life"] as FactKey[]) : [])];
+    return { country: c.id, fact: rng.pick(options) };
+  });
+  const tiles = rng.shuffle(groups.flatMap((g) => KINDS.map((k) => `${g.country}:${k}`)));
+  return { groups, tiles };
 }
 
+const COLORS = [
+  { bg: "#f3d272", emoji: "🟨" },
+  { bg: "#9fd06f", emoji: "🟩" },
+  { bg: "#8ec5f0", emoji: "🟦" },
+  { bg: "#c3aaf6", emoji: "🟪" },
+];
 const MAX_MISTAKES = 4;
 type S = { guesses: string[][] };
 
 export function Viererbande() {
   const { day, isToday, loaded, saved, persist } = useDaily<S>("viererbande");
   const puzzle = useMemo(() => makePuzzle(day), [day]);
+  const shapes = useShapes("world");
   const [local, setLocal] = useState<string[][] | null>(null);
-  const guesses = local ?? saved?.state?.guesses ?? [];
+  // ignore progress saved by the old version of the game
+  const stored = (saved?.state?.guesses ?? []).filter((g) => g.every((id) => id.includes(":")));
+  const guesses = local ?? stored;
   const [sel, setSel] = useState<string[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [shake, setShake] = useState(false);
   const [order, setOrder] = useState<string[] | null>(null);
 
-  const groupOf = (id: string) => puzzle.groups.findIndex((g) => g.ids.includes(id));
-  const isSolved = (gi: number) => guesses.some((gs) => gs.every((id) => groupOf(id) === gi));
-  const solved = puzzle.groups.map((_, i) => i).filter(isSolved);
-  const mistakes = guesses.filter((gs) => !gs.every((id) => groupOf(id) === groupOf(gs[0]))).length;
+  const groupOf = (tile: string) => puzzle.groups.findIndex((g) => tile.startsWith(g.country + ":"));
+  const isRight = (gs: string[]) => gs.every((t) => groupOf(t) === groupOf(gs[0]));
+  const solved = puzzle.groups.map((_, i) => i).filter((gi) => guesses.some((gs) => isRight(gs) && groupOf(gs[0]) === gi));
+  const mistakes = guesses.filter((gs) => !isRight(gs)).length;
   const won = solved.length === 4;
   const over = won || mistakes >= MAX_MISTAKES;
-  const tileIds = (order ?? puzzle.tiles.map((t) => t.id)).filter((id) => !solved.includes(groupOf(id)));
+  const tiles = (order ?? puzzle.tiles).filter((t) => !solved.includes(groupOf(t)));
 
-  const toggle = (id: string) => {
+  const toggle = (t: string) => {
     if (over) return;
     setMsg(null);
-    setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : s.length < 4 ? [...s, id] : s));
+    setSel((s) => (s.includes(t) ? s.filter((x) => x !== t) : s.length < 4 ? [...s, t] : s));
   };
 
   const check = () => {
@@ -108,34 +109,29 @@ export function Viererbande() {
     }
     const next = [...guesses, sel];
     setLocal(next);
-    const counts = puzzle.groups.map((g) => sel.filter((id) => g.ids.includes(id)).length);
-    const best = Math.max(...counts);
+    const best = Math.max(...puzzle.groups.map((_, gi) => sel.filter((t) => groupOf(t) === gi).length));
     if (best === 4) {
-      setMsg("Richtig!");
+      setMsg(`Richtig – das ist ${BY_ID[puzzle.groups[groupOf(sel[0])].country].n}!`);
       setSel([]);
     } else {
-      setMsg(best === 3 ? "Fast – eine Kachel ist falsch." : "Leider falsch.");
+      setMsg(best === 3 ? "Fast – eine Kachel gehört zu einem anderen Land." : "Leider falsch.");
       setShake(true);
       setTimeout(() => setShake(false), 350);
     }
-    const nSolved = puzzle.groups.filter((g, gi) => next.some((gs) => gs.every((id) => groupOf(id) === gi))).length;
-    const nMistakes = next.filter((gs) => !gs.every((id) => groupOf(id) === groupOf(gs[0]))).length;
-    const done = nSolved === 4 || nMistakes >= MAX_MISTAKES;
-    const share =
-      `Viererbande #${dayNumber(day)} · ${nSolved}/4${nSolved === 4 ? ` mit ${nMistakes} Fehler${nMistakes === 1 ? "" : "n"}` : ""}\n` +
-      next.map((gs) => gs.map((id) => COLORS[groupOf(id)].emoji).join("")).join("\n");
+    const nSolved = puzzle.groups.filter((_, gi) => next.some((gs) => isRight(gs) && groupOf(gs[0]) === gi)).length;
+    const nMistakes = next.filter((gs) => !isRight(gs)).length;
     persist({
-      done,
+      done: nSolved === 4 || nMistakes >= MAX_MISTAKES,
       won: nSolved === 4,
       score: nSolved,
       max: 4,
       label: nSolved === 4 ? `${nMistakes} Fehler` : `${nSolved}/4`,
-      share,
+      share:
+        `Viererbande #${dayNumber(day)} · ${nSolved}/4${nSolved === 4 ? ` mit ${nMistakes} Fehler${nMistakes === 1 ? "" : "n"}` : ""}\n` +
+        next.map((gs) => gs.map((t) => COLORS[groupOf(t)].emoji).join("")).join("\n"),
       state: { guesses: next },
     });
   };
-
-  const shuffle = () => setOrder(makeRng(Math.random() * 1e9).shuffle(tileIds));
 
   const shownGroups = over ? puzzle.groups.map((_, i) => i) : solved;
 
@@ -146,52 +142,63 @@ export function Viererbande() {
       isToday={isToday}
       rules={
         <>
-          <p>Auf den 16 Kacheln stehen Länder. Finde <strong>vier Gruppen aus je vier Ländern</strong>, die etwas gemeinsam haben – etwa die Region, ein gemeinsames Nachbarland oder ihre Größe.</p>
-          <p>Wähle vier Kacheln und tippe auf „Prüfen“.</p>
-          <p>Du darfst dir {MAX_MISTAKES} Fehler erlauben. Vorsicht: Manche Länder passen scheinbar in mehrere Gruppen.</p>
+          <p>
+            Vier Länder verstecken sich in 16 Kacheln. Jedes Land kommt viermal vor: als <strong>Flagge</strong>, als <strong>Umriss</strong>, mit seiner{" "}
+            <strong>Hauptstadt</strong> und mit einem <strong>Fakt</strong> wie Einwohnerzahl, BIP pro Kopf oder Touristen.
+          </p>
+          <p>Wähle die vier Kacheln, die zum selben Land gehören, und tippe auf „Prüfen“. Alle vier Länder liegen auf demselben Kontinent.</p>
+          <p>Du darfst dir {MAX_MISTAKES} Fehler erlauben.</p>
         </>
       }
     >
-      {!loaded ? (
-        <div className="h-96 animate-pulse rounded-2xl bg-line" />
+      {!loaded || !shapes ? (
+        <div className="h-96 animate-pulse rounded-3xl bg-line" />
       ) : (
         <>
           <div className="space-y-2">
             {shownGroups.map((gi) => {
               const g = puzzle.groups[gi];
-              const c = COLORS[gi];
+              const c = BY_ID[g.country];
+              const f = factText(c, g.fact);
               return (
-                <div key={gi} className={`pop rounded-xl p-3 text-center ${c.bg} ${c.text}`}>
-                  <p className="font-display font-semibold">{g.cat.label}</p>
-                  <p className="text-sm font-medium">{g.ids.map((id) => BY_ID[id].n).join(" · ")}</p>
+                <div key={gi} className="pop flex items-center gap-3 rounded-2xl p-3" style={{ background: COLORS[gi].bg, boxShadow: "0 4px 0 rgb(0 0 0 / 0.12)" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={flagUrl(c.iso2)} alt="" className="h-9 w-auto rounded-md border-2 border-ink/80" />
+                  <ShapeOutline shape={shapes.byId[c.id]} fill="#2c2a35" className="h-10 w-10 shrink-0" size={100} label={`Umriss von ${c.n}`} />
+                  <div className="min-w-0">
+                    <p className="font-display text-lg font-semibold leading-tight">{c.n}</p>
+                    <p className="text-sm font-semibold text-ink/75">
+                      Hauptstadt {c.cap} – {f.label}: {f.value}
+                    </p>
+                  </div>
                 </div>
               );
             })}
           </div>
           {!over && (
-            <div className={`mt-2 grid grid-cols-4 gap-2 ${shake ? "shake" : ""}`}>
-              {tileIds.map((id) => (
-                <Tile key={id} id={id} selected={sel.includes(id)} onClick={() => toggle(id)} />
+            <div className={`mt-2 grid grid-cols-4 gap-2 sm:gap-2.5 ${shake ? "shake" : ""}`}>
+              {tiles.map((t) => (
+                <Tile key={t} tile={t} fact={puzzle.groups[groupOf(t)].fact} selected={sel.includes(t)} onClick={() => toggle(t)} shape={shapes.byId[t.split(":")[0]]} />
               ))}
             </div>
           )}
           {!over && (
             <>
-              <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted" aria-label={`Noch ${MAX_MISTAKES - mistakes} Fehler erlaubt`}>
+              <div className="mt-4 flex items-center justify-center gap-2 text-sm font-semibold text-muted" aria-label={`Noch ${MAX_MISTAKES - mistakes} Fehler erlaubt`}>
                 Fehler übrig:
                 {Array.from({ length: MAX_MISTAKES }).map((_, i) => (
-                  <span key={i} className={`h-3 w-3 rounded-full ${i < MAX_MISTAKES - mistakes ? "bg-ink" : "bg-line"}`} />
+                  <span key={i} className={`h-3.5 w-3.5 rounded-full ${i < MAX_MISTAKES - mistakes ? "bg-ink" : "bg-line"}`} />
                 ))}
               </div>
-              <p className="mt-2 h-5 text-center text-sm font-semibold" role="status">
+              <p className="mt-2 min-h-5 text-center text-sm font-bold" role="status">
                 {msg}
               </p>
               <div className="mt-3 flex flex-wrap justify-center gap-2">
-                <button type="button" className="btn-ghost" onClick={shuffle}>
+                <button type="button" className="btn-ghost" onClick={() => setOrder(makeRng(Math.random() * 1e9).shuffle(tiles))}>
                   Mischen
                 </button>
                 <button type="button" className="btn-ghost" onClick={() => setSel([])} disabled={!sel.length}>
-                  Auswahl aufheben
+                  Abwählen
                 </button>
                 <button type="button" className="btn-primary" onClick={check} disabled={sel.length !== 4}>
                   Prüfen
@@ -201,8 +208,8 @@ export function Viererbande() {
           )}
           {over && (
             <ResultCard
-              title={won ? "Alle Gruppen gefunden" : "Keine Fehler mehr übrig"}
-              score={won ? `${mistakes} Fehler` : `${solved.length}/4 Gruppen`}
+              title={won ? "Alle Länder gefunden" : "Keine Fehler mehr übrig"}
+              score={won ? `${mistakes} Fehler` : `${solved.length}/4 Länder`}
               share={saved?.share || ""}
               isToday={isToday}
               current="viererbande"
@@ -214,18 +221,40 @@ export function Viererbande() {
   );
 }
 
-function Tile({ id, selected, onClick }: { id: string; selected: boolean; onClick: () => void }) {
+function Tile({ tile, fact, selected, onClick, shape }: { tile: string; fact: FactKey; selected: boolean; onClick: () => void; shape?: Shape }) {
+  const [id, kind] = tile.split(":") as [string, Kind];
   const c = BY_ID[id];
+  let content: React.ReactNode;
+  let label: string;
+  if (kind === "flag") {
+    // eslint-disable-next-line @next/next/no-img-element
+    content = <img src={flagUrl(c.iso2)} alt="" className="max-h-[62%] w-[80%] rounded-md object-contain shadow-sm" draggable={false} />;
+    label = "Flagge";
+  } else if (kind === "shape") {
+    content = shape ? <ShapeOutline shape={shape} fill={selected ? "#ffffff" : "#2c2a35"} className="h-[80%] w-[80%]" size={120} /> : null;
+    label = "Umriss";
+  } else if (kind === "cap") {
+    content = <span className="font-display text-[14px] font-semibold leading-tight break-words [hyphens:auto] sm:text-lg">{c.cap}</span>;
+    label = `Hauptstadt ${c.cap}`;
+  } else {
+    const f = factText(c, fact);
+    content = (
+      <span className="leading-tight">
+        <span className={`block text-[10px] font-bold sm:text-xs ${selected ? "text-white/75" : "text-muted"}`}>{f.label}</span>
+        <span className="block font-display text-[13px] font-semibold sm:text-lg">{f.value}</span>
+      </span>
+    );
+    label = `${f.label} ${f.value}`;
+  }
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className={`tile-btn flex aspect-square flex-col items-center justify-center gap-1.5 p-1.5 text-center sm:aspect-[4/3] ${selected ? "tile-selected" : ""}`}
+      aria-label={label}
+      className={`tile-btn grid aspect-square place-items-center p-1.5 text-center sm:aspect-[4/3] ${selected ? "tile-selected" : ""}`}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={flagUrl(c.iso2)} alt="" className="h-6 w-auto rounded-[3px] shadow-sm sm:h-8" draggable={false} />
-      <span className="text-[12px] font-bold leading-tight break-words [hyphens:auto] sm:text-[15px]">{c.n}</span>
+      {content}
     </button>
   );
 }

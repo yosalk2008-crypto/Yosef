@@ -73,6 +73,10 @@ export function SiteHeader() {
                 </Link>
               ))}
             </div>
+            <Link href="/tiefgang" className="chunk mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #3f96d6, #0a2656)", ["--edge" as string]: "#061a3d" }}>
+              Tiefgang
+              <span className="rounded-full bg-[#f3d272] px-2.5 py-0.5 text-sm text-ink">Neu</span>
+            </Link>
             <h2 className="mb-2 mt-6 text-lg font-semibold">Quiz nach Region</h2>
             <div className="flex flex-wrap gap-2">
               {REGIONS.map((r) => (
