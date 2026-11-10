@@ -33,7 +33,7 @@ export function QuizSetup() {
   }, [sp]);
 
   const info = QUIZ_TYPES.find((q) => q.key === typ)!;
-  const regions = REGIONS.filter((r) => !info.countriesOnly || r.kind === "countries");
+  const regions = REGIONS.filter((r) => (!info.countriesOnly || r.kind === "countries") && !(typ === "hauptstaedte" && r.noCapitals));
   useEffect(() => {
     if (!regions.some((r) => r.key === region)) setRegion("welt");
   }, [regions, region]);

@@ -11,7 +11,7 @@ const out = path.join(repo, "public/thumbs");
 fs.mkdirSync(out, { recursive: true });
 
 const ts = require("topojson-simplify");
-const Q = { world: 0.25, us: 0.02, de: 0.002, ch: 0.0005, at: 0.001 };
+const Q = { world: 0.25, us: 0.02, de: 0.002, ch: 0.0005, at: 0.001, sy: 0.0005 };
 const load = (k) => {
   let t = JSON.parse(fs.readFileSync(path.join(repo, "public/geo", k + ".json")));
   t = ts.simplify(ts.presimplify(t), Q[k]);
@@ -30,10 +30,12 @@ const sets = {
   nordamerika: { f: cont("Nordamerika"), p: d3.geoEqualEarth().rotate([100, 0]), box: [[-168, 7], [-53, 72]] },
   suedamerika: { f: cont("Südamerika"), p: d3.geoEqualEarth().rotate([60, 0]) },
   ozeanien: { f: cont("Ozeanien"), p: d3.geoEqualEarth().rotate([-150, 0]), box: [[112, -47], [180, -5]] },
+  nahost: { f: world.filter((f) => ["EGY", "BHR", "IRQ", "IRN", "ISR", "JOR", "KWT", "LBN", "OMN", "PSE", "QAT", "SAU", "SYR", "TUR", "ARE", "YEM"].includes(f.id)), p: d3.geoEqualEarth().rotate([-45, 0]) },
   usa: { f: load("us"), p: d3.geoAlbersUsa() },
   deutschland: { f: load("de"), p: d3.geoMercator() },
   schweiz: { f: load("ch"), p: d3.geoMercator() },
   oesterreich: { f: load("at"), p: d3.geoMercator() },
+  syrien: { f: load("sy"), p: d3.geoMercator() },
 };
 
 for (const [key, { f, p, box }] of Object.entries(sets)) {

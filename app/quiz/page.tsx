@@ -4,7 +4,7 @@ import { QuizSetup } from "@/components/quiz/QuizSetup";
 
 export const metadata: Metadata = {
   title: "Unbegrenzte Geografie-Quizze",
-  description: "Flaggen, Hauptstädte, Umrisse, Karten-Quiz und „Alle nennen“ – für die Welt, alle Kontinente, Bundesländer, Kantone und US-Staaten.",
+  description: "Flaggen, Hauptstädte, Umrisse, Karten-Quiz und „Alle nennen“ – für die Welt, alle Kontinente, den Nahen Osten, Bundesländer, Kantone, US-Staaten und syrische Gouvernements.",
 };
 
 export default function QuizPage() {

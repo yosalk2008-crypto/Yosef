@@ -19,18 +19,22 @@ export type RegionKey =
   | "nordamerika"
   | "suedamerika"
   | "ozeanien"
+  | "nahost"
   | "usa"
   | "deutschland"
   | "schweiz"
-  | "oesterreich";
+  | "oesterreich"
+  | "syrien";
 
 export type Region = {
   key: RegionKey;
   label: string;
-  shapes: "world" | "us" | "de" | "ch" | "at";
+  shapes: "world" | "us" | "de" | "ch" | "at" | "sy";
   kind: "countries" | "states";
   /** Minutes for "Alle nennen" */
   minutes: number;
+  /** Capitals mostly share the region's name, so a capitals quiz would be trivial */
+  noCapitals?: boolean;
 };
 
 export const REGIONS: Region[] = [
@@ -41,10 +45,12 @@ export const REGIONS: Region[] = [
   { key: "nordamerika", label: "Nord- & Mittelamerika", shapes: "world", kind: "countries", minutes: 4 },
   { key: "suedamerika", label: "Südamerika", shapes: "world", kind: "countries", minutes: 2 },
   { key: "ozeanien", label: "Ozeanien", shapes: "world", kind: "countries", minutes: 2 },
+  { key: "nahost", label: "Naher Osten", shapes: "world", kind: "countries", minutes: 3 },
   { key: "usa", label: "US-Bundesstaaten", shapes: "us", kind: "states", minutes: 6 },
   { key: "deutschland", label: "Deutsche Bundesländer", shapes: "de", kind: "states", minutes: 2 },
   { key: "schweiz", label: "Schweizer Kantone", shapes: "ch", kind: "states", minutes: 3 },
   { key: "oesterreich", label: "Österreichische Bundesländer", shapes: "at", kind: "states", minutes: 2 },
+  { key: "syrien", label: "Syrische Gouvernements", shapes: "sy", kind: "states", minutes: 3, noCapitals: true },
 ];
 
 export const REGION_BY_KEY = Object.fromEntries(REGIONS.map((r) => [r.key, r])) as Record<RegionKey, Region>;
@@ -121,6 +127,27 @@ const CH: Row[] = [
   ["CH-26", "Jura", "Delsberg", [], ["Delémont"]],
 ];
 
+/** Middle East as commonly used in German: Levant, Mesopotamia, Arabian Peninsula, Iran, Turkey and Egypt. */
+export const NAHOST = ["EGY", "BHR", "IRQ", "IRN", "ISR", "JOR", "KWT", "LBN", "OMN", "PSE", "QAT", "SAU", "SYR", "TUR", "ARE", "YEM"];
+
+// geoBoundaries ISO 3166-2 codes
+const SY: Row[] = [
+  ["SY-DI", "Damaskus", "Damaskus", ["Dimaschq", "Damascus"], ["Dimaschq", "Damascus"]],
+  ["SY-RD", "Rif Dimaschq", "Damaskus", ["Rif Dimashq", "Umland von Damaskus", "Damaskus-Land", "Rural Damascus"], ["Dimaschq", "Damascus"]],
+  ["SY-HL", "Aleppo", "Aleppo", ["Halab", "Haleb"], ["Halab", "Haleb"]],
+  ["SY-HI", "Homs", "Homs", ["Hims"], ["Hims"]],
+  ["SY-HM", "Hama", "Hama", ["Hamah"], ["Hamah"]],
+  ["SY-LA", "Latakia", "Latakia", ["Lattakia", "al-Ladhiqiyya", "Ladhiqiyya"], ["Lattakia", "al-Ladhiqiyya", "Ladhiqiyya"]],
+  ["SY-TA", "Tartus", "Tartus", ["Tartous"], ["Tartous"]],
+  ["SY-ID", "Idlib", "Idlib", ["Idleb"], ["Idleb"]],
+  ["SY-RA", "ar-Raqqa", "ar-Raqqa", ["Raqqa", "Rakka", "Ar-Raqqa"], ["Raqqa", "Rakka"]],
+  ["SY-DY", "Deir ez-Zor", "Deir ez-Zor", ["Dair az-Zaur", "Deir ez Zor", "Deir-ez-Zor", "Deir Ezzor"], ["Dair az-Zaur", "Deir ez Zor", "Deir-ez-Zor", "Deir Ezzor"]],
+  ["SY-HA", "al-Hasaka", "al-Hasaka", ["Hasaka", "Al-Hasakeh", "Hasakeh"], ["Hasaka", "Hasakeh"]],
+  ["SY-DR", "Daraa", "Daraa", ["Dar'a", "Deraa"], ["Dar'a", "Deraa"]],
+  ["SY-SU", "as-Suwaida", "as-Suwaida", ["Suwaida", "Sweida", "As-Sweida"], ["Suwaida", "Sweida"]],
+  ["SY-QU", "Quneitra", "Quneitra", ["al-Qunaitira", "Kuneitra"], ["al-Qunaitira", "Madinat al-Baath", "Khan Arnabah"]],
+];
+
 // us-atlas FIPS codes
 const US: Row[] = [
   ["US-01", "Alabama", "Montgomery"],
@@ -183,8 +210,9 @@ export function entitiesFor(key: RegionKey): Entity[] {
   if (key === "deutschland") return fromRows(DE);
   if (key === "schweiz") return fromRows(CH);
   if (key === "oesterreich") return fromRows(AT);
+  if (key === "syrien") return fromRows(SY);
   const cont = CONT_OF[key];
-  return COUNTRIES.filter((c) => !cont || c.cont === cont).map((c) => ({
+  return COUNTRIES.filter((c) => (key === "nahost" ? NAHOST.includes(c.id) : !cont || c.cont === cont)).map((c) => ({
     id: c.id,
     name: c.n,
     alt: c.alt,

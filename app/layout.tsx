@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     template: "%s · Geografik",
   },
   description:
-    "Acht neue Geografie-Rätsel jeden Tag und unbegrenzte Quizze zu Flaggen, Hauptstädten, Umrissen und Karten – Welt, Kontinente, Bundesländer, Kantone und US-Staaten.",
+    "Acht neue Geografie-Rätsel jeden Tag und unbegrenzte Quizze zu Flaggen, Hauptstädten, Umrissen und Karten – Welt, Kontinente, Naher Osten, Bundesländer, Kantone, US-Staaten und syrische Gouvernements.",
   openGraph: {
     title: "Geografik – tägliche Geografie-Rätsel",
     description: "Acht neue Rätsel jeden Tag plus unbegrenzte Länder-Quizze. Kostenlos und ohne Anmeldung.",

@@ -31,7 +31,9 @@ export default function Quellen() {
           österreichische Bundesländer:{" "}
           <a href="https://github.com/ginseng666/GeoJSON-TopoJSON-Austria" rel="noopener">GeoJSON-TopoJSON-Austria</a>,
           Schweizer Kantone:{" "}
-          <a href="https://github.com/codeforgermany/click_that_hood" rel="noopener">click_that_hood</a>.
+          <a href="https://github.com/codeforgermany/click_that_hood" rel="noopener">click_that_hood</a>,
+          syrische Gouvernements:{" "}
+          <a href="https://www.geoboundaries.org/" rel="noopener">geoBoundaries</a> (CC BY 4.0).
           Flaggen: <a href="https://github.com/lipis/flag-icons" rel="noopener">flag-icons</a> (MIT).
         </p>
       </div>
