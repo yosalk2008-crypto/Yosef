@@ -32,7 +32,7 @@ export function Laenderjagd() {
   const { day, isToday, loaded, saved, persist } = useDaily<S>("laenderjagd");
   const target = useMemo(() => pickTarget(day), [day]);
   const [local, setLocal] = useState<string[] | null>(null);
-  const guesses = local ?? saved?.state?.guesses ?? [];
+  const guesses = (local ?? saved?.state?.guesses ?? []).filter((g) => BY_ID[g]);
   const won = guesses.includes(target.id);
   const over = won || guesses.length >= MAX;
   const shapes = useShapes("world");

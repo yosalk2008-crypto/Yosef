@@ -51,7 +51,7 @@ export function Grenzgang() {
   const fromB = useMemo(() => bfs(route.b), [route.b]);
   const MAX = route.d - 1 + 4;
   const [local, setLocal] = useState<string[] | null>(null);
-  const guesses = local ?? saved?.state?.guesses ?? [];
+  const guesses = (local ?? saved?.state?.guesses ?? []).filter((g) => BY_ID[g]);
   const shapes = useShapes("world");
 
   const quality = (id: string) => {

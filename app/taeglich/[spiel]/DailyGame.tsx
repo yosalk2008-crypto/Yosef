@@ -1,7 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { GameKey } from "@/lib/daily";
+import { Component, type ReactNode } from "react";
+import { clearResult, isValidDay, utcDate, type GameKey } from "@/lib/daily";
 
 const loading = () => (
   <div className="mx-auto max-w-3xl px-4 pt-10">
@@ -23,5 +24,49 @@ const MAP: Record<Exclude<GameKey, "tiefgang">, React.ComponentType> = {
 
 export function DailyGame({ game }: { game: Exclude<GameKey, "tiefgang"> }) {
   const C = MAP[game];
-  return <C />;
+  return (
+    <GameBoundary game={game}>
+      <C />
+    </GameBoundary>
+  );
+}
+
+/**
+ * If a saved game no longer fits today's puzzle (e.g. after a data update), the game would crash.
+ * Then the saved state for that day is dropped and the puzzle starts fresh instead of showing an error page.
+ */
+class GameBoundary extends Component<{ game: GameKey; children: ReactNode }, { failed: number; pending: boolean }> {
+  state = { failed: 0, pending: false };
+  static getDerivedStateFromError() {
+    return { pending: true };
+  }
+  componentDidCatch(error: unknown) {
+    console.error(error);
+    const p = new URLSearchParams(window.location.search).get("tag");
+    clearResult(isValidDay(p) ? p : utcDate(), this.props.game);
+    this.setState((s) => ({ failed: s.failed + 1, pending: false }));
+  }
+  render() {
+    if (this.state.pending) return null;
+    if (this.state.failed > 1)
+      return (
+        <div className="mx-auto max-w-xl px-4 pt-12 text-center">
+          <h1 className="text-2xl font-semibold">Das Spiel konnte nicht geladen werden</h1>
+          <p className="mt-2 text-muted">Lade die Seite neu. Wenn es weiter nicht klappt, probier ein anderes Spiel.</p>
+          <button type="button" className="btn-primary mt-5" onClick={() => window.location.reload()}>
+            Seite neu laden
+          </button>
+        </div>
+      );
+    return (
+      <div key={this.state.failed}>
+        {this.state.failed === 1 && (
+          <p className="mx-auto mt-4 max-w-3xl rounded-2xl bg-brand-soft px-4 py-3 text-[15px] font-semibold">
+            Dein gespeicherter Spielstand passte nach einem Update nicht mehr zum Rätsel und wurde zurückgesetzt.
+          </p>
+        )}
+        {this.props.children}
+      </div>
+    );
+  }
 }

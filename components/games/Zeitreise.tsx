@@ -40,7 +40,7 @@ export function Zeitreise() {
   const events = useMemo(() => plan(day), [day]);
   const shapes = useShapes("world");
   const [local, setLocal] = useState<Guess[] | null>(null);
-  const guesses = local ?? saved?.state?.guesses ?? [];
+  const guesses = (local ?? saved?.state?.guesses ?? []).filter((g) => BY_ID[g.place]);
   const round = guesses.length;
   const over = round >= ROUNDS;
   const [reveal, setReveal] = useState<number | null>(null);

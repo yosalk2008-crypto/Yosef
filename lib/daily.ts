@@ -80,6 +80,14 @@ export function saveResult(date: string, game: GameKey, r: DailyResult) {
   write(s);
 }
 
+/** Drops a saved game (e.g. when it no longer fits the puzzle after a data update). */
+export function clearResult(date: string, game: GameKey) {
+  const s = read();
+  if (!s.daily[date]?.[game]) return;
+  delete s.daily[date][game];
+  write(s);
+}
+
 export function allResults() {
   return read().daily;
 }
