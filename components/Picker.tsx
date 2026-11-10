@@ -1,5 +1,6 @@
 "use client";
 
+import { bestMatch } from "@/lib/fuzzy";
 import { useMemo, useRef, useState } from "react";
 import { norm } from "@/lib/data/countries";
 
@@ -42,6 +43,11 @@ export function Picker({
       else if (nq.length > 2 && keys.some((k) => k.includes(nq))) contains.push(o);
     }
     starts.sort((a, b) => a.label.localeCompare(b.label, "de"));
+    if (!starts.length && !contains.length && nq.length >= 4) {
+      // nothing starts with it: offer the name it is a small typo of ("Deutshcland", "Kuwait-Stadt")
+      const fz = bestMatch(q, index.filter(({ o }) => !disabled.includes(o.id)).map(({ o }) => ({ item: o, names: [o.label, ...(o.alt || [])] })));
+      if (fz) return [fz];
+    }
     return [...starts, ...contains].slice(0, 8);
   }, [q, index, disabled]);
 

@@ -28,7 +28,11 @@ export type Country = {
 
 export type Continent = "Europa" | "Asien" | "Afrika" | "Nordamerika" | "Südamerika" | "Ozeanien";
 
-export const COUNTRIES = raw as unknown as Country[];
+/** Countries left out of every game and quiz. */
+const EXCLUDED = new Set(["ISR"]);
+export const COUNTRIES = (raw as unknown as Country[])
+  .filter((c) => !EXCLUDED.has(c.id))
+  .map((c) => ({ ...c, borders: c.borders.filter((b) => !EXCLUDED.has(b)) }));
 export const BY_ID: Record<string, Country> = Object.fromEntries(COUNTRIES.map((c) => [c.id, c]));
 export const CONTINENTS: Continent[] = ["Europa", "Asien", "Afrika", "Nordamerika", "Südamerika", "Ozeanien"];
 

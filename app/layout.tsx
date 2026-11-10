@@ -3,6 +3,7 @@ import { Fredoka, Nunito } from "next/font/google";
 import { site } from "@/lib/site";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { EasterEggs } from "@/components/EasterEggs";
 import "./globals.css";
 
 const fredoka = Fredoka({ subsets: ["latin"], variable: "--font-fredoka", display: "swap", weight: ["500", "600", "700"] });
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteHeader />
         <main className="flex-1">{children}</main>
         <SiteFooter />
+        <EasterEggs />
       </body>
     </html>
   );

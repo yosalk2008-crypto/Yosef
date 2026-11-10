@@ -44,7 +44,7 @@ const RAW: [string, number, ...string[]][] = [
   ["Sukarno verkündet die Unabhängigkeit von den Niederlanden", 1945, "IDN"],
   ["Die Philippinen werden von den USA unabhängig", 1946, "PHL"],
   ["Nach Gandhis gewaltfreiem Widerstand wird das Land unabhängig – Nehru wird erster Premierminister", 1947, "IND"],
-  ["David Ben-Gurion ruft den Staat Israel aus", 1948, "ISR"],
+  ["Mahatma Gandhi wird in Neu-Delhi ermordet", 1948, "IND"],
   ["Mao Zedong ruft die Volksrepublik aus", 1949, "CHN"],
   ["Wenige Tage nach Beginn des Koreakriegs erobern nordkoreanische Truppen Seoul", 1950, "KOR"],
   ["Von Kathmandu aus aufgebrochen, erreichen Hillary und Tenzing Norgay als Erste den Gipfel des Mount Everest", 1953, "NPL"],

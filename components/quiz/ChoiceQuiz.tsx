@@ -1,5 +1,6 @@
 "use client";
 
+import { fuzzyMatch } from "@/lib/fuzzy";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flagUrl, norm } from "@/lib/data/countries";
 import type { Entity } from "@/lib/data/regions";
@@ -84,7 +85,7 @@ export function ChoiceQuiz({ typ }: { typ: QuizType }) {
 
   const submitTyped = (text: string) => {
     if (answered || !q || !text.trim()) return;
-    const ok = [q.e.capital!, ...q.e.capitalAlt].some((c) => norm(c) === norm(text));
+    const ok = fuzzyMatch(text, [q.e.capital!, ...q.e.capitalAlt]);
     setTyped({ text, ok });
     record(ok);
   };

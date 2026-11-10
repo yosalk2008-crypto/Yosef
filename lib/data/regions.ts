@@ -128,7 +128,7 @@ const CH: Row[] = [
 ];
 
 /** Middle East as commonly used in German: Levant, Mesopotamia, Arabian Peninsula, Iran, Turkey and Egypt. */
-export const NAHOST = ["EGY", "BHR", "IRQ", "IRN", "ISR", "JOR", "KWT", "LBN", "OMN", "PSE", "QAT", "SAU", "SYR", "TUR", "ARE", "YEM"];
+export const NAHOST = ["EGY", "BHR", "IRQ", "IRN", "JOR", "KWT", "LBN", "OMN", "PSE", "QAT", "SAU", "SYR", "TUR", "ARE", "YEM"];
 
 // geoBoundaries ISO 3166-2 codes
 const SY: Row[] = [

@@ -1,5 +1,6 @@
 "use client";
 
+import { bestMatch, canon } from "@/lib/fuzzy";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { norm } from "@/lib/data/countries";
@@ -22,7 +23,7 @@ export function NameAllQuiz() {
 
   const index = useMemo(() => {
     const m = new Map<string, string>();
-    for (const e of all) for (const n of [e.name, ...e.alt]) m.set(norm(n), e.id);
+    for (const e of all) for (const n of [e.name, ...e.alt]) m.set(canon(n), e.id);
     return m;
   }, [all]);
 
@@ -57,6 +58,11 @@ export function NameAllQuiz() {
   };
 
   const pending = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fuzzyFind = (v: string) =>
+    bestMatch(
+      v,
+      all.filter((e) => !found.includes(e.id)).map((e) => ({ item: e.id, names: [e.name, ...e.alt] }))
+    );
   const accept = (id: string) => {
     if (pending.current) clearTimeout(pending.current);
     setFound((f) => (f.includes(id) ? f : [...f, id]));
@@ -66,16 +72,22 @@ export function NameAllQuiz() {
   const onChange = (v: string) => {
     setText(v);
     if (pending.current) clearTimeout(pending.current);
-    const key = norm(v);
+    const key = canon(v);
     const id = index.get(key);
-    if (!id || found.includes(id)) return;
+    if (!id || found.includes(id)) {
+      // small typo ("Deutschlnad", "Kuwait" for "Kuwait-Stadt"): accept after a short pause
+      const stillTyping = [...index.keys()].some((k) => k.length > key.length && k.startsWith(key));
+      const fz = key.length >= 4 && !stillTyping ? fuzzyFind(v) : null;
+      if (fz) pending.current = setTimeout(() => accept(fz), 1500);
+      return;
+    }
     // "Niger" vs "Nigeria", "Brasil" vs "Brasilien": wait briefly if a longer name could still follow
     const longer = [...index.keys()].some((k) => k.length > key.length && k.startsWith(key) && !found.includes(index.get(k)!));
     if (!longer) accept(id);
     else pending.current = setTimeout(() => accept(id), 1200);
   };
   const onEnter = () => {
-    const id = index.get(norm(text));
+    const id = index.get(canon(text)) ?? fuzzyFind(text);
     if (id && !found.includes(id)) accept(id);
   };
 

@@ -1,3 +1,4 @@
+import { canon } from "./fuzzy";
 import { BY_ID, COUNTRIES, CONTINENTS, SUBREGION_DE, norm, type Country } from "./data/countries";
 import { BEKANNTHEIT } from "./data/bekanntheit";
 import { KATALOG, cleanAnswers } from "./data/tiefgang-katalog";
@@ -194,17 +195,17 @@ function lev(a: string, b: string) {
 export type Verdict = { ok: true; answer: Answer } | { ok: false; reason: string };
 
 export function check(q: Question, input: string): Verdict {
-  const x = norm(input);
+  const x = canon(input);
   if (!x) return { ok: false, reason: "Keine Antwort eingegeben." };
-  const exact = q.answers.find((a) => [a.name, ...a.alt].some((n) => norm(n) === x));
+  const exact = q.answers.find((a) => [a.name, ...a.alt].some((n) => canon(n) === x));
   if (exact) return { ok: true, answer: exact };
   // "Niger" must not be read as a typo of "Nigeria"
-  const exactOther = COUNTRIES.find((c) => [c.n, ...c.alt].some((n) => norm(n) === x) || (c.cap && norm(c.cap) === x));
+  const exactOther = COUNTRIES.find((c) => [c.n, ...c.alt].some((n) => canon(n) === x) || (c.cap && canon(c.cap) === x));
   if (exactOther && !q.key.startsWith("k:")) return { ok: false, reason: `„${input.trim()}“ passt nicht zu dieser Frage.` };
   let best: { a: Answer; d: number } | null = null;
   for (const a of q.answers) {
     for (const name of [a.name, ...a.alt]) {
-      const k = norm(name);
+      const k = canon(name);
       const d = lev(x, k);
       const tol = k.length <= 5 ? 1 : 2;
       if (d <= tol && (!best || d < best.d)) best = { a, d };
@@ -212,7 +213,7 @@ export function check(q: Question, input: string): Verdict {
   }
   if (best) return { ok: true, answer: best.a };
   // a real country/capital that does not fit this question?
-  const other = COUNTRIES.find((c) => [c.n, ...c.alt].some((n) => norm(n) === x) || (c.cap && norm(c.cap) === x));
+  const other = COUNTRIES.find((c) => [c.n, ...c.alt].some((n) => canon(n) === x) || (c.cap && canon(c.cap) === x));
   if (other) return { ok: false, reason: `„${input.trim()}“ passt nicht zu dieser Frage.` };
   return { ok: false, reason: `„${input.trim()}“ kennen wir nicht als gültige Antwort.` };
 }
