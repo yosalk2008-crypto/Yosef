@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { dayNumber, msUntilNextDay } from "@/lib/daily";
+import { dayNumber, msUntilNextDay, utcDate } from "@/lib/daily";
 import { useDaily } from "@/lib/useDaily";
+import { LeaderboardJoin } from "../LeaderboardJoin";
 import { MAX_PTS, ROUNDS, SECONDS, check, dailyQuestions, emojiFor, meters, randomQuestions, tierOf, type Question } from "@/lib/tiefgang";
 import { AnswerExplorer } from "./AnswerExplorer";
 import { Creature } from "./Creatures";
@@ -345,7 +346,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
               </div>
             )}
 
-            {phase === "done" && <Done results={results} questions={questions} mode={mode} share={daily.saved?.share} onRestart={restart} totalM={totalM} />}
+            {phase === "done" && <Done results={results} questions={questions} mode={mode} isToday={daily.isToday} share={daily.saved?.share} onRestart={restart} totalM={totalM} />}
         </div>
       </div>
     </div>
@@ -367,7 +368,7 @@ function Timer({ left }: { left: number }) {
   );
 }
 
-function Done({ results, questions, mode, share, onRestart, totalM }: { results: Result[]; questions: Question[]; mode: string; share?: string; onRestart: () => void; totalM: number }) {
+function Done({ results, questions, mode, isToday, share, onRestart, totalM }: { results: Result[]; questions: Question[]; mode: string; isToday: boolean; share?: string; onRestart: () => void; totalM: number }) {
   const [copied, setCopied] = useState(false);
   const [left, setLeft] = useState("");
   useEffect(() => {
@@ -446,6 +447,7 @@ function Done({ results, questions, mode, share, onRestart, totalM }: { results:
         </Link>
       </div>
       {mode === "daily" && <p className="mt-4 text-sm text-ink/60">Neue Fragen in {left} Stunden.</p>}
+      {mode === "daily" && <LeaderboardJoin day={utcDate()} game="tiefgang" isToday={isToday} />}
     </div>
   );
 }

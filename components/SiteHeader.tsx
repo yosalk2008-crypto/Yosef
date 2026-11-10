@@ -86,6 +86,9 @@ export function SiteHeader() {
               ))}
             </div>
             <div className="mt-6 grid gap-2">
+              <Link href="/bestenliste" className="btn-ghost justify-start">
+                Bestenliste
+              </Link>
               <Link href="/archiv" className="btn-ghost justify-start">
                 Archiv – alle früheren Rätsel
               </Link>

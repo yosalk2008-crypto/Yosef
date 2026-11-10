@@ -1,8 +1,9 @@
 "use client";
 
+import { LeaderboardJoin } from "./LeaderboardJoin";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { dayNumber, formatDay, msUntilNextDay, type GameKey } from "@/lib/daily";
+import { dayNumber, formatDay, msUntilNextDay, utcDate, type GameKey } from "@/lib/daily";
 import { GAME_BY_KEY, GAMES } from "@/lib/games";
 import { Icon } from "./Icon";
 import { GameArt } from "./GameArt";
@@ -135,6 +136,7 @@ export function ResultCard({
         </Link>
       </div>
       {isToday && <p className="mt-4 text-sm text-muted">Nächstes Rätsel in {left}</p>}
+      <LeaderboardJoin day={utcDate()} game={current} isToday={isToday} />
       <div className="mt-5 border-t-2 border-line pt-4">
         <p className="mb-2 text-sm font-semibold">Weiterspielen</p>
         <div className="flex flex-wrap gap-2">

@@ -11,7 +11,7 @@ export default function Home() {
         <DailyBoard />
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 pt-6">
+      <section className="mx-auto grid max-w-6xl gap-5 px-4 pt-6 lg:grid-cols-[2fr_1fr]">
         <Link
           href="/tiefgang"
           className="chunk relative flex flex-col items-start gap-4 overflow-hidden px-6 py-6 text-white sm:flex-row sm:items-center sm:justify-between sm:px-8"
@@ -27,6 +27,21 @@ export default function Home() {
             </span>
           </span>
           <span className="relative btn-primary bg-[#f3d272] text-ink shadow-[0_4px_0_#b8962f] hover:bg-[#f7dc8a]">Jetzt abtauchen</span>
+        </Link>
+        <Link href="/bestenliste" className="chunk flex items-center justify-between gap-4 px-6 py-6" style={{ background: "#f3d272", ["--edge" as string]: "#c9a43c" }}>
+          <span>
+            <span className="block font-display text-3xl font-semibold">Bestenliste</span>
+            <span className="mt-1 block text-lg font-semibold text-ink/75">Wer hat heute die meisten Punkte?</span>
+          </span>
+          <svg viewBox="0 0 64 56" className="h-16 w-20 shrink-0" aria-hidden="true">
+            <rect x="22" y="14" width="20" height="40" rx="3" fill="#fff" stroke="#2c2a35" strokeWidth="3" />
+            <rect x="3" y="26" width="19" height="28" rx="3" fill="#fff" stroke="#2c2a35" strokeWidth="3" />
+            <rect x="42" y="34" width="19" height="20" rx="3" fill="#fff" stroke="#2c2a35" strokeWidth="3" />
+            <text x="32" y="38" textAnchor="middle" fontSize="16" fontWeight="700" fill="#2c2a35">1</text>
+            <text x="12.5" y="46" textAnchor="middle" fontSize="13" fontWeight="700" fill="#2c2a35">2</text>
+            <text x="51.5" y="50" textAnchor="middle" fontSize="12" fontWeight="700" fill="#2c2a35">3</text>
+            <path d="M32 2l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" fill="#ee8a2f" stroke="#2c2a35" strokeWidth="2" strokeLinejoin="round" />
+          </svg>
         </Link>
       </section>
 

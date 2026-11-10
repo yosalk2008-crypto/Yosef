@@ -33,11 +33,31 @@ export default function Datenschutz() {
       <div>
         <h2>3. Spielstände im Browser</h2>
         <p>
-          Ihre Ergebnisse, Serien (Streaks) und Einstellungen speichern wir ausschließlich lokal in
-          Ihrem Browser (Local Storage). Diese Daten werden nicht an uns übertragen und verlassen
-          Ihr Gerät nicht. Sie sind für die Funktion der Spiele erforderlich (§ 25 Abs. 2 Nr. 2
-          TDDDG). Sie können sie jederzeit löschen, indem Sie die Website-Daten in Ihrem Browser
+          Ihre Ergebnisse, Serien (Streaks) und Einstellungen speichern wir lokal in Ihrem Browser
+          (Local Storage). Sie sind für die Funktion der Spiele erforderlich (§ 25 Abs. 2 Nr. 2
+          TDDDG). Solange Sie nicht an der Bestenliste teilnehmen, verlassen diese Daten Ihr Gerät
+          nicht. Sie können sie jederzeit löschen, indem Sie die Website-Daten in Ihrem Browser
           entfernen.
+        </p>
+      </div>
+      <div>
+        <h2>3a. Bestenliste</h2>
+        <p>
+          Die Teilnahme an der Bestenliste ist freiwillig. Erst wenn Sie einen Namen eintragen,
+          übermitteln wir für jedes abgeschlossene Tagesrätsel den gewählten Namen, das Datum, das
+          Spiel, Ihre Punktzahl sowie eine zufällig erzeugte Spieler-Kennung (sie wird in Ihrem
+          Browser gespeichert und enthält keine persönlichen Angaben). Name und Punkte sind für
+          alle Besucher öffentlich sichtbar; wählen Sie daher bitte einen Spitznamen statt Ihres
+          vollständigen Namens. Rechtsgrundlage ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a
+          DSGVO), die Sie jederzeit widerrufen können, indem Sie uns kontaktieren; wir löschen
+          dann Ihre Einträge.
+        </p>
+        <p>
+          Die Daten werden beim Datenbankdienst Supabase (Supabase Inc.)
+          auf Servern in Frankfurt am Main (EU) gespeichert. Mit Supabase besteht ein Vertrag zur
+          Auftragsverarbeitung; für etwaige Zugriffe aus Drittländern gelten die
+          Standardvertragsklauseln der EU-Kommission. Beim Abruf werden technisch notwendig Ihre
+          IP-Adresse und Browserdaten an Supabase übertragen.
         </p>
       </div>
       <div>
