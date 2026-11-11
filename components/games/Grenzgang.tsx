@@ -70,7 +70,8 @@ export function Grenzgang() {
     const path: string[] = [];
     let cur = route.b;
     while (cur !== route.a) {
-      const prev = BY_ID[cur].borders.find((n) => fromA[n] === fromA[cur] - 1)!;
+      const prev = BY_ID[cur].borders.find((n) => fromA[n] === fromA[cur] - 1);
+      if (!prev) break; // should not happen with symmetric borders – never crash the game
       if (prev !== route.a) path.unshift(prev);
       cur = prev;
     }

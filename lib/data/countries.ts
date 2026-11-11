@@ -30,9 +30,10 @@ export type Continent = "Europa" | "Asien" | "Afrika" | "Nordamerika" | "Südame
 
 /** Countries left out of every game and quiz. */
 const EXCLUDED = new Set(["ISR"]);
-export const COUNTRIES = (raw as unknown as Country[])
-  .filter((c) => !EXCLUDED.has(c.id))
-  .map((c) => ({ ...c, borders: c.borders.filter((b) => !EXCLUDED.has(b)) }));
+const RAW = (raw as unknown as Country[]).filter((c) => !EXCLUDED.has(c.id));
+const RAW_BORDERS = new Map(RAW.map((c) => [c.id, new Set(c.borders)]));
+/** Borders only count if both countries list each other (the source data has Sri Lanka → India one-way). */
+export const COUNTRIES = RAW.map((c) => ({ ...c, borders: c.borders.filter((b) => !EXCLUDED.has(b) && RAW_BORDERS.get(b)?.has(c.id)) }));
 export const BY_ID: Record<string, Country> = Object.fromEntries(COUNTRIES.map((c) => [c.id, c]));
 export const CONTINENTS: Continent[] = ["Europa", "Asien", "Afrika", "Nordamerika", "Südamerika", "Ozeanien"];
 
