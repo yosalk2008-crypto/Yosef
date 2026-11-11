@@ -91,8 +91,8 @@ export default function Datenschutz() {
       <div>
         <h2>6. Cookies</h2>
         <p>
-          Diese Website verwendet keine Cookies und setzt keine Analyse-, Werbe- oder
-          Tracking-Tools ein.
+          Diese Website verwendet keine Cookies und keine Werbe- oder Tracking-Tools. Die
+          cookiefreie Reichweitenmessung ist unter Punkt 3a beschrieben.
         </p>
       </div>
       <div>
