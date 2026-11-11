@@ -77,6 +77,16 @@ export function SiteHeader() {
               Tiefgang
               <span className="rounded-full bg-[#f3d272] px-2.5 py-0.5 text-sm text-ink">Neu</span>
             </Link>
+            <a
+              href="https://istdaskosher.vercel.app"
+              target="_blank"
+              rel="noopener"
+              className="chunk mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white"
+              style={{ background: "linear-gradient(160deg, #1f4fd1, #0a1630)", ["--edge" as string]: "#050c1f" }}
+            >
+              Ist das koscher?
+              <span className="rounded-full bg-white px-2.5 py-0.5 text-sm text-ink">Neu</span>
+            </a>
             <h2 className="mb-2 mt-6 text-lg font-semibold">Quiz nach Region</h2>
             <div className="flex flex-wrap gap-2">
               {REGIONS.map((r) => (
