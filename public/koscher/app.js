@@ -56,7 +56,7 @@ window.mountKosher = function (app) {
           </div>
           <div class="stage">
             <div class="disc" aria-hidden="true"></div>
-            <img class="figur" src="/koscher/figur.webp" alt="" width="429" height="600" />
+            <img class="figur" src="/koscher/figur.webp?v=2" alt="" width="521" height="700" />
             <div class="probe">
               <small>${esc(cat)}</small>
               <p>${esc(item)}</p>
