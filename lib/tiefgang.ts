@@ -135,6 +135,47 @@ const TEMPLATES: Template[] = [
   { key: "big", make: () => ({ key: "big", text: "Nenne ein Land, das größer ist als 1 Million km².", hint: "Deutschland hat etwa 357.000 km².", answers: countryAnswers(COUNTRIES.filter((c) => c.area > 1e6)) }) },
 ];
 
+/** Fixed country sets: rarity comes from the AI fame ratings, names and spellings from the country data. */
+const SETS: { key: string; text: string; hint: string; ids: string[] }[] = [
+  { key: "ostsee", text: "Nenne ein Land, das an die Ostsee grenzt.", hint: "Alle Anrainerstaaten der Ostsee.", ids: ["DEU", "DNK", "SWE", "FIN", "RUS", "EST", "LVA", "LTU", "POL"] },
+  { key: "mittelmeer", text: "Nenne ein Land mit Küste am Mittelmeer.", hint: "Auch Inselstaaten im Mittelmeer zählen.", ids: ["ESP", "FRA", "MCO", "ITA", "MLT", "SVN", "HRV", "BIH", "MNE", "ALB", "GRC", "TUR", "CYP", "SYR", "LBN", "PSE", "EGY", "LBY", "TUN", "DZA", "MAR"] },
+  { key: "schwarzes-meer", text: "Nenne ein Land am Schwarzen Meer.", hint: "Alle Länder mit Küste am Schwarzen Meer.", ids: ["TUR", "BGR", "ROU", "UKR", "RUS", "GEO"] },
+  { key: "donau", text: "Nenne ein Land, durch das die Donau fließt.", hint: "Auch Länder, an deren Grenze sie entlangfließt.", ids: ["DEU", "AUT", "SVK", "HUN", "HRV", "SRB", "BGR", "ROU", "MDA", "UKR"] },
+  { key: "alpen", text: "Nenne ein Land mit Anteil an den Alpen.", hint: "Die acht Alpenstaaten.", ids: ["FRA", "MCO", "ITA", "CHE", "LIE", "AUT", "DEU", "SVN"] },
+  { key: "aequator", text: "Nenne ein Land, durch das der Äquator verläuft.", hint: "Land oder Hoheitsgewässer – 13 Staaten.", ids: ["ECU", "COL", "BRA", "STP", "GAB", "COG", "COD", "UGA", "KEN", "SOM", "MDV", "IDN", "KIR"] },
+  { key: "spanisch", text: "Nenne ein Land mit Spanisch als Amtssprache.", hint: "Staaten, in denen Spanisch (Mit-)Amtssprache ist.", ids: ["ESP", "MEX", "GTM", "HND", "SLV", "NIC", "CRI", "PAN", "CUB", "DOM", "COL", "VEN", "ECU", "PER", "BOL", "CHL", "ARG", "PRY", "URY", "GNQ"] },
+  { key: "portugiesisch", text: "Nenne ein Land mit Portugiesisch als Amtssprache.", hint: "Die portugiesischsprachigen Staaten.", ids: ["PRT", "BRA", "AGO", "MOZ", "CPV", "GNB", "STP", "TLS", "GNQ"] },
+  { key: "arabisch", text: "Nenne ein Land mit Arabisch als Amtssprache.", hint: "Staaten, in denen Arabisch (Mit-)Amtssprache ist.", ids: ["DZA", "BHR", "COM", "DJI", "EGY", "IRQ", "JOR", "KWT", "LBN", "LBY", "MRT", "MAR", "OMN", "PSE", "QAT", "SAU", "SOM", "SDN", "SYR", "TUN", "ARE", "YEM", "TCD"] },
+  { key: "deutsch", text: "Nenne ein Land mit Deutsch als Amtssprache.", hint: "Landesweite Amtssprache – Regionen wie Südtirol zählen nicht.", ids: ["DEU", "AUT", "CHE", "LIE", "LUX", "BEL"] },
+  { key: "euro", text: "Nenne ein Land, in dem man mit dem Euro bezahlt.", hint: "Euro-Länder und Staaten, die den Euro offiziell nutzen.", ids: ["AUT", "BEL", "HRV", "CYP", "EST", "FIN", "FRA", "DEU", "GRC", "IRL", "ITA", "LVA", "LTU", "LUX", "MLT", "NLD", "PRT", "SVK", "SVN", "ESP", "BGR", "AND", "MCO", "SMR", "VAT", "MNE"] },
+  { key: "eu", text: "Nenne ein Mitgliedsland der Europäischen Union.", hint: "Die 27 EU-Staaten.", ids: ["AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST", "FIN", "FRA", "DEU", "GRC", "HUN", "IRL", "ITA", "LVA", "LTU", "LUX", "MLT", "NLD", "POL", "PRT", "ROU", "SVK", "SVN", "ESP", "SWE"] },
+  { key: "g7", text: "Nenne ein Land der G7.", hint: "Die sieben großen Industrienationen.", ids: ["USA", "JPN", "DEU", "GBR", "FRA", "ITA", "CAN"] },
+  { key: "monarchie", text: "Nenne ein Land mit einem König, Kaiser, Sultan, Emir oder Fürsten an der Spitze.", hint: "Auch Länder mit dem britischen König als Staatsoberhaupt zählen.", ids: ["GBR", "ESP", "NLD", "BEL", "LUX", "DNK", "NOR", "SWE", "MCO", "LIE", "AND", "VAT", "JPN", "THA", "KHM", "MYS", "BRN", "BTN", "SAU", "JOR", "KWT", "BHR", "QAT", "ARE", "OMN", "MAR", "SWZ", "LSO", "TON", "CAN", "AUS", "NZL", "JAM", "BHS", "BLZ", "ATG", "GRD", "KNA", "LCA", "VCT", "PNG", "SLB", "TUV"] },
+  { key: "stan", text: "Nenne ein Land, dessen Name auf „-stan“ endet.", hint: "Es zählt der deutsche Name.", ids: ["AFG", "PAK", "KAZ", "UZB", "TKM", "KGZ", "TJK"] },
+];
+for (const set of SETS)
+  TEMPLATES.push({ key: "set:" + set.key, make: () => ({ key: "set:" + set.key, text: set.text, hint: set.hint, answers: countryAnswers(set.ids.map((id) => BY_ID[id]).filter(Boolean)) }) });
+
+TEMPLATES.push(
+  { key: "pop100", make: () => ({ key: "pop100", text: "Nenne ein Land mit mehr als 100 Millionen Einwohnern.", hint: "Grundlage sind die aktuellen Zahlen der Weltbank.", answers: countryAnswers(COUNTRIES.filter((c) => (c.pop ?? 0) > 1e8)) }) },
+  { key: "ien", make: () => ({ key: "ien", text: "Nenne ein Land, dessen deutscher Name auf „-ien“ endet.", hint: "Wie Spanien oder Indien.", answers: countryAnswers(COUNTRIES.filter((c) => /ien$/.test(c.n))) }) },
+  {
+    key: "capbig",
+    make: () => {
+      const list = COUNTRIES.filter((c) => c.cap && (c.capPop ?? 0) > 5e6);
+      return { key: "capbig", text: "Nenne eine Hauptstadt mit mehr als 5 Millionen Einwohnern.", hint: "Einwohner der Stadt selbst, nicht des Landes.", answers: scored(list.map((c) => ({ id: "cap-" + c.id, name: c.cap!, alt: c.capAlt, fame: fame(c) }))) };
+    },
+  },
+  {
+    key: "capletter",
+    make: (rng) => {
+      const L = rng.pick("ABKLMPST".split(""));
+      const list = COUNTRIES.filter((c) => c.cap && c.cap.toUpperCase().startsWith(L));
+      return { key: "capletter:" + L, text: `Nenne eine Hauptstadt, die mit „${L}“ beginnt.`, hint: "Es zählt der deutsche Name der Hauptstadt.", answers: scored(list.map((c) => ({ id: "cap-" + c.id, name: c.cap!, alt: c.capAlt, fame: fame(c) }))) };
+    },
+  }
+);
+
 const CURATED: Question[] = KATALOG.map((p) => {
   const seen = new Set<string>();
   const answers: Answer[] = [];
@@ -148,14 +189,22 @@ const CURATED: Question[] = KATALOG.map((p) => {
   return { key: "k:" + p.key, text: p.text, hint: p.hint, answers: withPerle(answers) };
 });
 
-function pickQuestions(rng: Rng, n: number): Question[] {
+/** Pools as they were before the big expansion on 12 Nov 2026 – keeps older daily puzzles (and saved games) unchanged. */
+const LEGACY_TEMPLATES = TEMPLATES.slice(0, 12);
+const LEGACY_CURATED_KEYS = ["fluss-europa", "fluss-afrika", "fluss-asien", "fluss-amerika", "gebirge", "berg-4000", "insel-mittelmeer", "meer", "wueste", "see-europa", "vulkan", "insel-deutschland", "stadt-rhein", "us-staat", "kanton", "de-grossstadt", "bundesland-hauptstadt"];
+const LEGACY_CURATED = LEGACY_CURATED_KEYS.map((k) => CURATED.find((q) => q.key === "k:" + k)!);
+const EXPANDED_FROM = "2026-11-12";
+
+function pickQuestions(rng: Rng, n: number, legacy = false): Question[] {
+  const CUR = legacy ? LEGACY_CURATED : CURATED;
+  const TPL = legacy ? LEGACY_TEMPLATES : TEMPLATES;
   // 4 curated prompts + 3 country prompts, mixed
-  const curated = rng.sample(CURATED, Math.min(4, CURATED.length));
+  const curated = rng.sample(CUR, Math.min(4, CUR.length));
   const out: Question[] = [...curated];
   const usedTypes = new Set<string>();
   let guard = 0;
   while (out.length < n && guard++ < 500) {
-    const t = rng.pick(TEMPLATES);
+    const t = rng.pick(TPL);
     if (usedTypes.has(t.key)) continue;
     const q = t.make(rng);
     if (!q || q.answers.length < 5 || out.some((o) => o.key === q.key)) continue;
@@ -168,7 +217,7 @@ function pickQuestions(rng: Rng, n: number): Question[] {
 export const ALL_CURATED = CURATED;
 
 export function dailyQuestions(day: string): Question[] {
-  return pickQuestions(makeRng(`${day}:tiefgang`), ROUNDS);
+  return pickQuestions(makeRng(`${day}:tiefgang`), ROUNDS, day < EXPANDED_FROM);
 }
 
 export function randomQuestions(n = ROUNDS): Question[] {
