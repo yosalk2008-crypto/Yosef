@@ -198,3 +198,23 @@
 .kosher h1 { font-weight: 800; }
 .kosher .chip { box-shadow: none; transform: none; font-family: inherit; }
 .kosher [tabindex="-1"]:focus, .kosher [tabindex="-1"]:focus-visible { outline: none; }
+
+/* Hero stage: figure on a light disc, question card in front */
+.kosher .stage { position: relative; min-height: 470px; }
+.kosher .disc { position: absolute; right: 0; top: 0; width: 400px; height: 400px; border-radius: 50%; background: radial-gradient(circle at 50% 40%, #f4f8ff 0%, #dbe7ff 70%); box-shadow: 0 0 0 10px rgb(255 255 255 / .06), 0 0 0 22px rgb(255 255 255 / .03); }
+.kosher .figur { position: absolute; right: 64px; top: 6px; height: 420px; width: auto; filter: drop-shadow(0 18px 24px rgb(0 0 0 / .35)); }
+.kosher .stage .probe { position: absolute; left: 0; bottom: 0; width: min(340px, 78%); min-height: 0; padding: 20px 22px 24px; }
+.kosher .stage .probe p { font-size: 28px; }
+.kosher .stage .probe .stamp { position: relative; right: auto; bottom: auto; display: inline-block; margin-top: 14px; font-size: 20px; }
+@media (max-width: 820px) {
+  .kosher .stage { max-width: 480px; }
+}
+@media (max-width: 520px) {
+  .kosher .stage { min-height: 380px; }
+  .kosher .disc { width: 280px; height: 280px; right: 0; }
+  .kosher .figur { height: 300px; right: 26px; }
+  .kosher .stage .probe { width: 74%; }
+  .kosher .stage .probe p { font-size: 24px; }
+}
+.kosher .stamp { white-space: nowrap; }
+@media (max-width: 520px) { .kosher .stage .probe .stamp { font-size: 16px; padding: 8px 12px; } }

@@ -54,10 +54,14 @@ window.mountKosher = function (app) {
               <a class="btn light" href="#/quiz">Quiz starten</a>
             </div>
           </div>
-          <div class="probe">
-            <small>${esc(cat)}</small>
-            <p>${esc(item)}</p>
-            <span id="probe-stamp"></span>
+          <div class="stage">
+            <div class="disc" aria-hidden="true"></div>
+            <img class="figur" src="/koscher/figur.webp" alt="" width="429" height="600" />
+            <div class="probe">
+              <small>${esc(cat)}</small>
+              <p>${esc(item)}</p>
+              <span id="probe-stamp"></span>
+            </div>
           </div>
         </div>`,
         "big"
