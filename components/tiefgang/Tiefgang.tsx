@@ -292,7 +292,11 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
                   className="mt-3 flex items-center gap-2"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    if (input.trim()) finish(input);
+                    // Enter while "Meintest du …?" is shown takes the suggestion, like in the other games
+                    if (sug) {
+                      setInput(sug);
+                      finish(sug);
+                    } else if (input.trim()) finish(input);
                   }}
                 >
                   <Timer left={left} />
@@ -319,6 +323,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
                 <Suggestion
                   dark
                   name={sug}
+                  hint="oder Enter"
                   onTake={() => {
                     setInput(sug);
                     setSug(null);

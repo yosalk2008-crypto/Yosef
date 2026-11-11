@@ -1,4 +1,4 @@
-import { canon } from "./fuzzy";
+import { canon, distance } from "./fuzzy";
 import { BY_ID, COUNTRIES, CONTINENTS, SUBREGION_DE, norm, type Country } from "./data/countries";
 import { BEKANNTHEIT } from "./data/bekanntheit";
 import { KATALOG, cleanAnswers } from "./data/tiefgang-katalog";
@@ -211,9 +211,11 @@ export function check(q: Question, input: string, suggested = false): Verdict {
   let best: { a: Answer; d: number } | null = null;
   for (const a of q.answers) {
     for (const name of [a.name, ...a.alt]) {
+      // compare with and without the "-Stadt" stripping, so "Basel-Statd" still finds "Basel-Stadt"
       const k = canon(name);
-      const d = lev(x, k);
-      const tol = k.length <= 5 ? 1 : 2;
+      const full = norm(name).replace(/\s+/g, "");
+      const d = Math.min(distance(x, k), distance(norm(input).replace(/\s+/g, ""), full));
+      const tol = full.length <= 5 ? 1 : 2;
       if (d <= tol && (!best || d < best.d)) best = { a, d };
     }
   }

@@ -185,7 +185,9 @@ function TypeAnswer({ onSubmit, result }: { onSubmit: (t: string, suggested: str
       className="mt-4 flex gap-2"
       onSubmit={(e) => {
         e.preventDefault();
-        setSug(onSubmit(t, sug));
+        // Enter while "Meintest du …?" is shown takes the suggestion
+        if (sug) setT(sug);
+        setSug(onSubmit(sug ?? t, sug));
       }}
     >
       <input
@@ -207,7 +209,7 @@ function TypeAnswer({ onSubmit, result }: { onSubmit: (t: string, suggested: str
         Prüfen
       </button>
     </form>
-    {sug && !result && <Suggestion name={sug} onTake={() => { setT(sug); setSug(null); inputRef.current?.focus(); }} />}
+    {sug && !result && <Suggestion name={sug} hint="oder Enter" onTake={() => { setT(sug); setSug(null); inputRef.current?.focus(); }} />}
     </>
   );
 }
