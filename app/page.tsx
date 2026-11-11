@@ -53,7 +53,7 @@ export default function Home() {
             <span className="inline-block rounded-full bg-white px-3 py-1 font-display text-sm font-semibold text-ink">Neu</span>
             <span className="mt-2 block font-display text-3xl font-semibold sm:text-4xl">Ist das koscher?</span>
             <span className="mt-1 block max-w-xl text-lg font-semibold text-white/85">
-              Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – mit Erklärungen und Fun Facts.
+              Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – über 100 Fragen mit Erklärungen.
             </span>
           </span>
           <span className="relative flex items-center gap-4">

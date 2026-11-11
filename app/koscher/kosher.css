@@ -197,3 +197,4 @@
 .kosher h1, .kosher h2, .kosher h3 { font-family: inherit; font-weight: 700; }
 .kosher h1 { font-weight: 800; }
 .kosher .chip { box-shadow: none; transform: none; font-family: inherit; }
+.kosher [tabindex="-1"]:focus, .kosher [tabindex="-1"]:focus-visible { outline: none; }

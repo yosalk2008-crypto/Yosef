@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "sw
 
 export const metadata: Metadata = {
   title: "Ist das koscher?",
-  description: "Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – mit Erklärungen, Fun Facts und Design-Ideen.",
+  description: "Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – über 100 Fragen mit Erklärungen.",
 };
 
 export default function Page() {
