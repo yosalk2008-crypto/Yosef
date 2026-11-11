@@ -4,9 +4,6 @@ import { REGIONS } from "@/lib/data/regions";
 
 const REGION_BLUE = { background: "#6aa8f0", ["--edge" as string]: "#4b88d1" };
 
-/** Sister site, linked like Tiefgang. Switch to https://istdaskosher.de once the domain is connected. */
-const KOSHER_URL = "https://istdaskosher.vercel.app";
-
 export default function Home() {
   return (
     <>
@@ -46,10 +43,8 @@ export default function Home() {
             <path d="M32 2l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" fill="#ee8a2f" stroke="#2c2a35" strokeWidth="2" strokeLinejoin="round" />
           </svg>
         </Link>
-        <a
-          href={KOSHER_URL}
-          target="_blank"
-          rel="noopener"
+        <Link
+          href="/koscher"
           className="chunk relative flex flex-col items-start gap-4 overflow-hidden px-6 py-6 text-white sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:col-span-2"
           style={{ background: "linear-gradient(160deg, #1f4fd1 0%, #13224a 55%, #0a1630 100%)", ["--edge" as string]: "#050c1f" }}
         >
@@ -67,7 +62,7 @@ export default function Home() {
             </span>
             <span className="btn-primary bg-white text-ink shadow-[0_4px_0_#9fb3df] hover:bg-[#eaf1ff]">Zum Quiz</span>
           </span>
-        </a>
+        </Link>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-10 sm:py-14">

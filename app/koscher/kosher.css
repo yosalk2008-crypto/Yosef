@@ -1,0 +1,199 @@
+/* Scoped styles for /koscher ("Ist das koscher?"), generated from istdaskosher/style.css */
+.kosher {
+  --ink: #0a1630;
+  --ink-2: #13224a;
+  --brand: #2563eb;
+  --brand-2: #38bdf8;
+  --brand-soft: #eaf1ff;
+  --surface: #f4f7fc;
+  --line: #e3e8f2;
+  --muted: #5b6577;
+  --ok: #1d7a52;
+  --no: #c8372d;
+  --maybe: #2563eb;
+  --radius: 20px;
+  color-scheme: light;
+}
+.kosher * { box-sizing: border-box; }
+
+
+
+
+
+
+
+.kosher .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; position: relative; }
+.kosher h1, .kosher h2, .kosher h3 { line-height: 1.1; letter-spacing: -0.025em; margin: 0; }
+
+
+.kosher .seal {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+  border: 2.5px solid #fff; font-weight: 800; font-size: 18px; transform: rotate(-12deg);
+  box-shadow: inset 0 0 0 2.5px var(--ink), inset 0 0 0 4px #fff;
+}
+.kosher .band { position: relative; overflow: hidden; background: var(--ink); color: #fff; padding: 112px 0 48px; }
+.kosher .band::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: linear-gradient(to right, rgb(255 255 255 / .06) 1px, transparent 1px), linear-gradient(to bottom, rgb(255 255 255 / .06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 75%);
+  mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 75%);
+}
+.kosher .glow { position: absolute; top: -220px; left: 50%; width: 820px; height: 520px; transform: translateX(-50%); border-radius: 50%; background: rgb(37 99 235 / .35); filter: blur(120px); pointer-events: none; }
+.kosher .band.big { padding: 130px 0 88px; }
+.kosher .band.short { padding-bottom: 92px; }
+.kosher .band h1 { font-size: clamp(36px, 7vw, 56px); font-weight: 800; }
+.kosher .band .lead { color: rgb(255 255 255 / .72); }
+.kosher .lead { font-size: 19px; max-width: 52ch; margin: 14px 0 0; }
+.kosher .grad { background: linear-gradient(90deg, #93c5fd, var(--brand-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.kosher .pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgb(255 255 255 / .15); background: rgb(255 255 255 / .05); border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 500; color: rgb(255 255 255 / .8); }
+.kosher .pill i { width: 6px; height: 6px; border-radius: 50%; background: var(--brand-2); }
+.kosher .wrap.lift { margin-top: -60px; }
+.kosher .btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+  border: 0; border-radius: 999px; padding: 14px 26px; font-weight: 600; font-size: 17px; text-decoration: none;
+  background: var(--brand); color: #fff; transition: background .15s, transform .08s;
+}
+.kosher .btn:hover { background: #1d4fd8; }
+.kosher .btn:active { transform: translateY(1px); }
+.kosher .btn.light { background: #fff; color: var(--ink); }
+.kosher .btn.light:hover { background: var(--brand-soft); }
+.kosher .btn.outline { background: transparent; color: #fff; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .25); }
+.kosher .btn.outline:hover { background: rgb(255 255 255 / .08); }
+.kosher .btn.ghost { background: #fff; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.kosher .btn.ghost:hover { background: var(--surface); }
+.kosher .stamp {
+  position: absolute; pointer-events: none;
+  font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1;
+  padding: 12px 18px; border: 4px solid currentColor; border-radius: 12px;
+  outline: 2px solid currentColor; outline-offset: 4px;
+  background: color-mix(in srgb, currentColor 7%, white);
+  transform: rotate(-10deg);
+  -webkit-mask-image: radial-gradient(circle at 30% 40%, #000 60%, rgba(0,0,0,.78) 61%, #000 70%);
+  mask-image: radial-gradient(circle at 30% 40%, #000 60%, rgba(0,0,0,.78) 61%, #000 70%);
+}
+.kosher .stamp.ja { color: var(--ok); }
+.kosher .stamp.nein { color: var(--no); }
+.kosher .stamp.kommt { color: var(--maybe); }
+.kosher .stamp.slam { animation: kslam .42s cubic-bezier(.2,1.6,.4,1) both; }
+@keyframes kslam {
+  0% { opacity: 0; transform: rotate(-22deg) scale(2.4); }
+  60% { opacity: 1; transform: rotate(-8deg) scale(.94); }
+  100% { opacity: 1; transform: rotate(-10deg) scale(1); }
+}
+.kosher .shake { animation: kshake .3s ease .3s; }
+@keyframes kshake { 0%,100% { transform: translate(0,0); } 30% { transform: translate(0,3px); } 60% { transform: translate(0,-1px); } }
+.kosher .hero { display: grid; gap: 40px; align-items: center; grid-template-columns: 1.1fr 0.9fr; }
+.kosher .hero h1 { font-size: clamp(48px, 9vw, 88px); font-weight: 800; letter-spacing: -0.04em; margin-top: 22px; }
+.kosher .hero .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.kosher .probe {
+  position: relative; background: #fff; color: var(--ink); border-radius: var(--radius); padding: 26px 26px 30px;
+  box-shadow: 0 30px 60px -20px rgb(0 0 0 / .55), 0 0 0 8px rgb(255 255 255 / .06);
+  min-height: 190px;
+}
+.kosher .probe small { color: var(--muted); font-weight: 600; font-size: 14px; }
+.kosher .probe p { margin: 6px 0 0; font-size: 34px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
+.kosher .probe .stamp { right: 22px; bottom: 26px; font-size: 24px; }
+.kosher .paths { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); margin-top: 40px; }
+.kosher .path { display: block; text-decoration: none; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; transition: border-color .15s, box-shadow .15s; }
+.kosher .path:hover { border-color: var(--brand); box-shadow: 0 10px 30px -14px rgb(37 99 235 / .35); }
+.kosher .path h2 { font-size: 22px; }
+.kosher .path p { margin: 8px 0 0; color: var(--muted); }
+.kosher .cats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.kosher .chip { border: 1px solid rgb(255 255 255 / .2); background: rgb(255 255 255 / .05); color: rgb(255 255 255 / .85); border-radius: 999px; padding: 7px 16px; font-weight: 600; font-size: 15px; cursor: pointer; }
+.kosher .chip:hover { background: rgb(255 255 255 / .1); }
+.kosher .chip[aria-pressed="true"] { background: #fff; color: var(--ink); border-color: #fff; }
+.kosher .quiz { max-width: 680px; margin: 0 auto; }
+.kosher .progress { display: flex; justify-content: space-between; color: rgb(255 255 255 / .7); font-weight: 500; font-size: 15px; margin: 24px 0 10px; }
+.kosher .bar { height: 6px; background: rgb(255 255 255 / .12); border-radius: 99px; overflow: hidden; }
+.kosher .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--brand), var(--brand-2)); border-radius: 99px; transition: width .3s; }
+.kosher .qcard, .kosher .result, .kosher .legal { position: relative; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 24px 50px -28px rgb(10 22 48 / .35); }
+.kosher .qcard { padding: 28px 26px 26px; }
+.kosher .qcard .kicker { color: var(--brand); font-weight: 600; font-size: 15px; }
+.kosher .qcard h2 { font-size: clamp(26px, 5.5vw, 36px); margin-top: 8px; max-width: 20ch; }
+.kosher .answers { display: grid; gap: 10px; margin-top: 24px; }
+.kosher .answer {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer;
+  border: 1px solid var(--line); background: #fff; border-radius: 14px; padding: 14px 16px; font-weight: 600; font-size: 18px;
+  transition: border-color .15s, background .15s;
+}
+.kosher .answer .dot { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; color: #fff; font-size: 16px; flex: none; }
+.kosher .answer[data-a="ja"] .dot { background: var(--ok); }
+.kosher .answer[data-a="nein"] .dot { background: var(--no); }
+.kosher .answer[data-a="kommt"] .dot { background: var(--maybe); }
+.kosher .answer:hover:not(:disabled) { border-color: var(--brand); background: var(--brand-soft); }
+.kosher .answer:disabled { cursor: default; opacity: .45; }
+.kosher .answer.picked { opacity: 1; border-color: var(--ink); }
+.kosher .answer.right { opacity: 1; border-color: var(--ok); background: #e9f6ef; }
+.kosher .verdict { position: relative; margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line); }
+.kosher .verdict strong { font-size: 21px; }
+.kosher .verdict .stamp { position: relative; display: inline-block; vertical-align: middle; margin: 0 0 4px 14px; font-size: clamp(15px, 4vw, 20px); padding: 9px 14px; }
+.kosher .verdict p { margin: 8px 0 0; }
+.kosher .verdict .src { color: var(--muted); font-size: 15px; }
+.kosher .next { margin-top: 22px; }
+.kosher .result { text-align: center; padding: 36px 22px; }
+.kosher .result .big { font-size: clamp(64px, 15vw, 104px); font-weight: 800; letter-spacing: -0.04em; line-height: 1; background: linear-gradient(90deg, var(--brand), var(--brand-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.kosher .result p { color: var(--muted); font-size: 18px; margin: 10px auto 0; max-width: 34ch; }
+.kosher .result .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 24px; }
+.kosher .review { margin-top: 20px; display: grid; gap: 8px; }
+.kosher .review div { display: flex; gap: 10px; align-items: baseline; background: var(--surface); border-radius: 12px; padding: 10px 14px; }
+.kosher .review b { flex: none; color: var(--ok); }
+.kosher .review b.x { color: var(--no); }
+.kosher .facts { columns: 2 320px; column-gap: 16px; margin-top: 36px; }
+.kosher .fact { break-inside: avoid; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px; margin: 0 0 16px; }
+.kosher .fact h2 { font-size: 21px; margin-top: 10px; }
+.kosher .fact p { margin: 8px 0 0; color: #3d4659; }
+.kosher .tag { display: inline-block; border-radius: 999px; padding: 3px 11px; font-size: 13px; font-weight: 600; }
+.kosher .tag.umstritten { background: var(--ink); color: #fff; }
+.kosher .tag.kurios { background: var(--brand-soft); color: var(--brand); }
+.kosher .designs { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); margin-top: 36px; }
+.kosher .design { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 14px 16px; }
+.kosher .design svg { display: block; width: 100%; height: auto; border-radius: 14px; background: var(--surface); }
+.kosher .design p { margin: 12px 4px 0; font-weight: 600; }
+.kosher .design small { display: block; margin: 0 4px; color: var(--muted); }
+.kosher .note { background: var(--ink); color: #fff; border-radius: var(--radius); padding: 24px 26px; margin-top: 24px; }
+.kosher .note a { color: #93c5fd; font-weight: 600; }
+.kosher .legal { max-width: 720px; padding: 28px 26px; }
+.kosher .legal h1 { font-size: 30px; }
+.kosher .legal h2 { font-size: 19px; margin-top: 22px; }
+.kosher .legal p { margin: 8px 0 0; }
+
+
+
+
+
+@media (max-width: 820px) {
+.kosher .hero { grid-template-columns: 1fr; gap: 32px; }
+}
+
+@media (max-width: 520px) {
+
+.kosher .band { padding-top: 16px; }
+.kosher .band.big { padding: 16px 0 64px; }
+.kosher .probe p { font-size: 28px; }
+.kosher .probe .stamp { position: relative; right: auto; bottom: auto; display: inline-block; margin-top: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+.kosher .stamp.slam, .kosher .shake { animation: none; }
+}
+
+.kosher { background: #fff; color: var(--ink); font-family: var(--font-inter), Inter, system-ui, sans-serif; font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased; padding-bottom: 64px; outline: none; }
+.kosher a { color: inherit; }
+.kosher button { font: inherit; color: inherit; }
+.kosher :focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; border-radius: 8px; }
+.kosher .band { padding-top: 22px; }
+.kosher .band.big { padding-top: 22px; }
+.kosher .knav { position: relative; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 34px; }
+.kosher .kbrand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; font-size: 17px; }
+.kosher .seal { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 2.5px solid #fff; font-weight: 800; font-size: 17px; transform: rotate(-12deg); box-shadow: inset 0 0 0 2.5px var(--ink), inset 0 0 0 4px #fff; }
+.kosher .klinks { display: flex; gap: 2px; flex-wrap: wrap; }
+.kosher .klinks a { text-decoration: none; font-weight: 600; font-size: 15px; padding: 7px 13px; border-radius: 999px; color: rgb(255 255 255 / .8); }
+.kosher .klinks a:hover { color: #fff; background: rgb(255 255 255 / .08); }
+.kosher .klinks a[aria-current="page"] { color: var(--ink); background: #fff; }
+.kosher .kfoot { max-width: 1080px; margin: 48px auto 0; padding: 22px 16px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 15px; }
+.kcopied { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #0a1630; color: #fff; padding: 10px 18px; border-radius: 999px; font-weight: 600; z-index: 60; }
+/* Geografik base styles that must not leak in */
+.kosher h1, .kosher h2, .kosher h3 { font-family: inherit; font-weight: 700; }
+.kosher h1 { font-weight: 800; }
+.kosher .chip { box-shadow: none; transform: none; font-family: inherit; }
