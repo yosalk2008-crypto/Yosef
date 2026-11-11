@@ -41,7 +41,19 @@ export default function Datenschutz() {
         </p>
       </div>
       <div>
-        <h2>3a. Bestenliste</h2>
+        <h2>3a. Reichweitenmessung (Vercel Web Analytics)</h2>
+        <p>
+          Um zu sehen, wie viele Besucher die Seite hat und welche Spiele beliebt sind, nutzen wir
+          Vercel Web Analytics. Dabei werden keine Cookies gesetzt und keine Daten im Browser
+          gespeichert. Erfasst werden die aufgerufene Seite, die verweisende Website, Land,
+          Gerätetyp, Betriebssystem und Browser. Besucher werden nur über einen anonymisierten
+          Hash erkannt, der jeden Tag neu gebildet wird; eine Wiedererkennung über mehrere Tage
+          oder Websites hinweg ist nicht möglich. Rechtsgrundlage ist unser berechtigtes Interesse
+          an der Verbesserung des Angebots (Art. 6 Abs. 1 lit. f DSGVO).
+        </p>
+      </div>
+      <div>
+        <h2>3b. Bestenliste</h2>
         <p>
           Die Teilnahme an der Bestenliste ist freiwillig. Erst wenn Sie einen Namen eintragen,
           übermitteln wir für jedes abgeschlossene Tagesrätsel den gewählten Namen, das Datum, das
