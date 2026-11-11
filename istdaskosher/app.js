@@ -19,6 +19,9 @@
   };
   const stamp = (a, isFood, slam = true) => `<span class="stamp ${a}${slam ? " slam" : ""}" role="img" aria-label="${stampText(a, isFood)}">${stampText(a, isFood)}</span>`;
 
+  /** Dark header band at the top of every page (like Firmengrafik), content goes below on white. */
+  const band = (inner, cls = "") => `<section class="band ${cls}"><div class="glow" aria-hidden="true"></div><div class="wrap">${inner}</div></section>`;
+
   function setNav(route) {
     document.querySelectorAll(".top nav a").forEach((a) => {
       if (a.getAttribute("href") === "#/" + route) a.setAttribute("aria-current", "page");
@@ -37,25 +40,31 @@
   ];
   function home() {
     const [cat, item, a] = PROBES[Math.floor(Math.random() * PROBES.length)];
-    app.innerHTML = `
-      <section class="hero">
-        <h1>Ist das koscher?</h1>
-        <p class="lead">Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – und erfahre, warum.</p>
-        <div class="probe">
-          <small>${esc(cat)}</small>
-          <p>${esc(item)}</p>
-          <span id="probe-stamp"></span>
-        </div>
-        <div class="actions">
-          <a class="btn" href="#/quiz">Quiz starten</a>
-          <a class="btn ghost" href="#/fakten">Fun Facts lesen</a>
-        </div>
-      </section>
-      <section class="paths" aria-label="Bereiche">
+    app.innerHTML =
+      band(
+        `<div class="hero">
+          <div>
+            <span class="pill"><i></i>Quiz · Fun Facts · Designs</span>
+            <h1>Ist das <span class="grad">koscher?</span></h1>
+            <p class="lead">Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – und erfahre, warum.</p>
+            <div class="actions">
+              <a class="btn light" href="#/quiz">Quiz starten</a>
+              <a class="btn outline" href="#/fakten">Fun Facts lesen</a>
+            </div>
+          </div>
+          <div class="probe">
+            <small>${esc(cat)}</small>
+            <p>${esc(item)}</p>
+            <span id="probe-stamp"></span>
+          </div>
+        </div>`,
+        "big"
+      ) +
+      `<div class="wrap"><section class="paths" aria-label="Bereiche">
         <a class="path" href="#/quiz"><h2>Das Quiz</h2><p>${ROUND} Fragen aus ${Q.length} – zu Essen, Schabbat, Körper und Alltag.</p></a>
-        <a class="path" href="#/fakten"><h2>Fun Facts</h2><p>Warum Cola einen gelben Deckel bekommt und Manhattan einen Draht drumherum hat.</p></a>
+        <a class="path" href="#/fakten"><h2>Fun Facts</h2><p>Umstrittenes und Kurioses: Schächtverbote, Laborfleisch, das koschere Handy.</p></a>
         <a class="path" href="#/designs"><h2>Designs</h2><p>Shirts, Tassen und Taschen mit Sprüchen, die du schon kennst.</p></a>
-      </section>`;
+      </section></div>`;
     setTimeout(() => {
       const el = document.getElementById("probe-stamp");
       if (el) el.outerHTML = stamp(a, cat === "Essen");
@@ -79,13 +88,17 @@
       ["nein", "✕", isFood ? "Nicht koscher" : "Verboten"],
       ["kommt", "≈", "Kommt drauf an"],
     ];
-    app.innerHTML = `
-      <section class="quiz">
+    app.innerHTML =
+      band(
+        `<div class="quiz"><h1>Quiz</h1>
         <div class="cats" role="group" aria-label="Thema">
           ${CATS.map((c) => `<button type="button" class="chip" data-cat="${c}" aria-pressed="${quiz.cat === c}">${c}</button>`).join("")}
         </div>
         <div class="progress"><span>Frage ${quiz.i + 1} von ${quiz.qs.length}</span><span>${quiz.picks.filter((p, k) => p === quiz.qs[k].a).length} richtig</span></div>
-        <div class="bar"><i style="width:${(quiz.i / quiz.qs.length) * 100}%"></i></div>
+        <div class="bar"><i style="width:${(quiz.i / quiz.qs.length) * 100}%"></i></div></div>`,
+        "short"
+      ) +
+      `<div class="wrap lift"><section class="quiz">
         <article class="qcard${picked ? " shake" : ""}" aria-live="polite">
           <span class="kicker">${esc(q.cat)} · Ist das ${isFood ? "koscher" : "erlaubt"}?</span>
           <h2>${esc(q.q)}</h2>
@@ -108,7 +121,7 @@
               : ""
           }
         </article>
-      </section>`;
+      </section></div>`;
     app.querySelectorAll(".chip").forEach((b) =>
       b.addEventListener("click", () => {
         newQuiz(b.dataset.cat);
@@ -141,8 +154,9 @@
           : ratio >= 0.4
             ? ["Nicht schlecht.", "Ein paar Regeln haben dich überrascht – genau dafür ist das Quiz da."]
             : ["So ein Schlamassel.", "Kein Problem: Die Erklärungen unten helfen beim nächsten Mal."];
-    app.innerHTML = `
-      <section class="quiz">
+    app.innerHTML =
+      band(`<div class="quiz"><h1>Dein Ergebnis</h1></div>`, "short") +
+      `<div class="wrap lift"><section class="quiz">
         <div class="result">
           <div class="big">${right}/${n}</div>
           <h1 style="font-size:32px;margin-top:10px">${title}</h1>
@@ -154,10 +168,10 @@
         </div>
         <div class="review">
           ${quiz.qs
-            .map((q, k) => `<div><b>${quiz.picks[k] === q.a ? "✓" : "✕"}</b><span>${esc(q.q)} – <em>${stampText(q.a, food(q))}</em></span></div>`)
+            .map((q, k) => `<div><b class="${quiz.picks[k] === q.a ? "" : "x"}">${quiz.picks[k] === q.a ? "✓" : "✕"}</b><span>${esc(q.q)} – <em>${stampText(q.a, food(q))}</em></span></div>`)
             .join("")}
         </div>
-      </section>`;
+      </section></div>`;
     document.getElementById("again").addEventListener("click", () => {
       newQuiz(quiz.cat);
       quizView();
@@ -184,10 +198,25 @@
   }
 
   // ---------- Facts ----------
+  let factFilter = "umstritten";
   function facts() {
-    app.innerHTML = `
-      <section class="page-head"><h1>Fun Facts</h1><p class="lead">Kleine Dinge über jüdische Regeln und Bräuche, die fast niemand weiß.</p></section>
-      <section class="facts">${window.FACTS.map((f) => `<article class="fact"><h2>${esc(f.t)}</h2><p>${esc(f.d)}</p></article>`).join("")}</section>`;
+    const show = factFilter === "alle" ? window.FACTS : window.FACTS.filter((f) => f.tag === factFilter);
+    app.innerHTML =
+      band(
+        `<h1>Fun Facts</h1><p class="lead">Worüber Rabbiner, Gerichte und Tierschützer streiten – und Kurioses, das fast niemand weiß.</p>
+        <div class="cats" role="group" aria-label="Filter">
+          ${[["umstritten", "Umstritten"], ["kurios", "Kurios"], ["alle", "Alle"]].map(([k, l]) => `<button type="button" class="chip" data-f="${k}" aria-pressed="${factFilter === k}">${l}</button>`).join("")}
+        </div>`
+      ) +
+      `<div class="wrap"><section class="facts">${show
+        .map((f) => `<article class="fact"><span class="tag ${f.tag}">${f.tag === "umstritten" ? "Umstritten" : "Kurios"}</span><h2>${esc(f.t)}</h2><p>${esc(f.d)}</p></article>`)
+        .join("")}</section></div>`;
+    app.querySelectorAll("[data-f]").forEach((b) =>
+      b.addEventListener("click", () => {
+        factFilter = b.dataset.f;
+        facts();
+      })
+    );
   }
 
   // ---------- Designs ----------
@@ -197,7 +226,7 @@
     const longest = Math.max(...lines.map((l) => l.length));
     const size = Math.min(28, Math.floor((d.item === "mug" ? 118 : 128) / (longest * 0.56)));
     const textBlock = (cx, cy, fill) =>
-      `<text x="${cx}" y="${cy - ((lines.length - 1) * size * 0.55)}" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="${size}" fill="${fill}">${lines
+      `<text x="${cx}" y="${cy - ((lines.length - 1) * size * 0.55)}" text-anchor="middle" font-family="Inter, sans-serif" font-weight="800" font-size="${size}" fill="${fill}">${lines
         .map((l, i) => `<tspan x="${cx}" dy="${i ? size * 1.1 : 0}">${esc(l)}</tspan>`)
         .join("")}</text>`;
     const stampBox = (cx, cy, w, h, fill) =>
@@ -225,32 +254,32 @@
   }
   function designs() {
     app.innerHTML = `
-      <section class="page-head"><h1>Designs</h1><p class="lead">Sprüche, die im Deutschen längst Alltag sind – auf Shirts, Tassen, Taschen und Stickern.</p></section>
-      <section class="designs">
+      ${band(`<h1>Designs</h1><p class="lead">Sprüche, die im Deutschen längst Alltag sind – auf Shirts, Tassen, Taschen und Stickern.</p>`)}
+      <div class="wrap"><section class="designs">
         ${window.DESIGNS.map((d) => `<figure class="design" style="margin:0">${mockup(d)}<figcaption><p>${esc(d.text.replace("\n", " "))}</p><small>${ITEM[d.item]}</small></figcaption></figure>`).join("")}
       </section>
       <div class="note">
         <strong>Bald im Shop.</strong> Die Designs gibt es bald zu kaufen. Du hast eine Idee für einen Spruch?
         <a href="mailto:${OWNER.email}?subject=Design-Idee%20f%C3%BCr%20istdaskosher.de">Schreib sie uns.</a>
-      </div>`;
+      </div></div>`;
   }
 
   // ---------- Legal ----------
   function impressum() {
-    app.innerHTML = `<section class="legal"><h1>Impressum</h1>
+    app.innerHTML = band("<h1>Impressum</h1>", "short") + `<div class="wrap lift"><section class="legal">
       <h2>Angaben gemäß § 5 DDG</h2><p><strong>${OWNER.name}</strong><br>${OWNER.street}<br>${OWNER.city}</p>
       <h2>Kontakt</h2><p>Telefon: <a href="tel:${OWNER.phoneHref}">${OWNER.phone}</a><br>E-Mail: <a href="mailto:${OWNER.email}">${OWNER.email}</a></p>
       <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2><p>${OWNER.name}, ${OWNER.street}, ${OWNER.city}</p>
       <h2>Hinweis zu den Inhalten</h2><p>Die Antworten im Quiz folgen vereinfacht der traditionellen (orthodoxen) Auslegung der Halacha. Jüdische Strömungen und Gemeinden sehen manches unterschiedlich. Die Inhalte ersetzen keine Auskunft eines Rabbiners.</p>
-      <h2>Verbraucherstreitbeilegung</h2><p>Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p></section>`;
+      <h2>Verbraucherstreitbeilegung</h2><p>Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p></section></div>`;
   }
   function datenschutz() {
-    app.innerHTML = `<section class="legal"><h1>Datenschutz</h1>
+    app.innerHTML = band("<h1>Datenschutz</h1>", "short") + `<div class="wrap lift"><section class="legal">
       <h2>1. Verantwortlicher</h2><p>${OWNER.name}, ${OWNER.street}, ${OWNER.city}, ${OWNER.email}</p>
       <h2>2. Hosting</h2><p>Die Website wird bei Vercel Inc. (440 N Barranca Ave #4133, Covina, CA 91723, USA) gehostet. Beim Aufruf werden technisch notwendige Daten wie IP-Adresse, Datum, Uhrzeit und Browser verarbeitet, um die Seite auszuliefern und vor Missbrauch zu schützen (Art. 6 Abs. 1 lit. f DSGVO). Für Übermittlungen in die USA gelten das EU-US Data Privacy Framework bzw. Standardvertragsklauseln.</p>
       <h2>3. Schriftarten</h2><p>Die Schriftart wird von Google Fonts (Google Ireland Limited) geladen. Dabei wird Ihre IP-Adresse an Google übertragen (Art. 6 Abs. 1 lit. f DSGVO).</p>
       <h2>4. Keine Cookies, kein Tracking</h2><p>Wir setzen keine Cookies und keine Analyse- oder Werbedienste ein. Ihre Quiz-Antworten werden nicht gespeichert und verlassen Ihr Gerät nicht.</p>
-      <h2>5. Ihre Rechte</h2><p>Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Widerspruch und Datenübertragbarkeit sowie das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren.</p></section>`;
+      <h2>5. Ihre Rechte</h2><p>Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Widerspruch und Datenübertragbarkeit sowie das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren.</p></section></div>`;
   }
 
   // ---------- Router ----------
