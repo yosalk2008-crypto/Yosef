@@ -32,7 +32,7 @@ export function SiteHeader() {
               <path d="M4 7h16M4 12h16M4 17h16" />
             </svg>
           </button>
-          <Link href="/" aria-label="Geografik – Startseite">
+          <Link href="/" aria-label="Koshertrivia – Startseite">
             <Logo />
           </Link>
           <div className="flex justify-end">

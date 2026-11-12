@@ -39,7 +39,7 @@ export function KosherQuiz() {
     (async () => {
       try {
         if (!window.QUESTIONS) await load("/koscher/data.js?v=5");
-        if (!window.mountKosher) await load("/koscher/app.js?v=5");
+        if (!window.mountKosher) await load("/koscher/app.js?v=6");
         if (alive && ref.current && window.mountKosher) cleanup = window.mountKosher(ref.current);
       } catch {
         if (alive) setFailed(true);

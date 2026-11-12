@@ -13,14 +13,14 @@ const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito", display: 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: "Geografik – tägliche Geografie-Rätsel & Länder-Quizze",
-    template: "%s · Geografik",
+    default: "Koshertrivia – tägliche Geografie-Rätsel & Länder-Quizze",
+    template: "%s · Koshertrivia",
   },
   description:
-    "Acht neue Geografie-Rätsel jeden Tag und unbegrenzte Quizze zu Flaggen, Hauptstädten, Umrissen und Karten – Welt, Kontinente, Naher Osten, Bundesländer, Kantone, US-Staaten und syrische Gouvernements.",
+    "Neun neue Geografie-Rätsel jeden Tag und unbegrenzte Quizze zu Flaggen, Hauptstädten, Umrissen und Karten – Welt, Kontinente, Naher Osten, Bundesländer, Kantone, US-Staaten und syrische Gouvernements.",
   openGraph: {
-    title: "Geografik – tägliche Geografie-Rätsel",
-    description: "Acht neue Rätsel jeden Tag plus unbegrenzte Länder-Quizze. Kostenlos und ohne Anmeldung.",
+    title: "Koshertrivia – tägliche Geografie-Rätsel",
+    description: "Neun neue Rätsel jeden Tag plus unbegrenzte Länder-Quizze. Kostenlos und ohne Anmeldung.",
     locale: "de_DE",
     type: "website",
   },

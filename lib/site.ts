@@ -1,5 +1,5 @@
 export const site = {
-  name: "Geografik",
+  name: "Koshertrivia",
   company: "Firmengrafik",
   url: "https://koshertrivia.de",
   email: "firmengrafik@gmail.com",

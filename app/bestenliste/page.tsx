@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Leaderboard } from "@/components/Leaderboard";
 
-export const metadata: Metadata = { title: "Bestenliste", description: "Wer hat heute die besten Ergebnisse in allen Geografik-Spielen?" };
+export const metadata: Metadata = { title: "Bestenliste", description: "Wer hat heute die besten Ergebnisse in allen Koshertrivia-Spielen?" };
 
 export default function Page() {
   return (

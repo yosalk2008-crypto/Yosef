@@ -201,7 +201,7 @@ window.mountKosher = function (app) {
 
   // ---------- Router ----------
   const ROUTES = { "": home, quiz: quizView };
-  const TITLES = { "": "Ist das koscher? – Geografik", quiz: "Quiz – Ist das koscher? – Geografik" };
+  const TITLES = { "": "Ist das koscher? – Koshertrivia", quiz: "Quiz – Ist das koscher? – Koshertrivia" };
   function route() {
     const r = location.hash.replace(/^#\/?/, "");
     const key = r in ROUTES ? r : "";
