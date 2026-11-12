@@ -112,7 +112,7 @@ export function ResultCard({
     return () => clearInterval(id);
   }, []);
   const copy = async () => {
-    const text = share + "\nfirmengrafik.de";
+    const text = share + "\nkoshertrivia.de";
     try {
       if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) await navigator.share({ text });
       else await navigator.clipboard.writeText(text);

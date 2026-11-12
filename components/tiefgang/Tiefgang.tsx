@@ -409,7 +409,7 @@ function Done({ results, questions, mode, isToday, share, onRestart, totalM }: {
   const text = share || `Tiefgang · ${nf.format(totalM)} m\n${results.map((r) => emojiFor(r.pts, r.perle)).join("")}`;
   const copy = async () => {
     try {
-      const t = text + "\nfirmengrafik.de/tiefgang";
+      const t = text + "\nkoshertrivia.de/tiefgang";
       if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) await navigator.share({ text: t });
       else await navigator.clipboard.writeText(t);
       setCopied(true);

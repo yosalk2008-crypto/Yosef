@@ -2,7 +2,7 @@
 
 /**
  * Google Maps JavaScript API (Street View + map) for "Spurensuche".
- * Browser key – it is visible to every visitor, so it must be restricted to firmengrafik.de
+ * Browser key – it is visible to every visitor, so it must be restricted to koshertrivia.de (and firmengrafik.de)
  * (HTTP referrer) and to the Maps JavaScript API in the Google Cloud Console.
  */
 const KEY = "AIzaSyAq4ReUx4PbNMVdsgcY5gecrVRP-SWS-Tk";

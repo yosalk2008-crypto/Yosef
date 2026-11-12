@@ -1,4 +1,4 @@
-/** Mounts the "Ist das koscher?" quiz into an element on firmengrafik.de/koscher. Returns a cleanup function. */
+/** Mounts the "Ist das koscher?" quiz into an element on koshertrivia.de/koscher. Returns a cleanup function. */
 window.mountKosher = function (app) {
   "use strict";
   const Q = window.QUESTIONS;

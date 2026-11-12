@@ -1,7 +1,7 @@
 export const site = {
   name: "Geografik",
   company: "Firmengrafik",
-  url: "https://firmengrafik.de",
+  url: "https://koshertrivia.de",
   email: "firmengrafik@gmail.com",
   phone: "0176 57998306",
   phoneHref: "+4917657998306",
