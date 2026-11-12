@@ -53,6 +53,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
   const [left, setLeft] = useState(SECONDS);
   const [input, setInput] = useState("");
   const [sug, setSug] = useState<string | null>(null);
+  const [shake, setShake] = useState(0);
   const deadline = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const restored = useRef(false);
@@ -167,7 +168,17 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
           setSug(v.suggest);
           return;
         }
-        r = v.ok ? { input: text, pts: v.answer.pts, answer: v.answer.name, id: v.answer.id, perle: v.answer.perle } : { input: text, pts: 0, reason: v.reason };
+        if (!v.ok) {
+          // wrong: the field shakes, the clock keeps running – try again as often as you like
+          setShake((x) => x + 1);
+          setSug(null);
+          try {
+            navigator.vibrate?.(120);
+          } catch {}
+          requestAnimationFrame(() => inputRef.current?.select());
+          return;
+        }
+        r = { input: text, pts: v.answer.pts, answer: v.answer.name, id: v.answer.id, perle: v.answer.perle };
       }
       const next = [...results, r];
       setResults(next);
@@ -213,7 +224,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
           {count}
         </div>
       )}
-      <style>{`@keyframes cd { 0% { transform: scale(1.8); opacity: 0 } 25% { transform: scale(1); opacity: 1 } 80% { opacity: 1 } 100% { transform: scale(.7); opacity: 0 } } .countdown-num { animation: cd .9s ease-out forwards } @media (prefers-reduced-motion: reduce) { .countdown-num { animation: none } }`}</style>
+      <style>{`@keyframes cd { 0% { transform: scale(1.8); opacity: 0 } 25% { transform: scale(1); opacity: 1 } 80% { opacity: 1 } 100% { transform: scale(.7); opacity: 0 } } .countdown-num { animation: cd .9s ease-out forwards } @keyframes tgshake { 0% { transform: translateX(0); box-shadow: 0 0 0 3px #d6453d } 15%,55% { transform: translateX(-9px) } 35%,75% { transform: translateX(9px) } 85% { transform: translateX(0); box-shadow: 0 0 0 3px #d6453d } 100% { box-shadow: 0 0 0 0 transparent } } .tg-shake { animation: tgshake .6s ease-in-out } @media (prefers-reduced-motion: reduce) { .countdown-num, .tg-shake { animation: none } }`}</style>
 
       {/* HUD */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-[#051a3a]/70 to-transparent px-4 pb-6 pt-3">
@@ -256,10 +267,10 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
                   <h1 className="text-3xl font-semibold">Tiefgang</h1>
                   <p className="mt-1 text-lg font-semibold text-white/85">Je seltener deine richtige Antwort, desto tiefer sinkt sie.</p>
                   <ul className="mt-4 space-y-1.5 text-[15px] leading-relaxed text-white/85">
-                    <li>{ROUNDS} Fragen, je {SECONDS} Sekunden, eine Antwort pro Frage.</li>
+                    <li>{ROUNDS} Fragen, je {SECONDS} Sekunden. Du hast beliebig viele Versuche, bis eine Antwort stimmt oder die Zeit um ist.</li>
                     <li>Bekannte Antworten bringen 10 Punkte, seltene bis zu 100. 1 Punkt = 10 Meter.</li>
                     <li>Stufen: Plankton, Schwarm, Selten, Tiefsee – und pro Frage genau eine <strong>Tiefseeperle</strong>, die seltenste Antwort.</li>
-                    <li>Falsch oder zu spät = 0 Meter. Kleine Tippfehler verzeihen wir.</li>
+                    <li>Falsche Antworten kosten nur Zeit. Ist die Zeit um, gibt es 0 Meter. Kleine Tippfehler verzeihen wir.</li>
                   </ul>
                 </>
               ) : (
@@ -301,13 +312,15 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
                 >
                   <Timer left={left} />
                   <input
+                    key={"in" + shake}
                     ref={inputRef}
                     value={input}
                     onChange={(e) => {
                       setInput(e.target.value);
                       setSug(null);
                     }}
-                    className="input min-w-0 flex-1 text-ink"
+                    className={`input min-w-0 flex-1 text-ink ${shake ? "tg-shake" : ""}`}
+                    autoFocus
                     placeholder="Eine Antwort …"
                     aria-label="Antwort"
                     autoComplete="off"
