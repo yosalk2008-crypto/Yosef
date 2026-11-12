@@ -1,4 +1,4 @@
-import { COUNTRIES, type Continent } from "./countries";
+import { ALL_COUNTRIES, type Continent } from "./countries";
 
 /** One thing that can be asked in an unlimited quiz: a country, state or canton. */
 export type Entity = {
@@ -27,7 +27,8 @@ export type RegionKey =
   | "syrien"
   | "marokko"
   | "tuerkei"
-  | "tuerkei-regionen";
+  | "tuerkei-regionen"
+  | "balkan";
 
 export type Region = {
   key: RegionKey;
@@ -53,6 +54,7 @@ export const REGIONS: Region[] = [
   { key: "suedamerika", label: "Südamerika", shapes: "world", kind: "countries", minutes: 2 },
   { key: "ozeanien", label: "Ozeanien", shapes: "world", kind: "countries", minutes: 2 },
   { key: "nahost", label: "Naher Osten", shapes: "world", kind: "countries", minutes: 3 },
+  { key: "balkan", label: "Balkan", shapes: "world", kind: "countries", minutes: 3 },
   { key: "usa", label: "US-Bundesstaaten", shapes: "us", kind: "states", minutes: 6 },
   { key: "deutschland", label: "Deutsche Bundesländer", shapes: "de", kind: "states", minutes: 2 },
   { key: "schweiz", label: "Schweizer Kantone", shapes: "ch", kind: "states", minutes: 3 },
@@ -148,7 +150,8 @@ const CH: Row[] = [
 ];
 
 /** Middle East as commonly used in German: Levant, Mesopotamia, Arabian Peninsula, Iran, Turkey and Egypt. */
-export const NAHOST = ["EGY", "BHR", "IRQ", "IRN", "JOR", "KWT", "LBN", "OMN", "PSE", "QAT", "SAU", "SYR", "TUR", "ARE", "YEM"];
+export const BALKAN = ["ALB", "BIH", "BGR", "GRC", "HRV", "XKX", "MKD", "MNE", "ROU", "SRB", "SVN"];
+export const NAHOST = ["EGY", "BHR", "IRQ", "IRN", "ISR", "JOR", "KWT", "LBN", "OMN", "PSE", "QAT", "SAU", "SYR", "TUR", "ARE", "YEM"];
 
 // geoBoundaries ISO 3166-2 codes
 const SY: Row[] = [
@@ -348,7 +351,7 @@ export function entitiesFor(key: RegionKey): Entity[] {
   if (key === "tuerkei") return fromRows(TR);
   if (key === "tuerkei-regionen") return fromRows(TRR);
   const cont = CONT_OF[key];
-  return COUNTRIES.filter((c) => (key === "nahost" ? NAHOST.includes(c.id) : !cont || c.cont === cont)).map((c) => ({
+  return ALL_COUNTRIES.filter((c) => (key === "nahost" ? NAHOST.includes(c.id) : key === "balkan" ? BALKAN.includes(c.id) : !cont || c.cont === cont)).map((c) => ({
     id: c.id,
     name: c.n,
     alt: c.alt,

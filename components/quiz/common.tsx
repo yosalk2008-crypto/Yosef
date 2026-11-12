@@ -40,6 +40,7 @@ const BOXES: Partial<Record<RegionKey, { box: Box; rotate?: number }>> = {
   suedamerika: { box: [[-82, -56], [-34, 13]], rotate: 60 },
   ozeanien: { box: [[112, -47], [188, 8]], rotate: -150 },
   nahost: { box: [[24, 11], [64, 43]], rotate: -45 },
+  balkan: { box: [[13, 34.5], [30.5, 48.5]], rotate: -20 },
 };
 
 export function mapSetup(region: Region, entities: Entity[]): { projection: MapProjection; rotate: number; fitIds: string[]; fitBox?: Box } {

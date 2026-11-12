@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BY_ID } from "@/lib/data/countries";
+import { BY_ID_ALL } from "@/lib/data/countries";
 import { EVENTS, YEAR_MAX, YEAR_MIN, type HistEvent } from "@/lib/data/events";
 import { dayNumber } from "@/lib/daily";
 import { distanceKm, useShapes } from "@/lib/geo";
@@ -26,7 +26,7 @@ function score(e: HistEvent, year: number, place: string) {
   const dy = Math.abs(year - e.year);
   const yearPts = Math.max(0, 5 - dy / 20);
   const ok = e.at.includes(place);
-  const km = ok ? 0 : Math.min(...e.at.map((id) => distanceKm(BY_ID[place].ll, BY_ID[id].ll)));
+  const km = ok ? 0 : Math.min(...e.at.map((id) => distanceKm(BY_ID_ALL[place].ll, BY_ID_ALL[id].ll)));
   const placePts = ok ? 5 : Math.max(0, 5 * (1 - km / 5000));
   return { yearPts: Math.round(yearPts * 10) / 10, placePts: Math.round(placePts * 10) / 10, km, ok, dy };
 }
@@ -40,7 +40,7 @@ export function Zeitreise() {
   const events = useMemo(() => plan(day), [day]);
   const shapes = useShapes("world");
   const [local, setLocal] = useState<Guess[] | null>(null);
-  const guesses = (local ?? saved?.state?.guesses ?? []).filter((g) => BY_ID[g.place]);
+  const guesses = (local ?? saved?.state?.guesses ?? []).filter((g) => BY_ID_ALL[g.place]);
   const round = guesses.length;
   const over = round >= ROUNDS;
   const [reveal, setReveal] = useState<number | null>(null);
@@ -114,7 +114,7 @@ export function Zeitreise() {
           {!revealed && (
             <div className="card mt-3 p-4">
               <p className="text-sm">
-                Ort: <strong>{place ? BY_ID[place].n : "noch nicht gewählt – tippe auf die Karte"}</strong>
+                Ort: <strong>{place ? BY_ID_ALL[place].n : "noch nicht gewählt – tippe auf die Karte"}</strong>
               </p>
               <div className="mt-4">
                 <div className="mb-1.5 flex items-baseline justify-between">
@@ -146,7 +146,7 @@ export function Zeitreise() {
             <div className="card pop mt-3 p-4">
               <p className="text-2xl font-display font-semibold">{(r.yearPts + r.placePts).toLocaleString("de-DE")} / 10 Punkte</p>
               <p className="mt-1 text-sm text-muted">
-                {e.year} in {e.at.map((id) => BY_ID[id].n).join(" / ")}. Du: {guesses[reveal].year} ({r.dy === 0 ? "genau" : `${r.dy} Jahre daneben`}), {BY_ID[guesses[reveal].place].n}
+                {e.year} in {e.at.map((id) => BY_ID_ALL[id].n).join(" / ")}. Du: {guesses[reveal].year} ({r.dy === 0 ? "genau" : `${r.dy} Jahre daneben`}), {BY_ID_ALL[guesses[reveal].place].n}
                 {r.ok ? " ✓" : ` (${new Intl.NumberFormat("de-DE").format(Math.round(r.km / 10) * 10)} km entfernt)`}
               </p>
               <button
@@ -174,8 +174,8 @@ export function Zeitreise() {
                     <SolutionRow
                       key={ev.text}
                       title={`„${ev.text}“`}
-                      right={`${ev.year} in ${ev.at.map((id) => BY_ID[id].n).join(" / ")}`}
-                      yours={`${g.year} (${r.dy === 0 ? "genau richtig" : `${r.dy} ${r.dy === 1 ? "Jahr" : "Jahre"} daneben`}), ${BY_ID[g.place].n}${r.ok ? " ✓" : ` (${new Intl.NumberFormat("de-DE").format(Math.round(r.km / 10) * 10)} km entfernt)`}`}
+                      right={`${ev.year} in ${ev.at.map((id) => BY_ID_ALL[id].n).join(" / ")}`}
+                      yours={`${g.year} (${r.dy === 0 ? "genau richtig" : `${r.dy} ${r.dy === 1 ? "Jahr" : "Jahre"} daneben`}), ${BY_ID_ALL[g.place].n}${r.ok ? " ✓" : ` (${new Intl.NumberFormat("de-DE").format(Math.round(r.km / 10) * 10)} km entfernt)`}`}
                       badge={{ text: `${p.toLocaleString("de-DE")} / 10`, pts: p, max: 10 }}
                     />
                   );

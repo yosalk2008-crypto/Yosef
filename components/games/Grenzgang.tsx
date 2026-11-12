@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BY_ID, COUNTRIES, flagUrl } from "@/lib/data/countries";
+import { ALL_COUNTRIES, BY_ID, BY_ID_ALL, COUNTRIES, flagUrl, type Country } from "@/lib/data/countries";
 import { dayNumber } from "@/lib/daily";
 import { useShapes } from "@/lib/geo";
 import { makeRng } from "@/lib/rng";
@@ -11,12 +11,14 @@ import { SolutionRow, Solutions } from "../Solutions";
 import { MapView } from "../MapView";
 import { Picker } from "../Picker";
 
-function bfs(from: string, allowed?: Set<string>): Record<string, number> {
+/** Distances in the border graph. Start and goal come from the game countries (BY_ID, keeps old puzzles the same),
+ * but every country – including ones never asked about – can be a step on the way (BY_ID_ALL). */
+function bfs(from: string, allowed?: Set<string>, graph: Record<string, Country> = BY_ID_ALL): Record<string, number> {
   const dist: Record<string, number> = { [from]: 0 };
   const q = [from];
   while (q.length) {
     const x = q.shift()!;
-    for (const n of BY_ID[x].borders) {
+    for (const n of graph[x].borders) {
       if (dist[n] != null) continue;
       if (allowed && !allowed.has(n)) continue;
       dist[n] = dist[x] + 1;
@@ -32,7 +34,7 @@ export function makeRoute(day: string) {
   const rng = makeRng(`${day}:grenzgang`);
   for (let i = 0; i < 1000; i++) {
     const a = rng.pick(START_POOL);
-    const d = bfs(a.id);
+    const d = bfs(a.id, undefined, BY_ID);
     const want = 4 + rng.int(3); // 3–5 countries in between
     const cand = START_POOL.filter((c) => d[c.id] === want);
     if (!cand.length) continue;
@@ -46,12 +48,14 @@ type S = { guesses: string[] };
 
 export function Grenzgang() {
   const { day, isToday, loaded, saved, persist } = useDaily<S>("grenzgang");
-  const route = useMemo(() => makeRoute(day), [day]);
-  const fromA = useMemo(() => bfs(route.a), [route.a]);
-  const fromB = useMemo(() => bfs(route.b), [route.b]);
+  const base = useMemo(() => makeRoute(day), [day]);
+  const fromA = useMemo(() => bfs(base.a), [base.a]);
+  const fromB = useMemo(() => bfs(base.b), [base.b]);
+  // shortest way over all countries (can be shorter than the one the puzzle was picked with)
+  const route = useMemo(() => ({ ...base, d: fromA[base.b] ?? base.d }), [base, fromA]);
   const MAX = route.d - 1 + 4;
   const [local, setLocal] = useState<string[] | null>(null);
-  const guesses = (local ?? saved?.state?.guesses ?? []).filter((g) => BY_ID[g]);
+  const guesses = (local ?? saved?.state?.guesses ?? []).filter((g) => BY_ID_ALL[g]);
   const shapes = useShapes("world");
 
   const quality = (id: string) => {
@@ -70,7 +74,7 @@ export function Grenzgang() {
     const path: string[] = [];
     let cur = route.b;
     while (cur !== route.a) {
-      const prev = BY_ID[cur].borders.find((n) => fromA[n] === fromA[cur] - 1);
+      const prev = BY_ID_ALL[cur].borders.find((n) => fromA[n] === fromA[cur] - 1);
       if (!prev) break; // should not happen with symmetric borders – never crash the game
       if (prev !== route.a) path.unshift(prev);
       cur = prev;
@@ -78,7 +82,7 @@ export function Grenzgang() {
     return path;
   }, [route, fromA]);
 
-  const options = useMemo(() => COUNTRIES.filter((c) => c.id !== route.a && c.id !== route.b).map((c) => ({ id: c.id, label: c.n, alt: c.alt })), [route]);
+  const options = useMemo(() => ALL_COUNTRIES.filter((c) => c.id !== route.a && c.id !== route.b).map((c) => ({ id: c.id, label: c.n, alt: c.alt })), [route]);
 
   const guess = (id: string) => {
     if (over || guesses.includes(id)) return;
@@ -93,7 +97,7 @@ export function Grenzgang() {
       score: w ? MAX - next.length + 1 : 0,
       max: MAX,
       label: w ? `${next.length} Tipps` : "nicht geschafft",
-      share: `Grenzgang #${dayNumber(day)} · ${BY_ID[route.a].n} → ${BY_ID[route.b].n}\n${w ? `${next.length} Tipps (kürzester Weg: ${route.d - 1})` : "nicht geschafft"}\n${next.map(e).join("")}`,
+      share: `Grenzgang #${dayNumber(day)} · ${BY_ID_ALL[route.a].n} → ${BY_ID_ALL[route.b].n}\n${w ? `${next.length} Tipps (kürzester Weg: ${route.d - 1})` : "nicht geschafft"}\n${next.map(e).join("")}`,
       state: { guesses: next },
     });
   };
@@ -115,7 +119,7 @@ export function Grenzgang() {
       rules={
         <>
           <p>
-            Finde einen Landweg von <strong>{BY_ID[route.a].n}</strong> nach <strong>{BY_ID[route.b].n}</strong>. Nenne dazu Länder, die dazwischen liegen – jedes muss an das nächste grenzen.
+            Finde einen Landweg von <strong>{BY_ID_ALL[route.a].n}</strong> nach <strong>{BY_ID_ALL[route.b].n}</strong>. Nenne dazu Länder, die dazwischen liegen – jedes muss an das nächste grenzen.
           </p>
           <p>
             <span className="font-semibold text-green-700">Grün</span>: liegt auf einem kürzesten Weg. <span className="font-semibold text-orange-600">Orange</span>: ein kleiner Umweg.{" "}
@@ -156,7 +160,7 @@ export function Grenzgang() {
             <div className="mt-3 flex flex-wrap gap-2">
               {guesses.map((g) => (
                 <span key={g} className={`pop rounded-full px-3 py-1.5 text-sm font-semibold text-white ${quality(g) === "on" ? "bg-green-600" : quality(g) === "near" ? "bg-orange-500" : "bg-red-600"}`}>
-                  {BY_ID[g].n}
+                  {BY_ID_ALL[g].n}
                 </span>
               ))}
             </div>
@@ -165,7 +169,7 @@ export function Grenzgang() {
             <>
               <Solutions>
                 <SolutionRow
-                  title={`Von ${BY_ID[route.a].n} nach ${BY_ID[route.b].n}`}
+                  title={`Von ${BY_ID_ALL[route.a].n} nach ${BY_ID_ALL[route.b].n}`}
                   rightLabel="Ein kürzester Weg"
                   right={
                     <span className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -174,8 +178,8 @@ export function Grenzgang() {
                           {k > 0 && <span className="text-muted">→</span>}
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2 py-0.5 text-sm font-semibold">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={flagUrl(BY_ID[id].iso2)} alt="" className="h-3.5 w-auto rounded-sm" />
-                            {BY_ID[id].n}
+                            <img src={flagUrl(BY_ID_ALL[id].iso2)} alt="" className="h-3.5 w-auto rounded-sm" />
+                            {BY_ID_ALL[id].n}
                           </span>
                         </span>
                       ))}
@@ -191,7 +195,7 @@ export function Grenzgang() {
                             const q = quality(g);
                             return (
                               <span key={g} className="rounded-full bg-white px-2.5 py-0.5 text-sm font-semibold">
-                                {q === "on" ? "🟩" : q === "near" ? "🟧" : "🟥"} {BY_ID[g].n}
+                                {q === "on" ? "🟩" : q === "near" ? "🟧" : "🟥"} {BY_ID_ALL[g].n}
                               </span>
                             );
                           })}
@@ -211,7 +215,7 @@ export function Grenzgang() {
 }
 
 function Endpoint({ id, label, right }: { id: string; label: string; right?: boolean }) {
-  const c = BY_ID[id];
+  const c = BY_ID_ALL[id];
   return (
     <div className={`flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2.5 ${right ? "items-end text-right sm:flex-row-reverse" : "items-start"}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}

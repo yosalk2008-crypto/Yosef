@@ -28,12 +28,19 @@ export type Country = {
 
 export type Continent = "Europa" | "Asien" | "Afrika" | "Nordamerika" | "Südamerika" | "Ozeanien";
 
-/** Countries left out of every game and quiz. */
+/**
+ * Countries that never come up as a question in the daily games (Länderjagd, Maßstab, Viererbande, Höher oder
+ * tiefer, Spitzenplatz, Farbecht, Zeitreise, Tiefgang). They are still drawn on every map, can be entered as a
+ * step in Grenzgang and are part of the region quizzes (ALL_COUNTRIES).
+ */
 const EXCLUDED = new Set(["ISR"]);
-const RAW = (raw as unknown as Country[]).filter((c) => !EXCLUDED.has(c.id));
-const RAW_BORDERS = new Map(RAW.map((c) => [c.id, new Set(c.borders)]));
+const RAW_ALL = raw as unknown as Country[];
+const RAW_BORDERS = new Map(RAW_ALL.map((c) => [c.id, new Set(c.borders)]));
 /** Borders only count if both countries list each other (the source data has Sri Lanka → India one-way). */
-export const COUNTRIES = RAW.map((c) => ({ ...c, borders: c.borders.filter((b) => !EXCLUDED.has(b) && RAW_BORDERS.get(b)?.has(c.id)) }));
+export const ALL_COUNTRIES: Country[] = RAW_ALL.map((c) => ({ ...c, borders: c.borders.filter((b) => RAW_BORDERS.get(b)?.has(c.id)) }));
+export const BY_ID_ALL: Record<string, Country> = Object.fromEntries(ALL_COUNTRIES.map((c) => [c.id, c]));
+/** Countries used for daily-game questions (deterministic puzzles depend on this list – do not change lightly). */
+export const COUNTRIES = ALL_COUNTRIES.filter((c) => !EXCLUDED.has(c.id)).map((c) => ({ ...c, borders: c.borders.filter((b) => !EXCLUDED.has(b)) }));
 export const BY_ID: Record<string, Country> = Object.fromEntries(COUNTRIES.map((c) => [c.id, c]));
 export const CONTINENTS: Continent[] = ["Europa", "Asien", "Afrika", "Nordamerika", "Südamerika", "Ozeanien"];
 

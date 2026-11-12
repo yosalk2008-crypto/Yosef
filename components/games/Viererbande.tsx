@@ -231,17 +231,17 @@ function Tile({ tile, fact, selected, onClick, shape }: { tile: string; fact: Fa
     content = <img src={flagUrl(c.iso2)} alt="" className="max-h-[62%] w-[80%] rounded-md object-contain shadow-sm" draggable={false} />;
     label = "Flagge";
   } else if (kind === "shape") {
-    content = shape ? <ShapeOutline shape={shape} fill={selected ? "#ffffff" : "#2c2a35"} className="h-[80%] w-[80%]" size={120} /> : null;
+    content = shape ? <ShapeOutline shape={shape} fill={selected ? "#ffffff" : "#2c2a35"} className="absolute inset-[8%] h-[84%] w-[84%]" size={120} pad={0.03} /> : null;
     label = "Umriss";
   } else if (kind === "cap") {
-    content = <span className="font-display text-[14px] font-semibold leading-tight break-words [hyphens:auto] sm:text-lg">{c.cap}</span>;
+    content = <span className="font-display text-[15px] font-bold leading-tight break-words [hyphens:auto] sm:text-xl">{c.cap}</span>;
     label = `Hauptstadt ${c.cap}`;
   } else {
     const f = factText(c, fact);
     content = (
-      <span className="leading-tight">
+      <span className="flex flex-col items-center justify-center leading-tight">
         <span className={`block text-[10px] font-bold sm:text-xs ${selected ? "text-white/75" : "text-muted"}`}>{f.label}</span>
-        <span className="block font-display text-[13px] font-semibold sm:text-lg">{f.value}</span>
+        <span className="mt-0.5 block font-display text-[14px] font-bold sm:text-xl">{f.value}</span>
       </span>
     );
     label = `${f.label} ${f.value}`;
@@ -252,7 +252,7 @@ function Tile({ tile, fact, selected, onClick, shape }: { tile: string; fact: Fa
       onClick={onClick}
       aria-pressed={selected}
       aria-label={label}
-      className={`tile-btn grid aspect-square place-items-center p-1.5 text-center sm:aspect-[4/3] ${selected ? "tile-selected" : ""}`}
+      className={`tile-btn relative flex aspect-square items-center justify-center p-1.5 text-center sm:aspect-[4/3] ${selected ? "tile-selected" : ""}`}
     >
       {content}
     </button>

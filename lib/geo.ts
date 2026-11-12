@@ -5,7 +5,7 @@ import { feature } from "topojson-client";
 import { geoArea, geoCentroid, geoDistance } from "d3-geo";
 import type { Feature, Geometry } from "geojson";
 import type { Topology, GeometryCollection } from "topojson-specification";
-import { BY_ID } from "./data/countries";
+import { BY_ID_ALL } from "./data/countries";
 
 export type ShapeKey = "world" | "us" | "de" | "ch" | "at" | "sy" | "ma" | "tr" | "trr";
 export type Shape = Feature<Geometry, { name?: string }> & { id: string };
@@ -20,8 +20,8 @@ export function loadShapes(key: ShapeKey): Promise<ShapeSet> {
       .then((topo: Topology) => {
         const objName = key === "world" ? "countries" : "regions";
         const fc = feature(topo, topo.objects[objName] as GeometryCollection) as unknown as { features: Shape[] };
-        // world map: only countries that are part of the games (e.g. Israel is left out)
-        const list = fc.features.map((f) => ({ ...f, id: String(f.id) })).filter((f) => key !== "world" || BY_ID[f.id]);
+        // world map: every country we have data for
+        const list = fc.features.map((f) => ({ ...f, id: String(f.id) })).filter((f) => key !== "world" || BY_ID_ALL[f.id]);
         return { list, byId: Object.fromEntries(list.map((f) => [f.id, f])) };
       });
   }
