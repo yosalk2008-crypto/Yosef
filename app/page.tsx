@@ -7,11 +7,27 @@ const REGION_BLUE = { background: "#6aa8f0", ["--edge" as string]: "#4b88d1" };
 export default function Home() {
   return (
     <>
-      <section className="mx-auto max-w-6xl px-4 pb-6 pt-6 sm:pt-10">
-        <DailyBoard />
-      </section>
-
-      <section className="mx-auto grid max-w-6xl gap-5 px-4 pt-6 lg:grid-cols-[2fr_1fr]">
+      <section className="mx-auto grid max-w-6xl gap-5 px-4 pt-6 sm:pt-10 lg:grid-cols-[2fr_1fr]">
+        <Link
+          href="/koscher"
+          className="chunk relative flex flex-col items-start gap-4 overflow-hidden px-6 py-7 text-white sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-9 lg:col-span-2"
+          style={{ background: "linear-gradient(160deg, #1f4fd1 0%, #13224a 55%, #0a1630 100%)", ["--edge" as string]: "#050c1f" }}
+        >
+          <span className="pointer-events-none absolute -right-4 -top-8 h-36 w-36 rounded-full border-4 border-white/10" aria-hidden="true" />
+          <span className="relative">
+            <span className="inline-block rounded-full bg-white px-3 py-1 font-display text-sm font-semibold text-ink">Neu</span>
+            <span className="mt-2 block font-display text-4xl font-semibold sm:text-5xl">Ist das koscher?</span>
+            <span className="mt-1 block max-w-xl text-lg font-semibold text-white/85">
+              Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – über 100 Fragen mit Erklärungen.
+            </span>
+          </span>
+          <span className="relative flex items-center gap-4">
+            <span className="hidden rotate-[-10deg] rounded-lg border-[3px] border-[#7fe0a8] px-3 py-1.5 font-display text-lg font-semibold uppercase tracking-wide text-[#7fe0a8] md:block" aria-hidden="true">
+              Koscher
+            </span>
+            <span className="btn-primary bg-white text-ink shadow-[0_4px_0_#9fb3df] hover:bg-[#eaf1ff]">Zum Quiz</span>
+          </span>
+        </Link>
         <Link
           href="/tiefgang"
           className="chunk relative flex flex-col items-start gap-4 overflow-hidden px-6 py-6 text-white sm:flex-row sm:items-center sm:justify-between sm:px-8"
@@ -43,26 +59,10 @@ export default function Home() {
             <path d="M32 2l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" fill="#ee8a2f" stroke="#2c2a35" strokeWidth="2" strokeLinejoin="round" />
           </svg>
         </Link>
-        <Link
-          href="/koscher"
-          className="chunk relative flex flex-col items-start gap-4 overflow-hidden px-6 py-6 text-white sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:col-span-2"
-          style={{ background: "linear-gradient(160deg, #1f4fd1 0%, #13224a 55%, #0a1630 100%)", ["--edge" as string]: "#050c1f" }}
-        >
-          <span className="pointer-events-none absolute -right-4 -top-8 h-36 w-36 rounded-full border-4 border-white/10" aria-hidden="true" />
-          <span className="relative">
-            <span className="inline-block rounded-full bg-white px-3 py-1 font-display text-sm font-semibold text-ink">Neu</span>
-            <span className="mt-2 block font-display text-3xl font-semibold sm:text-4xl">Ist das koscher?</span>
-            <span className="mt-1 block max-w-xl text-lg font-semibold text-white/85">
-              Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – über 100 Fragen mit Erklärungen.
-            </span>
-          </span>
-          <span className="relative flex items-center gap-4">
-            <span className="hidden rotate-[-10deg] rounded-lg border-[3px] border-[#7fe0a8] px-3 py-1.5 font-display text-lg font-semibold uppercase tracking-wide text-[#7fe0a8] md:block" aria-hidden="true">
-              Koscher
-            </span>
-            <span className="btn-primary bg-white text-ink shadow-[0_4px_0_#9fb3df] hover:bg-[#eaf1ff]">Zum Quiz</span>
-          </span>
-        </Link>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 pb-6 pt-10 sm:pt-14">
+        <DailyBoard />
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
