@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { QUIZ_TYPES, type QuizType } from "@/lib/games";
-import { REGIONS, entitiesFor, type RegionKey } from "@/lib/data/regions";
+import { REGIONS, entitiesFor, splitsOf, type RegionKey } from "@/lib/data/regions";
 
 const LENGTHS = [
   { v: "10", label: "10" },
@@ -38,6 +38,7 @@ export function QuizSetup() {
     if (!regions.some((r) => r.key === region)) setRegion("welt");
   }, [regions, region]);
   const count = entitiesFor(region).length;
+  const splits = splitsOf(region).filter((r) => regions.some((x) => x.key === r.key));
 
   const start = () => {
     const q = new URLSearchParams({ region });
@@ -73,12 +74,24 @@ export function QuizSetup() {
       <fieldset>
         <legend className="mb-3 text-sm font-bold text-muted">2 · Region</legend>
         <div className="flex flex-wrap gap-2">
-          {regions.map((r) => (
-            <button key={r.key} type="button" aria-pressed={region === r.key} onClick={() => setRegion(r.key)} className="chip">
-              {r.label}
-            </button>
-          ))}
+          {regions
+            .filter((r) => !r.parent)
+            .map((r) => (
+              <button key={r.key} type="button" aria-pressed={region === r.key || REGIONS.find((x) => x.key === region)?.parent === r.key} onClick={() => setRegion(r.key)} className="chip">
+                {r.label}
+              </button>
+            ))}
         </div>
+        {splits.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="text-sm font-bold text-muted">Aufteilung:</span>
+            {splits.map((r) => (
+              <button key={r.key} type="button" aria-pressed={region === r.key} onClick={() => setRegion(r.key)} className="chip">
+                {r.split}
+              </button>
+            ))}
+          </div>
+        )}
         {info.countriesOnly && <p className="mt-2 text-xs text-muted">Flaggen gibt es nur für Länder.</p>}
       </fieldset>
 

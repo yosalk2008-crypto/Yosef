@@ -73,6 +73,7 @@ export function norm(s: string) {
   return s
     .toLowerCase()
     .replace(/ß/g, "ss")
+    .replace(/ı/g, "i")
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9]+/g, " ")

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { DailyBoard } from "@/components/DailyBoard";
-import { REGIONS } from "@/lib/data/regions";
+import { MAIN_REGIONS } from "@/lib/data/regions";
 
 const REGION_BLUE = { background: "#6aa8f0", ["--edge" as string]: "#4b88d1" };
 
@@ -105,7 +105,7 @@ export default function Home() {
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
-          {REGIONS.map((r) => (
+          {MAIN_REGIONS.map((r) => (
             <Link key={r.key} href={`/quiz?region=${r.key}`} className="chunk flex flex-col items-center px-3 pb-4 pt-4 text-center" style={REGION_BLUE}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={`/thumbs/${r.key}.svg`} alt="" className="aspect-[1.6] w-full max-w-[220px] object-contain" loading="lazy" />

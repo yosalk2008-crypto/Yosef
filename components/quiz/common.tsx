@@ -75,7 +75,7 @@ export function QuizHeader({ title, region, done, total, score }: { title: strin
             <Link href="/quiz" className="hover:text-ink">
               Quizze
             </Link>{" "}
-            / {region.label}
+            / {region.split && !region.parent ? `${region.label} – ${region.split}` : region.label}
           </p>
           <h1 className="text-2xl font-display font-semibold tracking-tight sm:text-3xl">{title}</h1>
         </div>

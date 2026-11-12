@@ -11,7 +11,7 @@ const out = path.join(repo, "public/thumbs");
 fs.mkdirSync(out, { recursive: true });
 
 const ts = require("topojson-simplify");
-const Q = { world: 0.25, us: 0.02, de: 0.002, ch: 0.0005, at: 0.001, sy: 0.0005 };
+const Q = { world: 0.25, us: 0.02, de: 0.002, ch: 0.0005, at: 0.001, sy: 0.0005, ma: 0.004, tr: 0.012 };
 const load = (k) => {
   let t = JSON.parse(fs.readFileSync(path.join(repo, "public/geo", k + ".json")));
   t = ts.simplify(ts.presimplify(t), Q[k]);
@@ -36,6 +36,8 @@ const sets = {
   schweiz: { f: load("ch"), p: d3.geoMercator() },
   oesterreich: { f: load("at"), p: d3.geoMercator() },
   syrien: { f: load("sy"), p: d3.geoMercator() },
+  marokko: { f: load("ma"), p: d3.geoMercator() },
+  tuerkei: { f: load("tr"), p: d3.geoMercator() },
 };
 
 for (const [key, { f, p, box }] of Object.entries(sets)) {

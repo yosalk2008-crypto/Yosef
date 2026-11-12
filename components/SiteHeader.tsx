@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { streak, useStoreVersion } from "@/lib/daily";
 import { GAMES } from "@/lib/games";
-import { REGIONS } from "@/lib/data/regions";
+import { MAIN_REGIONS } from "@/lib/data/regions";
 import { GameArt } from "./GameArt";
 import { Logo } from "./Logo";
 
@@ -87,7 +87,7 @@ export function SiteHeader() {
             </Link>
             <h2 className="mb-2 mt-6 text-lg font-semibold">Quiz nach Region</h2>
             <div className="flex flex-wrap gap-2">
-              {REGIONS.map((r) => (
+              {MAIN_REGIONS.map((r) => (
                 <Link key={r.key} href={`/quiz?region=${r.key}`} className="chip">
                   {r.label}
                 </Link>

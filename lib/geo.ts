@@ -7,7 +7,7 @@ import type { Feature, Geometry } from "geojson";
 import type { Topology, GeometryCollection } from "topojson-specification";
 import { BY_ID } from "./data/countries";
 
-export type ShapeKey = "world" | "us" | "de" | "ch" | "at" | "sy";
+export type ShapeKey = "world" | "us" | "de" | "ch" | "at" | "sy" | "ma" | "tr" | "trr";
 export type Shape = Feature<Geometry, { name?: string }> & { id: string };
 export type ShapeSet = { list: Shape[]; byId: Record<string, Shape> };
 

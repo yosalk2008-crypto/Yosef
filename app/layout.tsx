@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     template: "%s · Koshertrivia",
   },
   description:
-    "Neun neue Geografie-Rätsel jeden Tag und unbegrenzte Quizze zu Flaggen, Hauptstädten, Umrissen und Karten – Welt, Kontinente, Naher Osten, Bundesländer, Kantone, US-Staaten und syrische Gouvernements.",
+    "Neun neue Geografie-Rätsel jeden Tag und unbegrenzte Quizze zu Flaggen, Hauptstädten, Umrissen und Karten – Welt, Kontinente, Naher Osten, Bundesländer, Kantone, US-Staaten, syrische Gouvernements, marokkanische Regionen und türkische Provinzen.",
   openGraph: {
     title: "Koshertrivia – tägliche Geografie-Rätsel",
     description: "Neun neue Rätsel jeden Tag plus unbegrenzte Länder-Quizze. Kostenlos und ohne Anmeldung.",
