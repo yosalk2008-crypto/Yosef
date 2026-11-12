@@ -122,10 +122,10 @@ export function ChoiceQuiz({ typ }: { typ: QuizType }) {
         <QuizEnd bestKey={`${typ}:${params.region.key}:${params.n}:${params.typing ? "t" : "c"}`} score={score} total={questions.length} missed={missed} onRestart={restart} />
       ) : (
         <div key={i} className="pop">
-          <div className="card grid min-h-[220px] place-items-center p-5 sm:min-h-[260px]">
+          <div className="card grid min-h-[220px] place-items-center p-5 sm:min-h-[260px]" style={typ === "flaggen" ? { background: "var(--color-surface)" } : undefined}>
             {typ === "flaggen" && q.e.iso2 && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={flagUrl(q.e.iso2)} alt="Gesuchte Flagge" className="max-h-52 w-auto max-w-full rounded-lg border border-line shadow-sm" />
+              <img src={flagUrl(q.e.iso2)} alt="Gesuchte Flagge" className="max-h-52 w-auto max-w-full rounded-lg border border-black/10 shadow-md" />
             )}
             {typ === "umrisse" && shapes?.byId[q.e.id] && <ShapeOutline shape={shapes.byId[q.e.id]} fill="#0f766e" className="h-56 w-56" size={300} label="Gesuchter Umriss" />}
             {typ === "hauptstaedte" && (
