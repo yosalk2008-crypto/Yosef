@@ -16,7 +16,9 @@ export function Archive() {
   const [sel, setSel] = useState<string | null>(null);
   const [res, setRes] = useState<ReturnType<typeof allResults>>({});
 
+  const [only, setOnly] = useState<string | null>(null);
   useEffect(() => {
+    setOnly(new URLSearchParams(window.location.search).get("spiel"));
     const t = utcDate();
     setToday(t);
     setMonth({ y: +t.slice(0, 4), m: +t.slice(5, 7) - 1 });
@@ -69,7 +71,7 @@ export function Archive() {
         <div className="grid grid-cols-7 gap-1">
           {cells.map((d, k) => {
             if (!d) return <div key={"e" + k} />;
-            const playable = d >= LAUNCH && d <= today;
+            const playable = d >= LAUNCH && d <= today && (only !== "spurensuche" || spurensucheInArchive(d, today));
             const n = doneCount(d);
             const active = sel === d;
             return (
@@ -98,18 +100,7 @@ export function Archive() {
           <ul className="mt-4 space-y-1.5">
             {GAMES.map((g) => {
               const r = res[sel]?.[g.key];
-              if (g.key === "spurensuche" && !spurensucheInArchive(sel, today))
-                return (
-                  <li key={g.key} className="flex items-center justify-between rounded-xl px-3 py-2.5 opacity-55">
-                    <span className="flex items-center gap-2.5 font-semibold">
-                      <span className="grid h-9 w-11 place-items-center rounded-xl" style={{ background: g.bg }}>
-                        <GameArt game={g.key} className="h-7 w-9" />
-                      </span>
-                      {g.title}
-                    </span>
-                    <span className="text-xs font-semibold text-muted">nur letzte 7 Tage</span>
-                  </li>
-                );
+              if (g.key === "spurensuche" && !spurensucheInArchive(sel, today)) return null;
               return (
                 <li key={g.key}>
                   <Link href={`/taeglich/${g.key}${sel === today ? "" : `?tag=${sel}`}`} className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-surface">

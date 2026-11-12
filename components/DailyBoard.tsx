@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LAUNCH, addDays, allResults, dayNumber, msUntilNextDay, useStoreVersion, utcDate, type DailyResult, type GameKey } from "@/lib/daily";
+import { LAUNCH, addDays, allResults, dayNumber, msUntilNextDay, useStoreVersion, utcDate, type DailyResult, type GameKey, SPURENSUCHE_ARCHIVE_DAYS } from "@/lib/daily";
 import { GAMES } from "@/lib/games";
 import { GameArt } from "./GameArt";
 
@@ -36,8 +36,11 @@ export function DailyBoard() {
 
   const randomDay = (game: GameKey) => {
     const t = utcDate();
-    const span = dayNumber(t) - 1;
-    const day = addDays(LAUNCH, Math.floor(Math.random() * span));
+    // Spurensuche: only the last days (each game costs Street View loads); others: any day since launch
+    const day =
+      game === "spurensuche"
+        ? addDays(t, -(1 + Math.floor(Math.random() * (SPURENSUCHE_ARCHIVE_DAYS - 1))))
+        : addDays(LAUNCH, Math.floor(Math.random() * (dayNumber(t) - 1)));
     router.push(`/taeglich/${game}?tag=${day}`);
   };
 
