@@ -7,17 +7,19 @@ const REGION_BLUE = { background: "#6aa8f0", ["--edge" as string]: "#4b88d1" };
 export default function Home() {
   return (
     <>
-      <section className="mx-auto grid max-w-6xl gap-5 px-4 pt-6 sm:pt-10 lg:grid-cols-[2fr_1fr]">
+      <section className="mx-auto grid max-w-6xl gap-4 px-4 pt-5 sm:pt-7 lg:grid-cols-[2fr_1fr]">
         <Link
           href="/koscher"
-          className="chunk relative flex flex-col items-start gap-4 overflow-hidden px-6 py-7 text-white sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-9 lg:col-span-2"
+          className="chunk relative flex items-center justify-between gap-3 overflow-hidden px-5 py-4 text-white sm:px-8 sm:py-5 lg:col-span-2"
           style={{ background: "linear-gradient(160deg, #1f4fd1 0%, #13224a 55%, #0a1630 100%)", ["--edge" as string]: "#050c1f" }}
         >
           <span className="pointer-events-none absolute -right-4 -top-8 h-36 w-36 rounded-full border-4 border-white/10" aria-hidden="true" />
           <span className="relative">
-            <span className="inline-block rounded-full bg-white px-3 py-1 font-display text-sm font-semibold text-ink">Neu</span>
-            <span className="mt-2 block font-display text-4xl font-semibold sm:text-5xl">Ist das koscher?</span>
-            <span className="mt-1 block max-w-xl text-lg font-semibold text-white/85">
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-1 font-display text-2xl font-semibold sm:text-4xl">
+              Ist das koscher?
+              <span className="hidden rounded-full bg-white px-2.5 py-0.5 text-sm text-ink sm:inline">Neu</span>
+            </span>
+            <span className="mt-1 hidden max-w-xl text-base font-semibold text-white/85 sm:block sm:text-lg">
               Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – über 100 Fragen mit Erklärungen.
             </span>
           </span>
@@ -25,19 +27,21 @@ export default function Home() {
             <span className="hidden rotate-[-10deg] rounded-lg border-[3px] border-[#7fe0a8] px-3 py-1.5 font-display text-lg font-semibold uppercase tracking-wide text-[#7fe0a8] md:block" aria-hidden="true">
               Koscher
             </span>
-            <span className="btn-primary bg-white text-ink shadow-[0_4px_0_#9fb3df] hover:bg-[#eaf1ff]">Zum Quiz</span>
+            <span className="btn-primary shrink-0 bg-white px-4 text-ink max-sm:min-h-0 max-sm:py-2 max-sm:text-sm shadow-[0_4px_0_#9fb3df] hover:bg-[#eaf1ff]">Zum Quiz</span>
           </span>
         </Link>
         <Link
           href="/halal"
-          className="chunk relative flex flex-col items-start gap-4 overflow-hidden px-6 py-6 text-white sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-7 lg:col-span-2"
+          className="chunk relative flex items-center justify-between gap-3 overflow-hidden px-5 py-4 text-white sm:px-8 sm:py-5 lg:col-span-2"
           style={{ background: "linear-gradient(160deg, #12a06d 0%, #0b3b2d 55%, #062a20 100%)", ["--edge" as string]: "#03170f" }}
         >
           <span className="pointer-events-none absolute -right-4 -top-8 h-36 w-36 rounded-full border-4 border-white/10" aria-hidden="true" />
           <span className="relative">
-            <span className="inline-block rounded-full bg-white px-3 py-1 font-display text-sm font-semibold text-ink">Neu</span>
-            <span className="mt-2 block font-display text-3xl font-semibold sm:text-4xl">Ist das halal?</span>
-            <span className="mt-1 block max-w-xl text-lg font-semibold text-white/85">
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-1 font-display text-2xl font-semibold sm:text-4xl">
+              Ist das halal?
+              <span className="hidden rounded-full bg-white px-2.5 py-0.5 text-sm text-ink sm:inline">Neu</span>
+            </span>
+            <span className="mt-1 hidden max-w-xl text-base font-semibold text-white/85 sm:block sm:text-lg">
               Vape, Sportwetten, Zinsen, Kredite: Rate, was im Islam erlaubt ist – 125 Fragen mit Quellen aus Quran, Bukhari und Muslim.
             </span>
           </span>
@@ -45,31 +49,33 @@ export default function Home() {
             <span className="hidden rotate-[-10deg] rounded-lg border-[3px] border-[#a7f3d0] px-3 py-1.5 font-display text-lg font-semibold uppercase tracking-wide text-[#a7f3d0] md:block" aria-hidden="true">
               Halal
             </span>
-            <span className="btn-primary bg-white text-ink shadow-[0_4px_0_#9fd8bf] hover:bg-[#e6f6ef]">Zum Quiz</span>
+            <span className="btn-primary shrink-0 bg-white px-4 text-ink max-sm:min-h-0 max-sm:py-2 max-sm:text-sm shadow-[0_4px_0_#9fd8bf] hover:bg-[#e6f6ef]">Zum Quiz</span>
           </span>
         </Link>
         <Link
           href="/tiefgang"
-          className="chunk relative flex flex-col items-start gap-4 overflow-hidden px-6 py-6 text-white sm:flex-row sm:items-center sm:justify-between sm:px-8"
+          className="chunk relative flex items-center justify-between gap-3 overflow-hidden px-5 py-4 text-white sm:px-8"
           style={{ background: "linear-gradient(160deg, #3f96d6 0%, #16528f 55%, #0a2656 100%)", ["--edge" as string]: "#061a3d" }}
         >
           <span className="pointer-events-none absolute -right-6 -top-6 h-32 w-32 rounded-full border-4 border-white/15" aria-hidden="true" />
           <span className="pointer-events-none absolute bottom-3 right-24 h-10 w-10 rounded-full border-[3px] border-white/20" aria-hidden="true" />
           <span className="relative">
-            <span className="inline-block rounded-full bg-[#f3d272] px-3 py-1 font-display text-sm font-semibold text-ink">Neu</span>
-            <span className="mt-2 block font-display text-3xl font-semibold sm:text-4xl">Tiefgang</span>
-            <span className="mt-1 block max-w-md text-lg font-semibold text-white/85">
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-1 font-display text-2xl font-semibold sm:text-3xl">
+              Tiefgang
+              <span className="hidden rounded-full bg-[#f3d272] px-2.5 py-0.5 text-sm text-ink sm:inline">Neu</span>
+            </span>
+            <span className="mt-1 hidden max-w-md text-base font-semibold text-white/85 sm:block sm:text-lg">
               Das Quiz der seltenen Antworten: Je unbekannter deine richtige Antwort, desto tiefer tauchst du.
             </span>
           </span>
-          <span className="relative btn-primary bg-[#f3d272] text-ink shadow-[0_4px_0_#b8962f] hover:bg-[#f7dc8a]">Jetzt abtauchen</span>
+          <span className="relative btn-primary shrink-0 bg-[#f3d272] px-4 text-ink max-sm:min-h-0 max-sm:py-2 max-sm:text-sm shadow-[0_4px_0_#b8962f] hover:bg-[#f7dc8a]"><span className="sm:hidden">Los</span><span className="hidden sm:inline">Jetzt abtauchen</span></span>
         </Link>
-        <Link href="/bestenliste" className="chunk flex items-center justify-between gap-4 px-6 py-6" style={{ background: "#f3d272", ["--edge" as string]: "#c9a43c" }}>
+        <Link href="/bestenliste" className="chunk flex items-center justify-between gap-4 px-5 py-4" style={{ background: "#f3d272", ["--edge" as string]: "#c9a43c" }}>
           <span>
-            <span className="block font-display text-3xl font-semibold">Bestenliste</span>
-            <span className="mt-1 block text-lg font-semibold text-ink/75">Wer hat heute die meisten Punkte?</span>
+            <span className="block font-display text-2xl font-semibold sm:text-3xl">Bestenliste</span>
+            <span className="mt-1 hidden text-base font-semibold text-ink/75 sm:block sm:text-lg">Wer hat heute die meisten Punkte?</span>
           </span>
-          <svg viewBox="0 0 64 56" className="h-16 w-20 shrink-0" aria-hidden="true">
+          <svg viewBox="0 0 64 56" className="h-12 w-16 shrink-0" aria-hidden="true">
             <rect x="22" y="14" width="20" height="40" rx="3" fill="#fff" stroke="#2c2a35" strokeWidth="3" />
             <rect x="3" y="26" width="19" height="28" rx="3" fill="#fff" stroke="#2c2a35" strokeWidth="3" />
             <rect x="42" y="34" width="19" height="20" rx="3" fill="#fff" stroke="#2c2a35" strokeWidth="3" />
@@ -81,7 +87,7 @@ export default function Home() {
         </Link>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 pb-6 pt-10 sm:pt-14">
+      <section className="mx-auto max-w-6xl px-4 pb-6 pt-8 sm:pt-10">
         <DailyBoard />
       </section>
 
