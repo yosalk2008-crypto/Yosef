@@ -131,3 +131,17 @@ export async function fetchBoard(scope: { day?: string; game?: GameKey | "alle" 
   if (!res.ok) throw new Error("Bestenliste nicht erreichbar");
   return (await res.json()) as Row[];
 }
+
+/**
+ * Spurensuche costs money per game (Google Street View), so a game may only start if the switch is on and today's
+ * limit is not reached (both set in Supabase, table spurensuche_config). Fails open if Supabase can't be reached.
+ */
+export async function spurensucheAllowed(isNew: boolean): Promise<boolean> {
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/rpc/spurensuche_gate`, { method: "POST", headers, body: JSON.stringify({ p_new: isNew }) });
+    if (!res.ok) return true;
+    return (await res.json()) !== false;
+  } catch {
+    return true;
+  }
+}

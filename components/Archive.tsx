@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { LAUNCH, allResults, dayNumber, formatDay, useStoreVersion, utcDate } from "@/lib/daily";
+import { LAUNCH, allResults, spurensucheInArchive, dayNumber, formatDay, useStoreVersion, utcDate } from "@/lib/daily";
 import { GAMES } from "@/lib/games";
 import { Icon } from "./Icon";
 import { GameArt } from "./GameArt";
@@ -79,13 +79,13 @@ export function Archive() {
                 disabled={!playable}
                 onClick={() => setSel(d)}
                 aria-pressed={active}
-                aria-label={`${formatDay(d)}${n ? `, ${n} von 8 gespielt` : ""}`}
+                aria-label={`${formatDay(d)}${n ? `, ${n} von ${GAMES.length} gespielt` : ""}`}
                 className={`relative aspect-square rounded-lg text-sm font-semibold transition disabled:opacity-25 ${
-                  active ? "bg-ink text-white" : n === 8 ? "bg-green-100 text-green-900" : n ? "bg-brand-soft text-ink" : "bg-surface hover:bg-line"
+                  active ? "bg-ink text-white" : n === GAMES.length ? "bg-green-100 text-green-900" : n ? "bg-brand-soft text-ink" : "bg-surface hover:bg-line"
                 }`}
               >
                 {+d.slice(8)}
-                {n > 0 && n < 8 && <span className={`absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full ${active ? "bg-white" : "bg-brand"}`} />}
+                {n > 0 && n < GAMES.length && <span className={`absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full ${active ? "bg-white" : "bg-brand"}`} />}
               </button>
             );
           })}
@@ -98,6 +98,18 @@ export function Archive() {
           <ul className="mt-4 space-y-1.5">
             {GAMES.map((g) => {
               const r = res[sel]?.[g.key];
+              if (g.key === "spurensuche" && !spurensucheInArchive(sel, today))
+                return (
+                  <li key={g.key} className="flex items-center justify-between rounded-xl px-3 py-2.5 opacity-55">
+                    <span className="flex items-center gap-2.5 font-semibold">
+                      <span className="grid h-9 w-11 place-items-center rounded-xl" style={{ background: g.bg }}>
+                        <GameArt game={g.key} className="h-7 w-9" />
+                      </span>
+                      {g.title}
+                    </span>
+                    <span className="text-xs font-semibold text-muted">nur letzte 7 Tage</span>
+                  </li>
+                );
               return (
                 <li key={g.key}>
                   <Link href={`/taeglich/${g.key}${sel === today ? "" : `?tag=${sel}`}`} className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-surface">

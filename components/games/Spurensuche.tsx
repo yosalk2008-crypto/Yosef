@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SPOTS, type Spot } from "@/lib/data/spurensuche";
-import { dayNumber } from "@/lib/daily";
+import { SPURENSUCHE_ARCHIVE_DAYS, dayNumber, spurensucheInArchive } from "@/lib/daily";
+import { spurensucheAllowed } from "@/lib/leaderboard";
 import { distanceKm } from "@/lib/geo";
 import { loadGoogleMaps } from "@/lib/gmaps";
 import { makeRng } from "@/lib/rng";
@@ -47,6 +48,7 @@ export function Spurensuche() {
   const [targets, setTargets] = useState<Target[] | null>(null);
   const [local, setLocal] = useState<[number, number][] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState<"archiv" | "wartung" | null>(null);
   const [guess, setGuess] = useState<[number, number] | null>(null);
   const [reveal, setReveal] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
@@ -74,6 +76,15 @@ export function Spurensuche() {
     let alive = true;
     (async () => {
       try {
+        if (!spurensucheInArchive(day)) {
+          if (alive) setBlocked("archiv");
+          return;
+        }
+        const started = (saved?.state?.targets?.length ?? 0) > 0;
+        if (!(await spurensucheAllowed(!started))) {
+          if (alive) setBlocked("wartung");
+          return;
+        }
         await loadGoogleMaps();
         const keep = saved?.state?.targets;
         if (keep?.length === ROUNDS) {
@@ -240,7 +251,17 @@ export function Spurensuche() {
         </>
       }
     >
-      {!loaded || (!targets && !error) ? (
+      {blocked ? (
+        <div className="card p-6 text-center">
+          <p className="text-4xl" aria-hidden="true">{blocked === "archiv" ? "🗓️" : "🛠️"}</p>
+          <p className="mt-2 text-xl font-display font-semibold">{blocked === "archiv" ? "Nur die letzten 7 Tage" : "Spurensuche macht gerade Pause"}</p>
+          <p className="mx-auto mt-1 max-w-md text-muted">
+            {blocked === "archiv"
+              ? `Im Archiv kannst du Spurensuche für die letzten ${SPURENSUCHE_ARCHIVE_DAYS} Tage nachspielen. Ältere Runden gibt es bald mit dem Abo.`
+              : "Wegen Wartungsarbeiten ist Spurensuche gerade nicht spielbar. Alle anderen Spiele laufen ganz normal – schau später wieder vorbei."}
+          </p>
+        </div>
+      ) : !loaded || (!targets && !error) ? (
         <div className="grid h-[60vh] min-h-80 place-items-center rounded-2xl bg-line text-sm font-semibold text-muted">
           <span className="animate-pulse">Orte werden gesucht …</span>
         </div>

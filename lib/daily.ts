@@ -148,3 +148,10 @@ export function msUntilNextDay() {
   const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
   return next - now.getTime();
 }
+
+/** Only the most recent days can be replayed from the archive (each game costs Street View loads). */
+export const SPURENSUCHE_ARCHIVE_DAYS = 7;
+export function spurensucheInArchive(day: string, today: string = utcDate()) {
+  const diff = (Date.parse(today) - Date.parse(day)) / 86400000;
+  return diff < SPURENSUCHE_ARCHIVE_DAYS;
+}
