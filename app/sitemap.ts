@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/tiefgang",
     "/tiefgang/endlos",
     "/koscher",
+    "/halal",
     "/bestenliste",
     ...GAMES.map((g) => `/taeglich/${g.key}`),
     ...QUIZ_TYPES.map((q) => `/quiz/${q.key}`),

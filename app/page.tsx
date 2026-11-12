@@ -29,6 +29,26 @@ export default function Home() {
           </span>
         </Link>
         <Link
+          href="/halal"
+          className="chunk relative flex flex-col items-start gap-4 overflow-hidden px-6 py-6 text-white sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-7 lg:col-span-2"
+          style={{ background: "linear-gradient(160deg, #12a06d 0%, #0b3b2d 55%, #062a20 100%)", ["--edge" as string]: "#03170f" }}
+        >
+          <span className="pointer-events-none absolute -right-4 -top-8 h-36 w-36 rounded-full border-4 border-white/10" aria-hidden="true" />
+          <span className="relative">
+            <span className="inline-block rounded-full bg-white px-3 py-1 font-display text-sm font-semibold text-ink">Neu</span>
+            <span className="mt-2 block font-display text-3xl font-semibold sm:text-4xl">Ist das halal?</span>
+            <span className="mt-1 block max-w-xl text-lg font-semibold text-white/85">
+              Vape, Sportwetten, Zinsen, Kredite: Rate, was im Islam erlaubt ist – 125 Fragen mit Quellen aus Quran, Bukhari und Muslim.
+            </span>
+          </span>
+          <span className="relative flex items-center gap-4">
+            <span className="hidden rotate-[-10deg] rounded-lg border-[3px] border-[#a7f3d0] px-3 py-1.5 font-display text-lg font-semibold uppercase tracking-wide text-[#a7f3d0] md:block" aria-hidden="true">
+              Halal
+            </span>
+            <span className="btn-primary bg-white text-ink shadow-[0_4px_0_#9fd8bf] hover:bg-[#e6f6ef]">Zum Quiz</span>
+          </span>
+        </Link>
+        <Link
           href="/tiefgang"
           className="chunk relative flex flex-col items-start gap-4 overflow-hidden px-6 py-6 text-white sm:flex-row sm:items-center sm:justify-between sm:px-8"
           style={{ background: "linear-gradient(160deg, #3f96d6 0%, #16528f 55%, #0a2656 100%)", ["--edge" as string]: "#061a3d" }}

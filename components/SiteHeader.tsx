@@ -85,6 +85,14 @@ export function SiteHeader() {
               Ist das koscher?
               <span className="rounded-full bg-white px-2.5 py-0.5 text-sm text-ink">Neu</span>
             </Link>
+            <Link
+              href="/halal"
+              className="chunk mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white"
+              style={{ background: "linear-gradient(160deg, #12a06d, #062a20)", ["--edge" as string]: "#03170f" }}
+            >
+              Ist das halal?
+              <span className="rounded-full bg-white px-2.5 py-0.5 text-sm text-ink">Neu</span>
+            </Link>
             <h2 className="mb-2 mt-6 text-lg font-semibold">Quiz nach Region</h2>
             <div className="flex flex-wrap gap-2">
               {MAIN_REGIONS.map((r) => (
