@@ -14,6 +14,7 @@ export type GameKey =
   | "farbecht"
   | "grenzgang"
   | "zeitreise"
+  | "spurensuche"
   | "tiefgang";
 
 export type DailyResult = {

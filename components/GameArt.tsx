@@ -95,6 +95,17 @@ function Art({ game, shadow = false }: { game: GameKey; shadow?: boolean }) {
           <circle cx="90" cy="25" r="3.5" fill={f("#fff")} />
         </g>
       );
+    case "spurensuche":
+      return (
+        <g {...s}>
+          <path d="M6 80L44 40h32l38 40z" fill={f("#8e9aa8")} />
+          <path d="M60 44v8M60 58v8M60 72v7" stroke={f("#fff")} strokeWidth="4" />
+          <path d="M8 40h104" />
+          <path d="M18 40V22h16v18M88 40V16h18v24" fill={f("#fff")} />
+          <path d="M60 8c-9 0-15 6-15 14 0 10 15 22 15 22s15-12 15-22c0-8-6-14-15-14z" fill={f("#e4573d")} />
+          <circle cx="60" cy="22" r="5" fill={f("#fff")} />
+        </g>
+      );
     case "zeitreise":
       return (
         <g {...s}>

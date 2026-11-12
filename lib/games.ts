@@ -74,6 +74,14 @@ export const GAMES: GameInfo[] = [
     edge: "#d38c68",
     icon: "M12 7v5l3 2M21 12a9 9 0 11-3-6.7M21 4v5h-5",
   },
+  {
+    key: "spurensuche",
+    title: "Spurensuche",
+    tagline: "Du stehst irgendwo auf der Welt. Schau dich in Street View um und tippe, wo du bist.",
+    bg: "#9fd3b0",
+    edge: "#74b38a",
+    icon: "M12 21s-6-5.3-6-10a6 6 0 0112 0c0 4.7-6 10-6 10zM12 13a2 2 0 100-4 2 2 0 000 4z",
+  },
 ];
 
 export const GAME_BY_KEY = Object.fromEntries(GAMES.map((g) => [g.key, g])) as Record<GameKey, GameInfo>;

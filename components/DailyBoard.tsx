@@ -57,7 +57,7 @@ export function DailyBoard() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 sm:gap-x-5 lg:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-6 sm:gap-x-5 lg:grid-cols-3">
         {GAMES.map((g) => {
           const r = res[g.key];
           const style = { background: g.bg, ["--edge" as string]: g.edge };

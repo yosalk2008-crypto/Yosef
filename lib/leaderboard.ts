@@ -17,6 +17,7 @@ export const LB_GAMES: { key: GameKey; title: string }[] = [
   { key: "farbecht", title: "Farbecht" },
   { key: "grenzgang", title: "Grenzgang" },
   { key: "zeitreise", title: "Zeitreise" },
+  { key: "spurensuche", title: "Spurensuche" },
   { key: "tiefgang", title: "Tiefgang" },
 ];
 

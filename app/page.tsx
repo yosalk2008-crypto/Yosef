@@ -118,7 +118,7 @@ export default function Home() {
       <section className="mx-auto max-w-2xl px-4 pb-16 pt-6 text-center">
         <h2 className="text-3xl font-semibold leading-tight sm:text-[40px]">Die Welt kennenlernen, ein Rätsel nach dem anderen</h2>
         <p className="mt-5 text-lg leading-relaxed text-muted">
-          Geografik ist kostenlos und braucht keine Anmeldung. Jeden Tag gibt es acht neue Rätsel zu Ländern, Grenzen, Flaggen und Geschichte – für alle
+          Geografik ist kostenlos und braucht keine Anmeldung. Jeden Tag gibt es neun neue Rätsel zu Ländern, Grenzen, Flaggen und Geschichte – für alle
           dieselben, damit du dich mit Freunden vergleichen kannst.
         </p>
         <p className="mt-4 text-lg leading-relaxed text-muted">
