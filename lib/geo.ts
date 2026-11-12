@@ -7,6 +7,9 @@ import type { Feature, Geometry } from "geojson";
 import type { Topology, GeometryCollection } from "topojson-specification";
 import { BY_ID_ALL } from "./data/countries";
 
+/** Shapes drawn as land on the world map that are not a country in any game and cannot be picked. */
+export const LAND_ONLY = new Set(["ESH"]);
+
 export type ShapeKey = "world" | "us" | "de" | "ch" | "at" | "sy" | "ma" | "tr" | "trr";
 export type Shape = Feature<Geometry, { name?: string }> & { id: string };
 export type ShapeSet = { list: Shape[]; byId: Record<string, Shape> };
@@ -20,8 +23,8 @@ export function loadShapes(key: ShapeKey): Promise<ShapeSet> {
       .then((topo: Topology) => {
         const objName = key === "world" ? "countries" : "regions";
         const fc = feature(topo, topo.objects[objName] as GeometryCollection) as unknown as { features: Shape[] };
-        // world map: every country we have data for
-        const list = fc.features.map((f) => ({ ...f, id: String(f.id) })).filter((f) => key !== "world" || BY_ID_ALL[f.id]);
+        // world map: every country we have data for, plus plain land areas without a country (Western Sahara)
+        const list = fc.features.map((f) => ({ ...f, id: String(f.id) })).filter((f) => key !== "world" || BY_ID_ALL[f.id] || LAND_ONLY.has(f.id));
         return { list, byId: Object.fromEntries(list.map((f) => [f.id, f])) };
       });
   }

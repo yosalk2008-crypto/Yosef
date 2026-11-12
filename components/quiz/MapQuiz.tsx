@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useShapes } from "@/lib/geo";
+import { LAND_ONLY, useShapes } from "@/lib/geo";
 import { randomRng } from "@/lib/rng";
 import { MapView } from "../MapView";
 import { QuizEnd, QuizHeader, mapSetup, questionCount, useEntities, useQuizParams } from "./common";
@@ -81,7 +81,9 @@ export function MapQuiz() {
     );
   }
 
-  const regionShapes = pool.map((e) => shapes.byId[e.id]);
+  // plain land without a country (Western Sahara) is drawn on world maps so there are no holes
+  const extra = params.region.shapes === "world" && (params.region.key === "welt" || params.region.key === "afrika") ? [...LAND_ONLY].map((id) => shapes.byId[id]).filter(Boolean) : [];
+  const regionShapes = [...pool.map((e) => shapes.byId[e.id]), ...extra];
   const missed = order.filter((e) => result[e.id] === MAX_TRIES).map((e) => ({ name: e.name }));
   const firstTry = Object.values(result).filter((t) => t === 0).length;
 

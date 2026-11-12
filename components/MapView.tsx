@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { geoAlbersUsa, geoEqualEarth, geoMercator, geoPath, type GeoProjection } from "d3-geo";
-import type { Shape } from "@/lib/geo";
+import { LAND_ONLY, type Shape } from "@/lib/geo";
 
 export type MapProjection = "world" | "mercator" | "usa";
 
@@ -162,7 +162,7 @@ export function MapView({
     // find what is under the pointer (pointer capture retargets events)
     const el = document.elementFromPoint(e.clientX, e.clientY) as Element | null;
     const id = el?.closest("[data-id]")?.getAttribute("data-id");
-    if (id) onPick(id);
+    if (id && !LAND_ONLY.has(id)) onPick(id);
   };
 
   const zoomBtn = (f: number) => setT((cur) => clamp(zoomAtStatic({ x: W / 2, y: H / 2 }, f, cur)));
