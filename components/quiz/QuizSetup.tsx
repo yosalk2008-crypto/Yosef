@@ -21,6 +21,8 @@ export function QuizSetup() {
   const [borders, setBorders] = useState(true);
   const [oneLife, setOneLife] = useState(false);
   const [input, setInput] = useState<"auswahl" | "eingabe">("auswahl");
+  // opened from a region tile: the region is already chosen, so the region list is not shown again
+  const [fixed, setFixed] = useState(false);
 
   useEffect(() => {
     const t = sp.get("typ");
@@ -28,17 +30,28 @@ export function QuizSetup() {
     const r = sp.get("region");
     if (r && REGIONS.some((x) => x.key === r)) {
       setRegion(r as RegionKey);
+      setFixed(true);
       if (REGIONS.find((x) => x.key === r)!.kind === "states" && (!t || t === "flaggen")) setTyp("karte");
     }
   }, [sp]);
 
   const info = QUIZ_TYPES.find((q) => q.key === typ)!;
-  const regions = REGIONS.filter((r) => (!info.countriesOnly || r.kind === "countries") && !(typ === "hauptstaedte" && r.noCapitals));
+  const fits = (r: (typeof REGIONS)[number], t: QuizType) => {
+    const inf = QUIZ_TYPES.find((q) => q.key === t)!;
+    return (!inf.countriesOnly || r.kind === "countries") && !(t === "hauptstaedte" && r.noCapitals);
+  };
+  const regions = REGIONS.filter((r) => fits(r, typ));
+  const cur = REGIONS.find((r) => r.key === region)!;
   useEffect(() => {
-    if (!regions.some((r) => r.key === region)) setRegion("welt");
-  }, [regions, region]);
+    if (regions.some((r) => r.key === region)) return;
+    // fixed region: keep it and fall back to a game type that works for it; otherwise fall back to "Welt"
+    if (fixed) setTyp("karte");
+    else setRegion("welt");
+  }, [regions, region, fixed]);
   const count = entitiesFor(region).length;
   const splits = splitsOf(region).filter((r) => regions.some((x) => x.key === r.key));
+  const types = fixed ? QUIZ_TYPES.filter((q) => fits(cur, q.key) || splitsOf(region).some((x) => fits(x, q.key))) : QUIZ_TYPES;
+  let step = 1;
 
   const start = () => {
     const q = new URLSearchParams({ region });
@@ -51,12 +64,16 @@ export function QuizSetup() {
     router.push(`/quiz/${typ}?${q}`);
   };
 
+  const title = fixed ? (cur.parent ? REGIONS.find((r) => r.key === cur.parent)!.label : cur.label) : "Unbegrenzte Quizze";
   return (
+    <>
+    <h1 className="text-3xl font-display font-semibold tracking-tight sm:text-4xl">{title}</h1>
+    <p className="mt-2 text-muted">{fixed ? "Wähle Spielart und Länge – so oft du willst." : "Wähle Spielart, Region und Länge – so oft du willst."}</p>
     <div className="mt-8 space-y-8">
       <fieldset>
-        <legend className="mb-3 text-sm font-bold text-muted">1 · Spielart</legend>
-        <div className="grid gap-2 sm:grid-cols-5">
-          {QUIZ_TYPES.map((q) => (
+        <legend className="mb-3 text-sm font-bold text-muted">{step++} · Spielart</legend>
+        <div className={`grid gap-2 ${types.length === 5 ? "sm:grid-cols-5" : types.length === 4 ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
+          {types.map((q) => (
             <button
               key={q.key}
               type="button"
@@ -71,8 +88,22 @@ export function QuizSetup() {
         </div>
       </fieldset>
 
+      {fixed ? (
+        splits.length > 0 && (
+          <fieldset>
+            <legend className="mb-3 text-sm font-bold text-muted">{step++} · Aufteilung</legend>
+            <div className="flex flex-wrap gap-2">
+              {splits.map((r) => (
+                <button key={r.key} type="button" aria-pressed={region === r.key} onClick={() => setRegion(r.key)} className="chip">
+                  {r.split}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        )
+      ) : (
       <fieldset>
-        <legend className="mb-3 text-sm font-bold text-muted">2 · Region</legend>
+        <legend className="mb-3 text-sm font-bold text-muted">{step++} · Region</legend>
         <div className="flex flex-wrap gap-2">
           {regions
             .filter((r) => !r.parent)
@@ -94,10 +125,11 @@ export function QuizSetup() {
         )}
         {info.countriesOnly && <p className="mt-2 text-xs text-muted">Flaggen gibt es nur für Länder.</p>}
       </fieldset>
+      )}
 
       {typ !== "alle-nennen" ? (
         <fieldset>
-          <legend className="mb-3 text-sm font-bold text-muted">3 · Anzahl Fragen</legend>
+          <legend className="mb-3 text-sm font-bold text-muted">{step++} · Anzahl Fragen</legend>
           <div className="flex flex-wrap gap-2">
             {LENGTHS.map((l) => (
               <button key={l.v} type="button" aria-pressed={n === l.v} onClick={() => setN(l.v)} className="chip min-w-14 justify-center" disabled={l.v !== "alle" && +l.v > count}>
@@ -147,5 +179,6 @@ export function QuizSetup() {
         Quiz starten
       </button>
     </div>
+    </>
   );
 }
