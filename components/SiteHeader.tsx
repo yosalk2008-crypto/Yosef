@@ -65,7 +65,7 @@ export function SiteHeader() {
                 <Link
                   key={g.key}
                   href={`/taeglich/${g.key}`}
-                  className="chunk flex items-center gap-2 px-2.5 py-2 font-display font-semibold"
+                  className="chunk !rounded-xl flex items-center gap-2 px-2.5 py-2 font-display font-semibold"
                   style={{ background: g.bg, ["--edge" as string]: g.edge }}
                 >
                   <GameArt game={g.key} className="h-9 w-12 shrink-0" />
@@ -73,13 +73,13 @@ export function SiteHeader() {
                 </Link>
               ))}
             </div>
-            <Link href="/tiefgang" className="chunk mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #3f96d6, #0a2656)", ["--edge" as string]: "#061a3d" }}>
+            <Link href="/tiefgang" className="chunk !rounded-xl mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #3f96d6, #0a2656)", ["--edge" as string]: "#061a3d" }}>
               Tiefgang
               <span className="rounded-full bg-[#f3d272] px-2.5 py-0.5 text-sm text-ink">Neu</span>
             </Link>
             <Link
               href="/koscher"
-              className="chunk mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white"
+              className="chunk !rounded-xl mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white"
               style={{ background: "linear-gradient(160deg, #1f4fd1, #0a1630)", ["--edge" as string]: "#050c1f" }}
             >
               Ist das koscher?
@@ -87,20 +87,20 @@ export function SiteHeader() {
             </Link>
             <Link
               href="/halal"
-              className="chunk mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white"
+              className="chunk !rounded-xl mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white"
               style={{ background: "linear-gradient(160deg, #12a06d, #062a20)", ["--edge" as string]: "#03170f" }}
             >
               Ist das halal?
               <span className="rounded-full bg-white px-2.5 py-0.5 text-sm text-ink">Neu</span>
             </Link>
-            <Link href="/multiplayer" className="chunk mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold" style={{ background: "#ee8a2f", ["--edge" as string]: "#b9621a" }}>
+            <Link href="/multiplayer" className="chunk !rounded-xl mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold" style={{ background: "#ee8a2f", ["--edge" as string]: "#b9621a" }}>
               Mit Freunden spielen
               <span className="rounded-full bg-white px-2.5 py-0.5 text-sm text-ink">Neu</span>
             </Link>
             <h2 className="mb-2 mt-6 text-lg font-semibold">Quiz nach Region</h2>
             <div className="flex flex-wrap gap-2">
               {MAIN_REGIONS.map((r) => (
-                <Link key={r.key} href={`/quiz?region=${r.key}`} className="chip">
+                <Link key={r.key} href={`/quiz?region=${r.key}`} className="chip !rounded-xl">
                   {r.label}
                 </Link>
               ))}
