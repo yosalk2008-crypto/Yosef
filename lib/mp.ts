@@ -6,11 +6,16 @@ import { entitiesFor } from "./data/regions";
 import { flagUrl } from "./data/countries";
 import { randomRng } from "./rng";
 import { BIG_POOL, randomQuestions, type Question } from "./tiefgang";
-import { utcDate } from "./daily";
+import { LAUNCH, addDays, utcDate, type DailyResult, type GameKey } from "./daily";
+import { GAMES } from "./games";
+import { pointsFor } from "./leaderboard";
 
 // ---------- games ----------
 
-export type GameId = "koscher" | "halal" | "flaggen" | "hauptstaedte" | "tiefgang";
+/** Daily games that can be played in a room (Spurensuche is left out: every round costs Street View loads). */
+export type DailyId = Exclude<GameKey, "tiefgang" | "spurensuche">;
+export type GameId = "koscher" | "halal" | "flaggen" | "hauptstaedte" | "tiefgang" | DailyId;
+export const isDaily = (g: GameId): g is DailyId => GAMES.some((x) => x.key === g);
 
 export const MP_GAMES: { id: GameId; title: string; desc: string; bg: string; edge: string; light: boolean }[] = [
   { id: "koscher", title: "Ist das koscher?", desc: "Erlaubt, verboten oder kommt drauf an", bg: "linear-gradient(160deg, #1f4fd1, #0a1630)", edge: "#050c1f", light: true },
@@ -19,18 +24,28 @@ export const MP_GAMES: { id: GameId; title: string; desc: string; bg: string; ed
   { id: "flaggen", title: "Flaggen raten", desc: "Welches Land hat diese Flagge?", bg: "#6aa8f0", edge: "#4b88d1", light: false },
   { id: "hauptstaedte", title: "Hauptstädte", desc: "Vier Städte, eine ist die Hauptstadt", bg: "#f3d272", edge: "#c9a43c", light: false },
 ];
-export const gameOf = (id: GameId) => MP_GAMES.find((g) => g.id === id)!;
+/** The daily games, each round a random puzzle from the archive. */
+export const MP_DAILY = GAMES.filter((g) => g.key !== "spurensuche" && g.key !== "tiefgang").map((g) => ({
+  id: g.key as DailyId,
+  title: g.title,
+  desc: g.tagline,
+  bg: g.bg,
+  edge: g.edge,
+  light: false,
+}));
+export const gameOf = (id: GameId) => [...MP_GAMES, ...MP_DAILY].find((g) => g.id === id) ?? MP_GAMES[0];
 
 // ---------- shared room state (sent by the admin to everyone) ----------
 
 export type Opt = { id: string; label: string };
 export type QView =
   | { kind: "choice"; text: string; cat?: string; img?: string; options: Opt[] }
-  | { kind: "tiefgang"; key: string; text: string; hint: string };
+  | { kind: "tiefgang"; key: string; text: string; hint: string }
+  | { kind: "daily"; game: DailyId; day: string };
 /** A question as only the admin knows it (with the solution). */
 export type HostQ = { view: QView; correct?: string; explain?: string; src?: string };
 /** One player's answer as everyone sees it after the question. */
-export type PAns = { label: string; choice?: string; ok: boolean; pts: number };
+export type PAns = { label: string; choice?: string; ok: boolean; pts: number; share?: string };
 export type Reveal = { correct?: string; explain?: string; src?: string; answers: Record<string, PAns | null>; rare?: { name: string; pts: number }[] };
 export type Phase = "lobby" | "frage" | "aufloesung" | "ende";
 
@@ -57,11 +72,16 @@ export type RoomState = {
 };
 
 /** What a player sends when answering. */
-export type AnswerMsg = { pid: string; i: number; choice?: string; tg?: { id: string } | null };
+export type AnswerMsg = { pid: string; i: number; choice?: string; tg?: { id: string } | null; daily?: Pick<DailyResult, "done" | "won" | "score" | "max" | "label" | "share"> };
 
 export const MAX_PLAYERS = 30;
 export const COUNTS = [5, 10, 15, 20];
 export const TIMES = [0, 15, 30, 60];
+/** Daily games: how many puzzles, and minutes rather than seconds. */
+export const DAILY_COUNTS = [1, 3, 5, 10];
+export const DAILY_TIMES = [0, 120, 300, 600];
+export const countsFor = (g: GameId) => (isDaily(g) ? DAILY_COUNTS : COUNTS);
+export const timesFor = (g: GameId) => (isDaily(g) ? DAILY_TIMES : TIMES);
 export const TIEFGANG_DEFAULT_SECS = 30;
 
 // ---------- questions ----------
@@ -96,6 +116,13 @@ const HALAL_LABEL: Record<string, string> = { halal: "Halal", haram: "Haram", ma
 
 export async function buildQuestions(game: GameId, n: number): Promise<HostQ[]> {
   const rng = randomRng();
+  if (isDaily(game)) {
+    // random puzzles from the archive (up to yesterday), never the same day twice
+    const span = Math.round((Date.parse(utcDate()) - Date.parse(LAUNCH)) / 86400000);
+    const days = new Set<string>();
+    while (days.size < Math.min(n, span)) days.add(addDays(LAUNCH, rng.int(span)));
+    return [...days].map((day) => ({ view: { kind: "daily", game, day } }));
+  }
   if (game === "koscher") {
     const raw = await dataset("/koscher/data.js", "QUESTIONS");
     return rng.sample(raw, Math.min(n, raw.length)).map((r) => {
@@ -152,6 +179,12 @@ export function judge(hq: HostQ, msg: AnswerMsg): PAns | null {
     if (!o) return null;
     const ok = o.id === hq.correct;
     return { label: o.label, choice: o.id, ok, pts: ok ? 1 : 0 };
+  }
+  if (hq.view.kind === "daily") {
+    const r = msg.daily;
+    if (!r?.done) return null;
+    const pts = pointsFor(hq.view.game, { ...r, state: undefined });
+    return { label: r.label, ok: !!r.won || pts > 0, pts, share: r.share };
   }
   if (!msg.tg) return null;
   const q = tiefgangQ(hq.view.key);

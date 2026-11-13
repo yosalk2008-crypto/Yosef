@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { Component, type ReactNode } from "react";
 import { clearResult, isValidDay, utcDate, type GameKey } from "@/lib/daily";
+import { MpDailyContext } from "@/lib/mpDaily";
 
 const loading = () => (
   <div className="mx-auto max-w-3xl px-4 pt-10">
@@ -41,8 +42,10 @@ class GameBoundary extends Component<{ game: GameKey; children: ReactNode }, { f
   static getDerivedStateFromError() {
     return { pending: true };
   }
+  static contextType = MpDailyContext;
   componentDidCatch(error: unknown) {
     console.error(error);
+    if (this.context) return this.setState((s) => ({ failed: s.failed + 1, pending: false })); // multiplayer: nothing saved to drop
     const p = new URLSearchParams(window.location.search).get("tag");
     clearResult(isValidDay(p) ? p : utcDate(), this.props.game);
     this.setState((s) => ({ failed: s.failed + 1, pending: false }));

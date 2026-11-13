@@ -6,11 +6,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getName, nameProblem } from "@/lib/leaderboard";
 import {
-  COUNTS,
+  MP_DAILY,
+  countsFor,
+  isDaily,
+  timesFor,
   MAX_PLAYERS,
   MP_GAMES,
   TIEFGANG_DEFAULT_SECS,
-  TIMES,
   buildQuestions,
   cleanCode,
   colorFor,
@@ -33,6 +35,10 @@ import {
 } from "@/lib/mp";
 import { check, emojiFor, type Answer, type Question } from "@/lib/tiefgang";
 import { Suggestion } from "../Suggestion";
+import { GameArt } from "../GameArt";
+import { DailyGame } from "@/app/taeglich/[spiel]/DailyGame";
+import { MpDailyContext, mpLoad, type MpDaily } from "@/lib/mpDaily";
+import { dayNumber, formatDay, type DailyResult } from "@/lib/daily";
 
 type Member = { name: string; host: boolean };
 type LobbyEntry = { code: string; title: string; game: GameId; players: number; phase: Phase };
@@ -502,7 +508,7 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
   // ---------------- answering (everyone, admin included) ----------------
 
   const myAns = mine && st && mine.round === st.round && mine.i === st.i && st.phase !== "lobby" ? mine : null;
-  const answer = (part: Pick<AnswerMsg, "choice" | "tg">, label: string) => {
+  const answer = (part: Pick<AnswerMsg, "choice" | "tg" | "daily">, label: string) => {
     const s = stRef.current;
     if (!s || s.phase !== "frage" || myAns) return;
     const msg: AnswerMsg = { pid: me, i: s.i, ...part };
@@ -680,7 +686,7 @@ function LobbyView({
                   key={x.id}
                   type="button"
                   aria-pressed={on}
-                  onClick={() => onSetting({ game: x.id, secs: x.id === "tiefgang" ? (st.secs || TIEFGANG_DEFAULT_SECS) : st.secs })}
+                  onClick={() => onSetting(switchTo(st, x.id))}
                   className={`chunk relative px-4 py-3.5 text-left ${x.light ? "text-white" : "text-ink"} ${on ? "outline outline-4 outline-offset-2 outline-ink" : ""}`}
                   style={{ background: x.bg, ["--edge" as string]: x.edge }}
                 >
@@ -696,11 +702,32 @@ function LobbyView({
             })}
           </div>
 
+          <h3 className="mt-6 text-xl font-semibold">Tägliche Spiele</h3>
+          <p className="text-[15px] text-muted">Jede Runde ist ein zufälliges Rätsel aus dem Archiv. Wenn alle fertig sind, vergleicht ihr eure Ergebnisse.</p>
+          <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            {MP_DAILY.map((x) => {
+              const on = x.id === st.game;
+              return (
+                <button
+                  key={x.id}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => onSetting(switchTo(st, x.id))}
+                  className={`chunk relative flex items-center gap-2 px-2.5 py-2 text-left font-display font-semibold ${on ? "outline outline-4 outline-offset-2 outline-ink" : ""}`}
+                  style={{ background: x.bg, ["--edge" as string]: x.edge }}
+                >
+                  <GameArt game={x.id} className="h-9 w-12 shrink-0" />
+                  <span className="text-[15px] leading-tight">{x.title}</span>
+                </button>
+              );
+            })}
+          </div>
+
           <div className="mt-6 grid gap-5 sm:grid-cols-2">
             <fieldset>
-              <legend className="mb-2 font-display text-lg font-semibold">Fragen</legend>
+              <legend className="mb-2 font-display text-lg font-semibold">{isDaily(st.game) ? "Runden" : "Fragen"}</legend>
               <div className="flex flex-wrap gap-2">
-                {COUNTS.map((n) => (
+                {countsFor(st.game).map((n) => (
                   <button key={n} type="button" className="chip" aria-pressed={st.n === n} onClick={() => onSetting({ n })}>
                     {n}
                   </button>
@@ -708,11 +735,11 @@ function LobbyView({
               </div>
             </fieldset>
             <fieldset>
-              <legend className="mb-2 font-display text-lg font-semibold">Zeit pro Frage</legend>
+              <legend className="mb-2 font-display text-lg font-semibold">{isDaily(st.game) ? "Zeit pro Runde" : "Zeit pro Frage"}</legend>
               <div className="flex flex-wrap gap-2">
-                {TIMES.map((t) => (
+                {timesFor(st.game).map((t) => (
                   <button key={t} type="button" className="chip" aria-pressed={st.secs === t} onClick={() => onSetting({ secs: t })}>
-                    {t ? `${t} s` : "Ohne Limit"}
+                    {t ? (t >= 60 ? `${t / 60} Min` : `${t} s`) : "Ohne Limit"}
                   </button>
                 ))}
               </div>
@@ -728,16 +755,18 @@ function LobbyView({
           </label>
 
           <button type="button" className="btn-primary mt-7 w-full text-lg sm:w-auto" disabled={busy} onClick={onStart}>
-            {busy ? "Lade Fragen …" : `${g.title} starten`}
+            {busy ? "Lade …" : `${g.title} starten`}
           </button>
-          <p className="mt-2 text-[15px] text-muted">Wer später dazukommt, steigt bei der nächsten Frage ein.</p>
+          <p className="mt-2 text-[15px] text-muted">Wer später dazukommt, steigt bei der nächsten {isDaily(st.game) ? "Runde" : "Frage"} ein.</p>
         </div>
       ) : (
         <div className="card mt-8 p-6 text-center">
           <p className="text-muted">Der Admin hat ausgewählt</p>
           <p className="mt-1 font-display text-3xl font-semibold">{g.title}</p>
           <p className="mt-1 font-semibold text-muted">
-            {st.n} Fragen · {st.secs ? `${st.secs} Sekunden pro Frage` : "ohne Zeitlimit"}
+            {isDaily(st.game)
+              ? `${st.n} ${st.n === 1 ? "Runde" : "Runden"} · ${st.secs ? `${st.secs / 60} Minuten pro Runde` : "ohne Zeitlimit"}`
+              : `${st.n} Fragen · ${st.secs ? `${st.secs} Sekunden pro Frage` : "ohne Zeitlimit"}`}
           </p>
           <p className="mt-5 font-semibold">Warte, bis der Admin das Spiel startet …</p>
         </div>
@@ -763,7 +792,7 @@ function QHead({ st, children }: { st: RoomState; children?: React.ReactNode }) 
   return (
     <div className="mt-6 flex items-center justify-between gap-3">
       <p className="font-display text-lg font-semibold">
-        {g.title} <span className="text-muted">· Frage {st.i + 1} von {st.total}</span>
+        {g.title} <span className="text-muted">· {isDaily(st.game) ? "Runde" : "Frage"} {st.i + 1} von {st.total}</span>
       </p>
       {children}
     </div>
@@ -788,13 +817,16 @@ function QuestionView({
   host: boolean;
   myAns: { label: string } | null;
   offset: number;
-  onAnswer: (part: Pick<AnswerMsg, "choice" | "tg">, label: string) => void;
+  onAnswer: (part: Pick<AnswerMsg, "choice" | "tg" | "daily">, label: string) => void;
   onForce: () => void;
 }) {
   const left = useCountdown(st.endsAt ? st.endsAt + offset : 0);
   const present = Object.keys(members);
   const doneN = present.filter((id) => st.done.includes(id)).length;
   const g = gameOf(st.game);
+
+  if (q.kind === "daily")
+    return <DailyRound st={st} q={q} members={members} me={me} host={host} myAns={myAns} left={left} onAnswer={onAnswer} onForce={onForce} />;
 
   return (
     <div>
@@ -815,7 +847,7 @@ function QuestionView({
           </div>
         )}
         <h2 className={`font-display font-semibold leading-tight ${q.kind === "choice" && q.img ? "text-center text-2xl" : "mt-3 text-[28px] sm:text-4xl"}`}>
-          {q.kind === "choice" && (st.game === "koscher" || st.game === "halal") ? `${q.text}?` : q.text}
+          {questionText(st, q)}
         </h2>
         {q.kind === "tiefgang" && <p className="mt-2 font-semibold text-white/80">{q.hint}</p>}
       </div>
@@ -930,12 +962,14 @@ function RevealView({ st, q, me, host, onNext }: { st: RoomState; q: QView; me: 
   const last = st.i + 1 >= st.total;
   const mineA = rv.answers[me];
 
+  if (q.kind === "daily") return <DailyReveal st={st} q={q} me={me} host={host} onNext={onNext} />;
+
   return (
     <div>
       <QHead st={st} />
       <div className="card mt-3 px-5 py-5 sm:px-7">
         <h2 className="font-display text-2xl font-semibold leading-tight sm:text-3xl">
-          {q.kind === "choice" && (st.game === "koscher" || st.game === "halal") ? `${q.text}?` : q.text}
+          {questionText(st, q)}
         </h2>
         {q.kind === "choice" && q.img && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -1038,7 +1072,7 @@ function Scores({ st, me, compact = false }: { st: RoomState; me: string; compac
   const rows = Object.entries(st.scores)
     .map(([id, p]) => ({ id, p, name: st.names[id] ?? "?" }))
     .sort((a, b) => b.p - a.p || a.name.localeCompare(b.name));
-  const unit = st.game === "tiefgang" ? "Punkte" : "richtig";
+  const unit = st.game === "tiefgang" || isDaily(st.game) ? "Punkte" : "richtig";
   let rank = 0;
   let prev = -1;
   return (
@@ -1089,6 +1123,179 @@ function EndView({ st, me, host, onLobby }: { st: RoomState; me: string; host: b
           </button>
         ) : (
           <p className="font-semibold text-muted">Der Admin wählt gleich das nächste Spiel …</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------- daily games ----------------
+
+function questionText(st: RoomState, q: QView) {
+  if (q.kind === "daily") return "";
+  return q.kind === "choice" && (st.game === "koscher" || st.game === "halal") ? `${q.text}?` : q.text;
+}
+
+/** Switching games keeps the settings that still fit, otherwise sensible defaults. */
+function switchTo(st: RoomState, game: GameId): Partial<RoomState> {
+  const counts = countsFor(game);
+  const times = timesFor(game);
+  const n = counts.includes(st.n) ? st.n : isDaily(game) ? 3 : 10;
+  let secs = times.includes(st.secs) ? st.secs : 0;
+  if (game === "tiefgang" && !secs) secs = TIEFGANG_DEFAULT_SECS;
+  return { game, n, secs };
+}
+
+const clock = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` : `${s}`);
+
+function DailyRound({
+  st,
+  q,
+  members,
+  me,
+  host,
+  myAns,
+  left,
+  onAnswer,
+  onForce,
+}: {
+  st: RoomState;
+  q: Extract<QView, { kind: "daily" }>;
+  members: Record<string, Member>;
+  me: string;
+  host: boolean;
+  myAns: { label: string } | null;
+  left: number | null;
+  onAnswer: (part: Pick<AnswerMsg, "choice" | "tg" | "daily">, label: string) => void;
+  onForce: () => void;
+}) {
+  const send = useRef(onAnswer);
+  send.current = onAnswer;
+  const storeKey = `${st.code}:${st.round}:${st.i}`;
+  const report = useCallback((r: DailyResult) => {
+    send.current({ daily: { done: r.done, won: r.won, score: r.score, max: r.max, label: r.label, share: r.share } }, r.label);
+  }, []);
+  const ctx = useMemo<MpDaily>(() => ({ day: q.day, storeKey, onResult: report }), [q.day, storeKey, report]);
+  // finished before a refresh: report again (the admin ignores doubles)
+  useEffect(() => {
+    const r = mpLoad(`${q.game}:${storeKey}`);
+    if (r?.done && !st.done.includes(me)) report(r);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeKey]);
+
+  const present = Object.keys(members);
+  const doneN = present.filter((id) => st.done.includes(id)).length;
+  const timeUp = left === 0 && !myAns;
+
+  return (
+    <div>
+      <QHead st={st}>
+        {left != null && (
+          <span
+            className={`grid h-12 min-w-12 place-items-center rounded-full border-[3px] border-ink px-2 font-display text-lg font-semibold tabular-nums ${left <= 10 ? "bg-bad text-white" : "bg-white"}`}
+            aria-label={`${left} Sekunden übrig`}
+          >
+            {clock(left)}
+          </span>
+        )}
+      </QHead>
+
+      <div className="sticky top-[68px] z-30 mt-3 sm:top-[76px]">
+        <div className={`flex flex-wrap items-center justify-between gap-2 rounded-2xl px-4 py-2.5 shadow-[0_3px_0_var(--color-edge)] ${myAns ? "bg-[#e5f4e3]" : "bg-white"}`} role="status" aria-live="polite">
+          <span className="font-semibold">
+            {myAns ? (
+              <>
+                Fertig: <strong>{myAns.label}</strong> – warte auf die anderen
+              </>
+            ) : timeUp ? (
+              "Die Zeit ist um."
+            ) : (
+              "Spiel das Rätsel – wenn alle fertig sind, vergleicht ihr."
+            )}
+          </span>
+          <span className="font-semibold text-muted">
+            {doneN} von {present.length} fertig
+          </span>
+        </div>
+      </div>
+
+      <div className={`mt-4 ${timeUp ? "pointer-events-none opacity-50" : ""}`}>
+        <MpDailyContext.Provider value={ctx}>
+          <div key={storeKey}>
+            <DailyGame game={q.game} />
+          </div>
+        </MpDailyContext.Provider>
+      </div>
+
+      <div className="mt-7">
+        <Players members={members} me={me} done={st.done} />
+        {host && doneN < present.length && (
+          <button type="button" className="btn-ghost mt-4" onClick={onForce}>
+            Nicht mehr warten – Ergebnisse zeigen
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DailyReveal({ st, q, me, host, onNext }: { st: RoomState; q: Extract<QView, { kind: "daily" }>; me: string; host: boolean; onNext: () => void }) {
+  const rv = st.reveal!;
+  const ids = Object.keys(rv.answers).sort((a, b) => (rv.answers[b]?.pts ?? -1) - (rv.answers[a]?.pts ?? -1));
+  const nameOf = (id: string) => st.names[id] ?? "?";
+  const last = st.i + 1 >= st.total;
+  const g = gameOf(st.game);
+  const mineA = rv.answers[me];
+
+  return (
+    <div>
+      <QHead st={st} />
+      <div className="chunk mt-3 flex items-center gap-3 px-4 py-3" style={{ background: g.bg, ["--edge" as string]: g.edge }}>
+        <GameArt game={q.game} className="h-11 w-14 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-xl font-semibold leading-tight">
+            {g.title} <span className="text-ink/55">#{dayNumber(q.day)}</span>
+          </p>
+          <p className="text-sm font-semibold text-ink/70">Rätsel vom {formatDay(q.day)}</p>
+        </div>
+        {rv.answers[me] !== undefined && (
+          <span className={`shrink-0 rounded-full px-3 py-1 font-bold text-white ${mineA ? "bg-ok" : "bg-bad"}`}>{mineA ? `+${mineA.pts} Punkte` : "Nicht fertig"}</span>
+        )}
+      </div>
+
+      <ul className="mt-4 grid gap-2.5">
+        {ids.map((id, k) => {
+          const a = rv.answers[id];
+          return (
+            <li key={id} className={`card px-4 py-3 ${id === me ? "ring-[3px] ring-brand-2" : ""}`}>
+              <div className="flex items-center gap-3">
+                <span className="w-6 text-center font-display text-lg font-semibold">{a ? k + 1 : "–"}</span>
+                <Avatar id={id} name={nameOf(id)} size={32} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">
+                    {nameOf(id)}
+                    {id === me && <span className="text-muted"> (du)</span>}
+                  </span>
+                  <span className="block text-[15px] text-muted">{a ? a.label : "Nicht fertig geworden"}</span>
+                </span>
+                <span className="font-display text-2xl font-semibold tabular-nums">{a?.pts ?? 0}</span>
+              </div>
+              {a?.share && <pre className="mt-2 whitespace-pre-wrap rounded-xl bg-paper px-3 py-2 font-sans text-sm font-semibold">{a.share.split("\n").slice(1).join("\n") || a.share}</pre>}
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-2 text-[15px] text-muted">Punkte wie in der Bestenliste: 0 bis 100 pro Rätsel.</p>
+
+      <Scores st={st} me={me} compact />
+
+      <div className="mt-6">
+        {host ? (
+          <button type="button" className="btn-primary w-full text-lg sm:w-auto" onClick={onNext}>
+            {last ? "Zum Endstand" : "Nächste Runde"}
+          </button>
+        ) : (
+          <p className="font-semibold text-muted">Der Admin startet gleich {last ? "den Endstand" : "die nächste Runde"} …</p>
         )}
       </div>
     </div>

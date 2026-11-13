@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { dayNumber, formatDay, msUntilNextDay, utcDate, type GameKey } from "@/lib/daily";
 import { GAME_BY_KEY, GAMES } from "@/lib/games";
 import { Icon } from "./Icon";
+import { useMpDaily } from "@/lib/mpDaily";
 import { GameArt } from "./GameArt";
 
 export function GameShell({
@@ -22,6 +23,7 @@ export function GameShell({
   children: React.ReactNode;
 }) {
   const info = GAME_BY_KEY[game];
+  const mp = useMpDaily();
   const [help, setHelp] = useState(false);
   useEffect(() => {
     try {
@@ -34,7 +36,7 @@ export function GameShell({
   }, [game]);
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-6 sm:pt-10">
+    <div className={mp ? "w-full" : "mx-auto w-full max-w-3xl px-4 pb-16 pt-6 sm:pt-10"}>
       <div className="chunk mb-6 flex items-center justify-between gap-3 p-3 sm:p-4" style={{ background: info.bg, ["--edge" as string]: info.edge }}>
         <div className="flex min-w-0 items-center gap-3">
           <span className="grid h-14 w-16 shrink-0 place-items-center rounded-2xl bg-white/45 sm:h-16 sm:w-20">
@@ -46,7 +48,7 @@ export function GameShell({
             </h1>
             <p className="text-sm font-semibold text-ink/70">
               {formatDay(day)}
-              {!isToday && (
+              {!isToday && !mp && (
                 <>
                   {" – "}
                   <Link href="/archiv" className="underline underline-offset-2">
@@ -97,6 +99,7 @@ export function ResultCard({
   current: GameKey;
   children?: React.ReactNode;
 }) {
+  const mp = useMpDaily();
   const [copied, setCopied] = useState(false);
   const [left, setLeft] = useState("");
   useEffect(() => {
@@ -121,6 +124,15 @@ export function ResultCard({
     } catch {}
   };
   const next = GAMES.filter((g) => g.key !== current);
+  if (mp)
+    return (
+      <section className="card mt-6 p-5 sm:p-6" aria-live="polite">
+        <p className="font-display text-lg font-semibold text-muted">{title}</p>
+        <p className="font-display text-5xl font-semibold">{score}</p>
+        {children && <div className="mt-3 text-[15px] text-muted">{children}</div>}
+        <pre className="mt-4 whitespace-pre-wrap rounded-2xl bg-paper p-3 font-sans text-sm font-semibold">{share}</pre>
+      </section>
+    );
   return (
     <section className="card mt-6 p-5 sm:p-6" aria-live="polite">
       <p className="font-display text-lg font-semibold text-muted">{title}</p>
