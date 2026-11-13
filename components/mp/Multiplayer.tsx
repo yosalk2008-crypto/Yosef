@@ -47,7 +47,7 @@ import { dayNumber, formatDay, type DailyResult } from "@/lib/daily";
 import { localHref, useLang, useT, type Lang } from "@/lib/i18n";
 import { ansName, qHint, qText } from "@/lib/tiefgang-i18n";
 
-type Member = { name: string; host: boolean };
+type Member = { name: string; host: boolean; at: number };
 type LobbyEntry = { code: string; title: string; game: GameId; players: number; phase: Phase };
 
 const NAME_KEY = "geografik:mpname";
@@ -76,7 +76,7 @@ export function Multiplayer() {
   const urlCode = cleanCode(params.get("code") || "");
   const [me, setMe] = useState("");
   const [name, setName] = useState("");
-  const [joined, setJoined] = useState<{ code: string; host: boolean } | null>(null);
+  const [joined, setJoined] = useState<{ code: string; host: boolean; duel?: boolean } | null>(null);
 
   useEffect(() => {
     setMe(tabId());
@@ -92,12 +92,12 @@ export function Multiplayer() {
     else if (n && sessionStorage.getItem("kt:mp:in") === urlCode) setJoined({ code: urlCode, host: false });
   }, [me, urlCode, joined]);
 
-  const enter = (code: string, host: boolean) => {
+  const enter = (code: string, host: boolean, duel = false) => {
     storeName(name.trim());
     try {
       sessionStorage.setItem("kt:mp:in", code);
     } catch {}
-    setJoined({ code, host });
+    setJoined({ code, host, duel });
     router.replace(localHref(lang, `/multiplayer?code=${code}`), { scroll: false });
   };
   const leave = () => {
@@ -110,7 +110,7 @@ export function Multiplayer() {
   };
 
   if (!me) return <div className="min-h-[60vh]" aria-busy="true" />;
-  if (joined) return <Room key={joined.code} code={joined.code} me={me} name={name.trim()} host={joined.host} onLeave={leave} />;
+  if (joined) return <Room key={joined.code} code={joined.code} me={me} name={name.trim()} host={joined.host} duel={!!joined.duel} onLeave={leave} />;
   return <Start name={name} setName={setName} initialCode={urlCode} onEnter={enter} />;
 }
 
@@ -118,7 +118,7 @@ export function Multiplayer() {
 // Start screen
 // ======================================================================
 
-function Start({ name, setName, initialCode, onEnter }: { name: string; setName: (s: string) => void; initialCode: string; onEnter: (code: string, host: boolean) => void }) {
+function Start({ name, setName, initialCode, onEnter }: { name: string; setName: (s: string) => void; initialCode: string; onEnter: (code: string, host: boolean, duel?: boolean) => void }) {
   const lang = useLang();
   const t = useT();
   const [code, setCode] = useState(initialCode);
@@ -126,11 +126,11 @@ function Start({ name, setName, initialCode, onEnter }: { name: string; setName:
   const invited = validCode(initialCode);
   const problem = name.trim() ? nameProblem(name, lang) : t("Gib zuerst deinen Namen ein.", "Enter your name first.");
 
-  const go = (c: string, host: boolean) => {
+  const go = (c: string, host: boolean, duel = false) => {
     if (problem) return setErr(problem);
     if (!host && !validCode(c)) return setErr(t("Der Code hat 5 Zeichen, zum Beispiel K7QXM.", "The code has 5 characters, e.g. K7QXM."));
     setErr("");
-    onEnter(c, host);
+    onEnter(c, host, duel);
   };
 
   return (
@@ -144,8 +144,8 @@ function Start({ name, setName, initialCode, onEnter }: { name: string; setName:
           </>
         ) : (
           t(
-            "Erstelle einen Server oder tritt einem bei. Alle bekommen dieselbe Frage, und wenn alle geantwortet haben, vergleicht ihr eure Antworten.",
-            "Create a server or join one. Everyone gets the same question, and once everyone has answered you compare your answers."
+            "Erstelle einen Server für deine ganze Gruppe oder fordere einen Freund zum 1v1 heraus. Alle bekommen dieselbe Frage, und wenn alle geantwortet haben, vergleicht ihr eure Antworten.",
+            "Create a server for your whole group or challenge a friend to a 1v1. Everyone gets the same question, and once everyone has answered you compare your answers."
           )
         )}
       </p>
@@ -179,15 +179,22 @@ function Start({ name, setName, initialCode, onEnter }: { name: string; setName:
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <div className="card flex flex-col p-5">
             <h2 className="text-2xl font-semibold">{t("Server erstellen", "Create a server")}</h2>
-            <p className="mt-1 flex-1 text-muted">{t("Du bist der Admin und entscheidest, welches Spiel gespielt wird.", "You’re the admin and decide which game is played.")}</p>
+            <p className="mt-1 flex-1 text-muted">{t(`Für eine Gruppe bis ${MAX_PLAYERS} Spieler. Du bist der Admin und entscheidest, welches Spiel gespielt wird.`, `For a group of up to ${MAX_PLAYERS} players. You’re the admin and decide which game is played.`)}</p>
             <button type="button" className="btn-primary mt-4" onClick={() => go(newCode(), true)}>
               {t("Server erstellen", "Create server")}
             </button>
           </div>
           <div className="card flex flex-col p-5">
+            <h2 className="text-2xl font-semibold">{t("1v1 gegen einen Freund", "1v1 against a friend")}</h2>
+            <p className="mt-1 flex-1 text-muted">{t("Nur ihr zwei. Du wählst das Spiel, schickst deinem Freund den Code und ihr spielt gegeneinander.", "Just the two of you. You pick the game, send your friend the code and play head to head.")}</p>
+            <button type="button" className="btn-primary mt-4" onClick={() => go(newCode(), true, true)}>
+              {t("1v1 starten", "Start a 1v1")}
+            </button>
+          </div>
+          <div className="card flex flex-col p-5 sm:col-span-2">
             <h2 className="text-2xl font-semibold">{t("Code eingeben", "Enter a code")}</h2>
-            <p className="mt-1 text-muted">{t("Den Code bekommst du vom Admin.", "You get the code from the admin.")}</p>
-            <div className="mt-4 flex gap-2">
+            <p className="mt-1 text-muted">{t("Den Code bekommst du vom Admin oder von deinem Gegner.", "You get the code from the admin or your opponent.")}</p>
+            <div className="mt-4 flex max-w-md gap-2">
               <input
                 className="input min-w-0 flex-1 text-center font-display text-xl uppercase tracking-[0.25em]"
                 value={code}
@@ -273,14 +280,16 @@ function OpenServers({ onJoin }: { onJoin: (code: string) => void }) {
 
 type Conn = "verbinde" | "ok" | "fehlt" | "weg" | "zu" | "fehler";
 
-function freshState(code: string, me: string, name: string): RoomState {
+function freshState(code: string, me: string, name: string, duel = false): RoomState {
   return {
     seq: 0,
     round: 0,
     code,
     hostId: me,
     title: name,
-    pub: true,
+    pub: !duel,
+    duel,
+    rival: "",
     game: "koscher",
     n: 10,
     secs: 0,
@@ -297,7 +306,14 @@ function freshState(code: string, me: string, name: string): RoomState {
   };
 }
 
-function Room({ code, me, name, host, onLeave }: { code: string; me: string; name: string; host: boolean; onLeave: () => void }) {
+/** In a duel only the admin and the seated opponent play; everyone else is turned away. */
+const plays = (s: RoomState, id: string) => !s.duel || id === s.hostId || id === s.rival;
+function onlyPlayers(s: RoomState, m: Record<string, Member>) {
+  if (!s.duel) return m;
+  return Object.fromEntries(Object.entries(m).filter(([id]) => plays(s, id)));
+}
+
+function Room({ code, me, name, host, duel, onLeave }: { code: string; me: string; name: string; host: boolean; duel: boolean; onLeave: () => void }) {
   const lang = useLang();
   const t = useT();
   const [st, setSt] = useState<RoomState | null>(null);
@@ -312,6 +328,7 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
   const offset = useRef(0);
   const stRef = useRef<RoomState | null>(null);
   stRef.current = st;
+  const [joinedAt] = useState(() => Date.now());
 
   // ---------------- admin ----------------
 
@@ -339,7 +356,7 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
     if (!h || h.st.phase !== "frage") return;
     const s = h.st;
     const hq = h.qs[s.i];
-    const ids = new Set([...Object.keys(membersRef.current), ...Object.keys(h.answers)]);
+    const ids = new Set([...Object.keys(membersRef.current).filter((id) => plays(s, id)), ...Object.keys(h.answers)]);
     const answers: Record<string, ReturnType<typeof judge>> = {};
     const scores = { ...s.scores };
     const names = { ...s.names };
@@ -361,7 +378,7 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
   const checkAll = useCallback(() => {
     const s = H.current?.st;
     if (!s || s.phase !== "frage") return;
-    const present = Object.keys(membersRef.current);
+    const present = Object.keys(membersRef.current).filter((id) => plays(s, id));
     if (present.length && present.every((id) => s.done.includes(id))) reveal();
   }, [reveal]);
 
@@ -379,7 +396,7 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
       const h = H.current;
       if (!h) return;
       const s = h.st;
-      if (s.phase !== "frage" || msg.i !== s.i || s.done.includes(msg.pid)) return rebroadcast();
+      if (s.phase !== "frage" || msg.i !== s.i || s.done.includes(msg.pid) || !plays(s, msg.pid)) return rebroadcast();
       h.answers[msg.pid] = judge(h.qs[s.i], msg);
       commit({ ...s, done: [...s.done, msg.pid], names: { ...s.names, [msg.pid]: membersRef.current[msg.pid]?.name ?? s.names[msg.pid] ?? "?" } });
       checkAll();
@@ -393,8 +410,9 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
     setBusy(true);
     try {
       h.qs = await buildQuestions(h.st.game, h.st.n);
+      if (h.st.duel && !(h.st.rival && membersRef.current[h.st.rival])) return;
       const names: Record<string, string> = {};
-      for (const [id, m] of Object.entries(membersRef.current)) names[id] = m.name;
+      for (const [id, m] of Object.entries(membersRef.current)) if (plays(h.st, id)) names[id] = m.name;
       ask({ ...h.st, round: h.st.round + 1, total: h.qs.length, scores: {}, names }, 0);
     } finally {
       setBusy(false);
@@ -408,6 +426,19 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
   };
   const toLobby = () => H.current && commit({ ...H.current.st, phase: "lobby", q: null, reveal: null, done: [], i: 0, total: 0, endsAt: 0 });
   const setting = (p: Partial<RoomState>) => H.current && H.current.st.phase === "lobby" && commit({ ...H.current.st, ...p });
+  // duel (admin): give the free seat to whoever joined first; free it again if they leave before the game
+  const seat = useCallback(() => {
+    const h = H.current;
+    if (!h || !h.st.duel) return;
+    const s = h.st;
+    const m = membersRef.current;
+    if (s.rival && (m[s.rival] || s.phase !== "lobby")) return;
+    const next = Object.entries(m)
+      .filter(([id, x]) => id !== s.hostId && !x.host)
+      .sort((a, b) => (a[1].at || 0) - (b[1].at || 0) || a[0].localeCompare(b[0]))[0]?.[0] ?? "";
+    if (next !== (s.rival ?? "")) commit({ ...s, rival: next });
+  }, [commit]);
+
   const close = () => {
     send("closed", {});
     onLeave();
@@ -424,17 +455,20 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
 
   useEffect(() => {
     if (host) {
-      H.current = loadHost(code) ?? { st: freshState(code, me, name), qs: [], answers: {} };
+      H.current = loadHost(code) ?? { st: freshState(code, me, name, duel), qs: [], answers: {} };
       setSt(H.current.st);
     }
     const c = realtime().channel(`kt:room:${code}`, { config: { broadcast: { self: false }, presence: { key: me } } });
     c.on("presence", { event: "sync" }, () => {
       const raw = c.presenceState<Member>();
       const m: Record<string, Member> = {};
-      for (const k in raw) if (raw[k][0]) m[k] = { name: raw[k][0].name, host: raw[k][0].host };
+      for (const k in raw) if (raw[k][0]) m[k] = { name: raw[k][0].name, host: raw[k][0].host, at: raw[k][0].at };
       membersRef.current = m;
       setMembers(m);
-      if (host) checkAll();
+      if (host) {
+        seat();
+        checkAll();
+      }
     });
     c.on("broadcast", { event: "state" }, ({ payload }) => {
       if (host) return;
@@ -449,7 +483,7 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
     c.on("broadcast", { event: "closed" }, () => !host && setConn("zu"));
     c.subscribe(async (status) => {
       if (status === "SUBSCRIBED") {
-        await c.track({ name, host });
+        await c.track({ name, host, at: joinedAt });
         if (host) rebroadcast();
         else c.send({ type: "broadcast", event: "hello", payload: { pid: me } });
       }
@@ -459,7 +493,7 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
       ch.current = null;
       realtime().removeChannel(c);
     };
-  }, [code, me, name, host, checkAll, onAnswer, rebroadcast]);
+  }, [code, me, name, host, duel, joinedAt, checkAll, onAnswer, rebroadcast, seat]);
 
   // players: ask for the state until it arrives
   useEffect(() => {
@@ -566,17 +600,24 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
   }
 
   const ids = Object.keys(members);
-  const full = !host && !st.names[me] && st.phase !== "lobby" && ids.length > MAX_PLAYERS;
+  const full = st.duel
+    ? !host && (st.rival ? st.rival !== me : st.phase !== "lobby")
+    : !host && !st.names[me] && st.phase !== "lobby" && ids.length > MAX_PLAYERS;
+  const shown = onlyPlayers(st, members);
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-16 pt-5 sm:pt-8">
-      <RoomBar st={st} members={members} me={me} />
+      <RoomBar st={st} members={shown} me={me} />
       {full ? (
-        <p className="mt-8 text-center text-lg font-semibold">{t(`Der Server ist voll (${MAX_PLAYERS} Spieler).`, `The server is full (${MAX_PLAYERS} players).`)}</p>
+        <p className="mt-8 text-center text-lg font-semibold">
+          {st.duel
+            ? t("Dieses 1v1 ist schon voll – hier spielen nur zwei. Erstell einfach dein eigenes.", "This 1v1 is already full – only two can play. Just start your own.")
+            : t(`Der Server ist voll (${MAX_PLAYERS} Spieler).`, `The server is full (${MAX_PLAYERS} players).`)}
+        </p>
       ) : st.phase === "lobby" ? (
-        <LobbyView st={st} host={host} members={members} me={me} busy={busy} onSetting={setting} onStart={start} />
+        <LobbyView st={st} host={host} members={shown} me={me} busy={busy} onSetting={setting} onStart={start} />
       ) : st.phase === "frage" && st.q ? (
-        <QuestionView st={st} q={st.q} members={members} me={me} host={host} myAns={myAns} offset={host ? 0 : offset.current} onAnswer={answer} onForce={reveal} dive={dive.round === st.round ? dive.list : []} />
+        <QuestionView st={st} q={st.q} members={shown} me={me} host={host} myAns={myAns} offset={host ? 0 : offset.current} onAnswer={answer} onForce={reveal} dive={dive.round === st.round ? dive.list : []} />
       ) : st.phase === "aufloesung" && st.q && st.reveal ? (
         <RevealView st={st} q={st.q} me={me} host={host} onNext={nextQ} dive={dive.round === st.round ? dive.list : []} />
       ) : st.phase === "ende" ? (
@@ -586,11 +627,11 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
       <div className="mt-10 flex flex-wrap justify-center gap-3 border-t-2 border-line pt-6">
         {host ? (
           <button type="button" className="btn-ghost" onClick={close}>
-            {t("Server schließen", "Close server")}
+            {st.duel ? t("1v1 beenden", "End 1v1") : t("Server schließen", "Close server")}
           </button>
         ) : (
           <button type="button" className="btn-ghost" onClick={onLeave}>
-            {t("Server verlassen", "Leave server")}
+            {st.duel ? t("1v1 verlassen", "Leave 1v1") : t("Server verlassen", "Leave server")}
           </button>
         )}
       </div>
@@ -620,7 +661,9 @@ function RoomBar({ st, members, me }: { st: RoomState; members: Record<string, M
   const [copied, setCopied] = useState(false);
   const share = async () => {
     const url = `${location.origin}${lang === "en" ? "/en" : ""}/multiplayer?code=${st.code}`;
-    const text = t(`Spiel mit mir auf Koshertrivia – Server-Code ${st.code}`, `Play with me on Koshertrivia – server code ${st.code}`);
+    const text = st.duel
+      ? t(`Ich fordere dich zum 1v1 auf Koshertrivia heraus – Code ${st.code}`, `I challenge you to a 1v1 on Koshertrivia – code ${st.code}`)
+      : t(`Spiel mit mir auf Koshertrivia – Server-Code ${st.code}`, `Play with me on Koshertrivia – server code ${st.code}`);
     try {
       if (navigator.share && matchMedia("(pointer: coarse)").matches) return await navigator.share({ title: "Koshertrivia", text, url });
       await navigator.clipboard.writeText(url);
@@ -632,7 +675,7 @@ function RoomBar({ st, members, me }: { st: RoomState; members: Record<string, M
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="min-w-0">
-        <p className="truncate font-display text-lg font-semibold text-muted">{serverName(st.title, lang)}</p>
+        <p className="truncate font-display text-lg font-semibold text-muted">{st.duel ? t(`1v1 von ${st.title}`, `${st.title}’s 1v1`) : serverName(st.title, lang)}</p>
         <p className="flex items-center gap-2">
           <span className="text-muted">Code</span>
           <span className="font-display text-3xl font-semibold tracking-[0.18em]">{st.code}</span>
@@ -640,7 +683,7 @@ function RoomBar({ st, members, me }: { st: RoomState; members: Record<string, M
       </div>
       <div className="flex items-center gap-3">
         <span className="font-semibold text-muted" aria-live="polite">
-          {n} {n === 1 ? t("Spieler", "player") : t("Spieler", "players")} online
+          {st.duel ? `${n}/2 ${t("Spieler", "players")}` : `${n} ${n === 1 ? t("Spieler", "player") : t("Spieler", "players")} online`}
         </span>
         <button type="button" className="btn-ghost" onClick={share}>
           {copied ? t("Link kopiert", "Link copied") : t("Einladen", "Invite")}
@@ -699,8 +742,15 @@ function LobbyView({
   const g = gameOf(st.game);
   return (
     <div className="mt-6">
-      <h2 className="mb-2 text-xl font-semibold">{t("Im Server", "On the server")}</h2>
+      <h2 className="mb-2 text-xl font-semibold">{st.duel ? t("1v1", "1v1") : t("Im Server", "On the server")}</h2>
       <Players members={members} me={me} />
+      {st.duel && Object.keys(members).length < 2 && (
+        <p className="mt-3 rounded-xl bg-brand-soft px-4 py-3 font-semibold">
+          {host
+            ? t(`Warte auf deinen Gegner … Schick ihm den Code ${st.code} oder tipp oben auf „Einladen“.`, `Waiting for your opponent … Send them the code ${st.code} or tap “Invite” above.`)
+            : t("Verbinde mit dem Duell …", "Joining the duel …")}
+        </p>
+      )}
 
       {host ? (
         <div className="mt-8">
@@ -773,6 +823,7 @@ function LobbyView({
             </fieldset>
           </div>
 
+          {!st.duel && (
           <label className="mt-6 flex cursor-pointer items-start gap-3">
             <input type="checkbox" className="mt-1 h-5 w-5 accent-[#2c2a35]" checked={st.pub} onChange={(e) => onSetting({ pub: e.target.checked })} />
             <span>
@@ -780,11 +831,12 @@ function LobbyView({
               <span className="block text-[15px] text-muted">{t("Aus: Nur wer den Code hat, kann beitreten.", "Off: only people with the code can join.")}</span>
             </span>
           </label>
+          )}
 
-          <button type="button" className="btn-primary mt-7 w-full text-lg sm:w-auto" disabled={busy} onClick={onStart}>
+          <button type="button" className="btn-primary mt-7 w-full text-lg sm:w-auto" disabled={busy || (st.duel && Object.keys(members).length < 2)} onClick={onStart}>
             {busy ? t("Lade …", "Loading …") : t(`${g.title} starten`, `Start ${g.titleEn}`)}
           </button>
-          <p className="mt-2 text-[15px] text-muted">{isDaily(st.game) ? t("Wer später dazukommt, steigt bei der nächsten Runde ein.", "Anyone joining later starts with the next round.") : t("Wer später dazukommt, steigt bei der nächsten Frage ein.", "Anyone joining later starts with the next question.")}</p>
+          <p className="mt-2 text-[15px] text-muted">{st.duel ? t("Starten geht, sobald dein Gegner da ist.", "You can start as soon as your opponent is here.") : isDaily(st.game) ? t("Wer später dazukommt, steigt bei der nächsten Runde ein.", "Anyone joining later starts with the next round.") : t("Wer später dazukommt, steigt bei der nächsten Frage ein.", "Anyone joining later starts with the next question.")}</p>
         </div>
       ) : (
         <div className="card mt-8 p-6 text-center">
@@ -1172,7 +1224,13 @@ function EndView({ st, me, host, onLobby }: { st: RoomState; me: string; host: b
       <div className="chunk px-5 py-7 text-center" style={{ background: "#f3d272", ["--edge" as string]: "#c9a43c" }}>
         <p className="font-display text-lg font-semibold text-ink/70">{gameTitle(st.game, lang)} · {t("Endstand", "Final standings")}</p>
         <p className="mt-1 font-display text-3xl font-semibold sm:text-4xl">
-          {winners.length === 1 ? t(`${winners[0]} gewinnt!`, `${winners[0]} wins!`) : t(`Unentschieden: ${winners.join(" & ")}`, `Tie: ${winners.join(" & ")}`)}
+          {winners.length === 1
+            ? st.duel
+              ? t(`${winners[0]} gewinnt das 1v1!`, `${winners[0]} wins the 1v1!`)
+              : t(`${winners[0]} gewinnt!`, `${winners[0]} wins!`)
+            : st.duel
+              ? t("Unentschieden!", "It’s a draw!")
+              : t(`Unentschieden: ${winners.join(" & ")}`, `Tie: ${winners.join(" & ")}`)}
         </p>
       </div>
       <Scores st={st} me={me} />

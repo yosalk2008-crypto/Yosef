@@ -83,6 +83,8 @@ export type RoomState = {
   reveal: Reveal | null;
   scores: Record<string, number>;
   names: Record<string, string>;
+  duel?: boolean; // 1v1: only the admin and one opponent play
+  rival?: string; // the opponent’s id in a duel ("" = seat free)
 };
 
 /** What a player sends when answering. */
