@@ -56,6 +56,9 @@ export function Spurensuche() {
   const [error, setError] = useState<string | null>(null);
   const [blocked, setBlocked] = useState<"archiv" | "wartung" | null>(null);
   const [guess, setGuess] = useState<[number, number] | null>(null);
+  const [bigMap, setBigMap] = useState(false);
+  const [full, setFull] = useState(false);
+  const stageEl = useRef<HTMLDivElement | null>(null);
   const [reveal, setReveal] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -75,6 +78,7 @@ export function Spurensuche() {
   const kms = targets ? guesses.map((g, i) => distanceKm([g[0], g[1]], [targets[i].lat, targets[i].lng])) : [];
   const pts = kms.map(points);
   const total = pts.reduce((a, b) => a + b, 0);
+  const playing = reveal == null && !over;
 
   // 1) load Google Maps and work out today's five panoramas (saved ones are reused, so the game stays the same after a reload)
   useEffect(() => {
@@ -125,7 +129,7 @@ export function Spurensuche() {
       linksControl: true,
       panControl: false,
       zoomControl: true,
-      fullscreenControl: true,
+      fullscreenControl: false,
       motionTracking: false,
       motionTrackingControl: false,
       enableCloseButton: false,
@@ -213,13 +217,16 @@ export function Spurensuche() {
   // after a guess / when the game is over: lines between guess and target
   useEffect(() => {
     if (!ready || !targets) return;
-    if (reveal != null) showResult([reveal]);
-    else if (over) showResult([0, 1, 2, 3, 4]);
+    if (reveal == null && !over) return;
+    // wait until the map has grown to the whole stage, then fit the lines
+    const id = setTimeout(() => (reveal != null ? showResult([reveal]) : showResult([0, 1, 2, 3, 4])), 260);
+    return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, reveal, over, targets]);
 
   const submit = () => {
     if (!guess || !targets || over) return;
+    setBigMap(false);
     const next: [number, number][] = [...guesses, guess];
     setLocal(next);
     setReveal(round);
@@ -234,6 +241,38 @@ export function Spurensuche() {
       state: { targets, guesses: next },
     });
   };
+
+  // full screen: the whole stage (Street View + map), with a CSS fallback where the browser can’t (iPhone)
+  const toggleFull = () => {
+    const el = stageEl.current;
+    if (!full) {
+      setFull(true);
+      el?.requestFullscreen?.().catch(() => {});
+    } else {
+      setFull(false);
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    }
+  };
+  useEffect(() => {
+    const off = () => !document.fullscreenElement && setFull(false);
+    document.addEventListener("fullscreenchange", off);
+    return () => document.removeEventListener("fullscreenchange", off);
+  }, []);
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (bigMap) setBigMap(false);
+      else if (full && !document.fullscreenElement) setFull(false);
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, [bigMap, full]);
+  useEffect(() => {
+    document.body.style.overflow = full ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [full]);
 
   const backToStart = () => {
     if (!targets || !pano.current) return;
@@ -296,45 +335,96 @@ export function Spurensuche() {
             <span className="text-muted">{t("Punkte", "Points")}: {total}</span>
           </div>
 
-          <div className={over && reveal == null ? "hidden" : ""}>
-            <div className="relative overflow-hidden rounded-2xl border-2 border-line">
-              <div ref={svEl} className="h-[52vh] min-h-72 w-full bg-ink/10 sm:h-[60vh]" aria-label={t("Street-View-Ansicht", "Street View")} />
-              {reveal == null && (
-                <button type="button" onClick={backToStart} className="absolute left-2 top-2 z-10 rounded-full bg-white/95 px-3 py-1.5 text-sm font-bold shadow">
-                  {t("Zurück zum Start", "Back to start")}
+          <div
+            ref={stageEl}
+            className={
+              full
+                ? "fixed inset-0 z-[60] bg-ink"
+                : "relative left-1/2 h-[72vh] min-h-[420px] w-[min(1240px,calc(100vw-16px))] -translate-x-1/2 overflow-hidden rounded-2xl border-2 border-line bg-ink/10"
+            }
+          >
+            <div ref={svEl} className="absolute inset-0" aria-label={t("Street-View-Ansicht", "Street View")} />
+
+            {playing && (
+              <button type="button" onClick={backToStart} className="absolute left-3 top-3 z-10 rounded-full bg-white/95 px-3 py-1.5 text-sm font-bold shadow">
+                {t("Zurück zum Start", "Back to start")}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={toggleFull}
+              className="absolute right-3 top-3 z-10 grid h-10 w-10 place-items-center rounded-full bg-white/95 shadow"
+              aria-label={full ? t("Vollbild beenden", "Exit full screen") : t("Vollbild", "Full screen")}
+              title={full ? t("Vollbild beenden", "Exit full screen") : t("Vollbild", "Full screen")}
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                {full ? <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
+              </svg>
+            </button>
+            {full && (
+              <span className="absolute left-3 top-16 z-10 rounded-full bg-white/95 px-3 py-1.5 text-sm font-bold shadow sm:left-1/2 sm:top-3 sm:-translate-x-1/2">
+                {over && reveal == null ? t("Alle Runden", "All rounds") : t(`Runde ${idx + 1} von ${ROUNDS}`, `Round ${idx + 1} of ${ROUNDS}`)} · {total} {t("Punkte", "points")}
+              </span>
+            )}
+
+            {/* the guess map: small in the corner, big when tapped, whole stage for the results */}
+            <div
+              className={`absolute z-20 overflow-hidden bg-white shadow-[0_6px_24px_rgba(0,0,0,.35)] transition-[width,height] duration-200 ${
+                !playing
+                  ? "inset-0"
+                  : bigMap
+                    ? "bottom-3 right-3 h-[min(72%,520px)] w-[calc(100%-24px)] rounded-2xl sm:w-[min(62%,720px)]"
+                    : "bottom-3 right-3 h-28 w-40 rounded-xl border-2 border-white sm:h-44 sm:w-64"
+              }`}
+            >
+              <div ref={mapEl} className="absolute inset-0" aria-label={t("Karte für deinen Tipp", "Map for your guess")} />
+              {playing && !bigMap && (
+                <button
+                  type="button"
+                  onClick={() => setBigMap(true)}
+                  className="absolute inset-0 z-10 flex items-end justify-center bg-transparent pb-1.5"
+                  aria-label={t("Karte vergrößern und Tipp setzen", "Open the map to place your guess")}
+                >
+                  <span className="rounded-full bg-ink/85 px-2.5 py-1 text-xs font-bold text-white">{guess ? t("Tipp ändern", "Change guess") : t("Tipp setzen", "Place guess")}</span>
                 </button>
               )}
+              {playing && bigMap && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setBigMap(false)}
+                    className="absolute right-2 top-2 z-10 grid h-9 w-9 place-items-center rounded-full bg-white text-lg font-bold shadow"
+                    aria-label={t("Karte verkleinern", "Shrink the map")}
+                  >
+                    ✕
+                  </button>
+                  <div className="absolute inset-x-2 bottom-2 z-10">
+                    <button type="button" onClick={submit} disabled={!guess} className="btn-primary w-full">
+                      {guess ? t("Tipp abgeben", "Submit guess") : t("Tipp auf die Karte setzen", "Tap the map to place your guess")}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
+            {reveal != null && (
+              <div className="card pop absolute inset-x-3 bottom-3 z-30 p-4 sm:left-3 sm:right-auto sm:w-96">
+                <p className="text-2xl font-display font-semibold">{pts[reveal]} / {MAX} {t("Punkte", "points")}</p>
+                <p className="mt-1 text-sm text-muted">
+                  {fmtKm(kms[reveal], lang)} {t("daneben – es war in der Nähe von", "off – it was near")} <strong className="text-ink">{placeOf(targets![reveal])}</strong>.
+                </p>
+                <button
+                  type="button"
+                  className="btn-primary mt-3"
+                  onClick={() => {
+                    setReveal(null);
+                    setGuess(null);
+                  }}
+                >
+                  {round < ROUNDS ? t("Nächste Runde", "Next round") : t("Ergebnis", "Result")}
+                </button>
+              </div>
+            )}
           </div>
-
-          <div className="mt-3 overflow-hidden rounded-2xl border-2 border-line">
-            <div ref={mapEl} className={`w-full ${over && reveal == null ? "h-[60vh] min-h-80" : "h-72 sm:h-80"}`} aria-label={t("Karte für deinen Tipp", "Map for your guess")} />
-          </div>
-
-          {reveal == null && !over && (
-            <button type="button" onClick={submit} disabled={!guess} className="btn-primary mt-3 w-full">
-              {guess ? t("Tipp abgeben", "Submit guess") : t("Setz einen Pin auf die Karte", "Drop a pin on the map")}
-            </button>
-          )}
-
-          {reveal != null && (
-            <div className="card pop mt-3 p-4">
-              <p className="text-2xl font-display font-semibold">{pts[reveal]} / {MAX} {t("Punkte", "points")}</p>
-              <p className="mt-1 text-sm text-muted">
-                {fmtKm(kms[reveal], lang)} {t("daneben – es war in der Nähe von", "off – it was near")} <strong className="text-ink">{placeOf(targets![reveal])}</strong>.
-              </p>
-              <button
-                type="button"
-                className="btn-primary mt-3"
-                onClick={() => {
-                  setReveal(null);
-                  setGuess(null);
-                }}
-              >
-                {round < ROUNDS ? t("Nächste Runde", "Next round") : t("Ergebnis", "Result")}
-              </button>
-            </div>
-          )}
 
           {over && reveal == null && targets && (
             <>
