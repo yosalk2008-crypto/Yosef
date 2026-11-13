@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLang, useT } from "@/lib/i18n";
 
 declare global {
   interface Window {
@@ -30,6 +31,8 @@ function load(src: string) {
 
 /** "Ist das halal?" – the quiz lives in /public/halal (plain JS, same engine and styles as "Ist das koscher?"). */
 export function HalalQuiz() {
+  const lang = useLang();
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
 
@@ -38,8 +41,10 @@ export function HalalQuiz() {
     let alive = true;
     (async () => {
       try {
+        (window as unknown as { KT_LANG?: string }).KT_LANG = lang;
         if (!window.HALAL) await load("/halal/data.js?v=3");
-        if (!window.mountHalal) await load("/halal/app.js?v=1");
+        if (lang === "en" && !(window as unknown as { HALAL_EN?: unknown }).HALAL_EN) await load("/halal/data.en.js?v=3");
+        if (!window.mountHalal) await load("/halal/app.js?v=2");
         if (alive && ref.current && window.mountHalal) cleanup = window.mountHalal(ref.current);
       } catch {
         if (alive) setFailed(true);
@@ -49,17 +54,19 @@ export function HalalQuiz() {
       alive = false;
       cleanup?.();
     };
-  }, []);
+  }, [lang]);
 
   return (
     <div className="kosher halal">
       <div ref={ref} tabIndex={-1} className="outline-none">
         {!failed && <section className="band big" style={{ minHeight: 420 }} aria-busy="true" />}
       </div>
-      {failed && <p className="wrap pt-10 font-semibold">Das Quiz konnte nicht geladen werden. Lade die Seite bitte neu.</p>}
+      {failed && <p className="wrap pt-10 font-semibold">{t("Das Quiz konnte nicht geladen werden. Lade die Seite bitte neu.", "The quiz could not be loaded. Please reload the page.")}</p>}
       <p className="kfoot">
-        Vereinfachte Darstellung aus sunnitischer Sicht. Wo die Gelehrten unterschiedlicher Meinung sind, lautet die Antwort „kommt drauf an“. Bei
-        persönlichen Fragen hilft ein Imam oder Gelehrter deines Vertrauens weiter.
+        {t(
+          "Vereinfachte Darstellung aus sunnitischer Sicht. Wo die Gelehrten unterschiedlicher Meinung sind, lautet die Antwort „kommt drauf an“. Bei persönlichen Fragen hilft ein Imam oder Gelehrter deines Vertrauens weiter.",
+          "A simplified overview from a Sunni perspective. Where scholars disagree, the answer is “it depends”. For personal questions, ask an imam or scholar you trust."
+        )}
       </p>
     </div>
   );
