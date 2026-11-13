@@ -4,7 +4,7 @@ import { allResults, utcDate, type DailyResult, type GameKey } from "./daily";
 
 // Public Supabase project (publishable key is meant to be used in the browser; access is limited by RLS).
 export const SUPA_URL = "https://pgebptkwzhngfmjylraz.supabase.co";
-const SUPA_KEY = "sb_publishable_Qxp5sXVWcxJCb6h653SeZg_70dVD7lt";
+export const SUPA_KEY = "sb_publishable_Qxp5sXVWcxJCb6h653SeZg_70dVD7lt";
 
 const headers = { apikey: SUPA_KEY, "Content-Type": "application/json" };
 

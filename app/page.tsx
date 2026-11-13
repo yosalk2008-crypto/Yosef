@@ -85,6 +85,29 @@ export default function Home() {
             <path d="M32 2l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" fill="#ee8a2f" stroke="#2c2a35" strokeWidth="2" strokeLinejoin="round" />
           </svg>
         </Link>
+        <Link
+          href="/multiplayer"
+          className="chunk relative flex items-center justify-between gap-3 overflow-hidden px-5 py-4 sm:px-8 lg:col-span-2"
+          style={{ background: "#ee8a2f", ["--edge" as string]: "#b9621a" }}
+        >
+          <span className="relative">
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-1 font-display text-2xl font-semibold sm:text-3xl">
+              Mit Freunden spielen
+              <span className="hidden rounded-full bg-white px-2.5 py-0.5 text-sm text-ink sm:inline">Neu</span>
+            </span>
+            <span className="mt-1 hidden max-w-xl text-base font-semibold text-ink/75 sm:block sm:text-lg">
+              Server erstellen oder mit Code beitreten – alle beantworten dieselbe Frage, dann vergleicht ihr eure Antworten.
+            </span>
+          </span>
+          <span className="relative flex items-center gap-4">
+            <span className="hidden -space-x-3 md:flex" aria-hidden="true">
+              {["#3f86dd", "#3e9a3a", "#d6453d", "#8a5cd6"].map((c, k) => (
+                <span key={c} className="h-11 w-11 rounded-full border-[3px] border-ink" style={{ background: c, zIndex: 4 - k }} />
+              ))}
+            </span>
+            <span className="btn-primary shrink-0 px-4 max-sm:min-h-0 max-sm:py-2 max-sm:text-sm">Server finden</span>
+          </span>
+        </Link>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pb-6 pt-8 sm:pt-10">

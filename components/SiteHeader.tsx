@@ -93,6 +93,10 @@ export function SiteHeader() {
               Ist das halal?
               <span className="rounded-full bg-white px-2.5 py-0.5 text-sm text-ink">Neu</span>
             </Link>
+            <Link href="/multiplayer" className="chunk mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold" style={{ background: "#ee8a2f", ["--edge" as string]: "#b9621a" }}>
+              Mit Freunden spielen
+              <span className="rounded-full bg-white px-2.5 py-0.5 text-sm text-ink">Neu</span>
+            </Link>
             <h2 className="mb-2 mt-6 text-lg font-semibold">Quiz nach Region</h2>
             <div className="flex flex-wrap gap-2">
               {MAIN_REGIONS.map((r) => (
