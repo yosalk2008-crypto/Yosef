@@ -16,6 +16,12 @@ export default function Quellen() {
           amtliche Werte.
         </p>
         <p className="mt-3">
+          Die Ø Jahrestemperatur (1991–2020) in der Länderjagd stammt aus dem{" "}
+          <a href="https://climateknowledgeportal.worldbank.org/" rel="noopener">Climate Change Knowledge Portal</a> der Weltbank
+          (Grundlage: CRU-Klimadaten), zusammengestellt in der{" "}
+          <a href="https://en.wikipedia.org/wiki/List_of_countries_by_average_yearly_temperature" rel="noopener">Wikipedia-Liste</a>. Für Taiwan liegt kein Wert vor.
+        </p>
+        <p className="mt-3">
           Namen, Fläche, Kontinente und Nachbarländer stammen aus dem Projekt{" "}
           <a href="https://github.com/mledoze/countries" rel="noopener">mledoze/countries</a> (ODbL),
           Hauptstädte und deren Einwohnerzahlen aus{" "}

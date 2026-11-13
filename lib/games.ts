@@ -13,7 +13,7 @@ export const GAMES: GameInfo[] = [
   {
     key: "laenderjagd",
     title: "Länderjagd",
-    tagline: "Errate das Land des Tages mit Hinweisen zu Lage, Größe und Wirtschaft.",
+    tagline: "Errate das Land des Tages mit Hinweisen zu Kontinent, Nachbarn, Klima und Größe.",
     bg: "#9fd06f",
     edge: "#7bb04c",
     icon: "M12 21s-7-6.2-7-11.5A7 7 0 0119 9.5C19 14.8 12 21 12 21zm0-9a2.5 2.5 0 100-5 2.5 2.5 0 000 5z",
