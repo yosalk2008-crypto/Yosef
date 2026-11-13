@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "sw
 
 export const metadata: Metadata = {
   title: "Ist das halal?",
-  description: "Vape, Sportwetten, Zinsen, Kredite: Rate, was im Islam erlaubt ist – 125 Fragen mit Quellen aus Quran, Tafsir, Sahih al-Bukhari und Sahih Muslim.",
+  description: "Vape, Sportwetten, Zinsen, Kredite: Rate, was im Islam erlaubt ist – 135 Fragen mit Quellen aus Quran, Tafsir, Sahih al-Bukhari und Sahih Muslim.",
 };
 
 export default function Page() {

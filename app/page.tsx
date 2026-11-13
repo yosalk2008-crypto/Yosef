@@ -20,7 +20,7 @@ export default function Home() {
               <span className="hidden rounded-full bg-white px-2.5 py-0.5 text-sm text-ink sm:inline">Neu</span>
             </span>
             <span className="mt-1 hidden max-w-xl text-base font-semibold text-white/85 sm:block sm:text-lg">
-              Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – über 100 Fragen mit Erklärungen.
+              Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – über 130 Fragen mit Erklärungen.
             </span>
           </span>
           <span className="relative flex items-center gap-4">
@@ -42,7 +42,7 @@ export default function Home() {
               <span className="hidden rounded-full bg-white px-2.5 py-0.5 text-sm text-ink sm:inline">Neu</span>
             </span>
             <span className="mt-1 hidden max-w-xl text-base font-semibold text-white/85 sm:block sm:text-lg">
-              Vape, Sportwetten, Zinsen, Kredite: Rate, was im Islam erlaubt ist – 125 Fragen mit Quellen aus Quran, Bukhari und Muslim.
+              Vape, Sportwetten, Zinsen, Kredite: Rate, was im Islam erlaubt ist – 135 Fragen mit Quellen aus Quran, Bukhari und Muslim.
             </span>
           </span>
           <span className="relative flex items-center gap-4">

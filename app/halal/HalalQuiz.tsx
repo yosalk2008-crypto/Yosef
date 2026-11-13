@@ -38,7 +38,7 @@ export function HalalQuiz() {
     let alive = true;
     (async () => {
       try {
-        if (!window.HALAL) await load("/halal/data.js?v=1");
+        if (!window.HALAL) await load("/halal/data.js?v=2");
         if (!window.mountHalal) await load("/halal/app.js?v=1");
         if (alive && ref.current && window.mountHalal) cleanup = window.mountHalal(ref.current);
       } catch {
