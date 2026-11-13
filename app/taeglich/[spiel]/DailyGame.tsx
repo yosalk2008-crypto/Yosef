@@ -20,7 +20,6 @@ const MAP: Record<Exclude<GameKey, "tiefgang">, React.ComponentType> = {
   spitzenplatz: dynamic(() => import("@/components/games/Spitzenplatz").then((m) => m.Spitzenplatz), { ssr: false, loading }),
   farbecht: dynamic(() => import("@/components/games/Farbecht").then((m) => m.Farbecht), { ssr: false, loading }),
   grenzgang: dynamic(() => import("@/components/games/Grenzgang").then((m) => m.Grenzgang), { ssr: false, loading }),
-  zeitreise: dynamic(() => import("@/components/games/Zeitreise").then((m) => m.Zeitreise), { ssr: false, loading }),
   spurensuche: dynamic(() => import("@/components/games/Spurensuche").then((m) => m.Spurensuche), { ssr: false, loading }),
 };
 

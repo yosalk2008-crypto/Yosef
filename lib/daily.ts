@@ -13,7 +13,6 @@ export type GameKey =
   | "spitzenplatz"
   | "farbecht"
   | "grenzgang"
-  | "zeitreise"
   | "spurensuche"
   | "tiefgang";
 

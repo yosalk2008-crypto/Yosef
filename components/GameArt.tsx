@@ -106,14 +106,5 @@ function Art({ game, shadow = false }: { game: GameKey; shadow?: boolean }) {
           <circle cx="60" cy="22" r="5" fill={f("#fff")} />
         </g>
       );
-    case "zeitreise":
-      return (
-        <g {...s}>
-          <rect x="36" y="20" width="76" height="54" rx="9" fill={f("#fff")} />
-          <path d="M48 60c4-10 10-14 16-12s8-8 14-4 6 12 0 16-10 0-16 3-16 4-14-3z" fill={f("#f0ad8a")} />
-          <path d="M8 10h34M8 80h34M12 10c0 18 16 22 16 35S12 62 12 80M38 10c0 18-16 22-16 35s16 17 16 35" fill={f("#fff")} />
-          <path d="M16 74c3-8 6-10 9-10s6 2 9 10z" fill={f("#f3d272")} />
-        </g>
-      );
   }
 }

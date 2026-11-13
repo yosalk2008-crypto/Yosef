@@ -16,7 +16,6 @@ export const LB_GAMES: { key: GameKey; title: string }[] = [
   { key: "spitzenplatz", title: "Spitzenplatz" },
   { key: "farbecht", title: "Farbecht" },
   { key: "grenzgang", title: "Grenzgang" },
-  { key: "zeitreise", title: "Zeitreise" },
   { key: "spurensuche", title: "Spurensuche" },
   { key: "tiefgang", title: "Tiefgang" },
 ];
@@ -38,7 +37,7 @@ export function pointsFor(game: GameKey, r: DailyResult): number {
     case "grenzgang":
       return r.won ? clamp(50 + (r.score / r.max) * 50) : 0;
     default:
-      return r.max > 0 ? clamp((r.score / r.max) * 100) : 0; // Maßstab, Farbecht, Zeitreise, Tiefgang
+      return r.max > 0 ? clamp((r.score / r.max) * 100) : 0; // Maßstab, Farbecht, Tiefgang
   }
 }
 

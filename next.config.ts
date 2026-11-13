@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
     const social = (path: string, src: string, to = "/") => ({ source: path, destination: `${to}?utm_source=${src}&utm_medium=social`, permanent: false });
     return [
       { source: "/musterwebsite/:path*", destination: "/", permanent: true },
+      { source: "/taeglich/zeitreise", destination: "/", permanent: true },
       social("/tiktok", "tiktok"),
       social("/tt", "tiktok"),
       social("/tt/halal", "tiktok", "/halal"),

@@ -67,14 +67,6 @@ export const GAMES: GameInfo[] = [
     icon: "M5 19a2 2 0 100-4 2 2 0 000 4zM19 9a2 2 0 100-4 2 2 0 000 4zM7 17c5 0 2-10 10-10",
   },
   {
-    key: "zeitreise",
-    title: "Zeitreise",
-    tagline: "Wann und wo war das? Ordne Ereignisse auf Karte und Zeitleiste ein.",
-    bg: "#f0ad8a",
-    edge: "#d38c68",
-    icon: "M12 7v5l3 2M21 12a9 9 0 11-3-6.7M21 4v5h-5",
-  },
-  {
     key: "spurensuche",
     title: "Spurensuche",
     tagline: "Du stehst irgendwo auf der Welt. Schau dich in Street View um und tippe, wo du bist.",

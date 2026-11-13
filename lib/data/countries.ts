@@ -30,7 +30,7 @@ export type Continent = "Europa" | "Asien" | "Afrika" | "Nordamerika" | "Südame
 
 /**
  * Countries that never come up as a question in the daily games (Länderjagd, Maßstab, Viererbande, Höher oder
- * tiefer, Spitzenplatz, Farbecht, Zeitreise, Tiefgang). They are still drawn on every map, can be entered as a
+ * tiefer, Spitzenplatz, Farbecht, Tiefgang). They are still drawn on every map, can be entered as a
  * step in Grenzgang and are part of the region quizzes (ALL_COUNTRIES).
  */
 const EXCLUDED = new Set(["ISR"]);
