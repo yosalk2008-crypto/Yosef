@@ -1,7 +1,8 @@
 import { canon, distance } from "./fuzzy";
 import { BY_ID, COUNTRIES, CONTINENTS, SUBREGION_DE, norm, type Country } from "./data/countries";
 import { BEKANNTHEIT } from "./data/bekanntheit";
-import { KATALOG, cleanAnswers } from "./data/tiefgang-katalog";
+import { KATALOG, cleanAnswers, type KatalogPrompt } from "./data/tiefgang-katalog";
+import { EXTEND, KATALOG3 } from "./data/tiefgang-katalog3";
 import { makeRng, type Rng } from "./rng";
 
 /**
@@ -176,7 +177,7 @@ TEMPLATES.push(
   }
 );
 
-const CURATED: Question[] = KATALOG.map((p) => {
+function curatedQ(p: KatalogPrompt): Question {
   const seen = new Set<string>();
   const answers: Answer[] = [];
   for (const line of cleanAnswers(p.answers)) {
@@ -187,7 +188,8 @@ const CURATED: Question[] = KATALOG.map((p) => {
     answers.push({ id: p.key + ":" + norm(name), name, alt, pts: Math.max(10, Math.min(100, +r)) });
   }
   return { key: "k:" + p.key, text: p.text, hint: p.hint, answers: withPerle(answers) };
-});
+}
+const CURATED: Question[] = KATALOG.map(curatedQ);
 
 /** Pools as they were before the big expansion on 12 Nov 2026 – keeps older daily puzzles (and saved games) unchanged. */
 const LEGACY_TEMPLATES = TEMPLATES.slice(0, 12);
@@ -214,14 +216,129 @@ function pickQuestions(rng: Rng, n: number, legacy = false): Question[] {
   return rng.shuffle(out);
 }
 
+// ---------- pool from 14 Nov 2026: only prompts with at least 50 valid answers ----------
+const BIG_FROM = "2026-11-14";
+const MIN_ANSWERS = 50;
+
+const CURATED3: Question[] = [
+  ...KATALOG.map((p) => curatedQ(EXTEND[p.key] ? { ...p, answers: [...p.answers, ...EXTEND[p.key]] } : p)),
+  ...KATALOG3.map(curatedQ),
+].filter((q) => q.answers.length >= MIN_ANSWERS);
+
+const capAnswers = (list: Country[]) => scored(list.filter((c) => c.cap).map((c) => ({ id: "cap-" + c.id, name: c.cap!, alt: c.capAlt, fame: fame(c) })));
+const ofCont = (...cs: string[]) => COUNTRIES.filter((c) => cs.includes(c.cont));
+const WB = "Grundlage sind die aktuellen Zahlen der Weltbank.";
+const hue = (h: string) => {
+  const r = parseInt(h.slice(1, 3), 16) / 255, g = parseInt(h.slice(3, 5), 16) / 255, b = parseInt(h.slice(5, 7), 16) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+  let H = 0;
+  if (d) {
+    if (mx === r) H = ((g - b) / d) % 6;
+    else if (mx === g) H = (b - r) / d + 2;
+    else H = (r - g) / d + 4;
+    H *= 60;
+    if (H < 0) H += 360;
+  }
+  const S = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
+  if (l > 0.9) return "weiß";
+  if (l < 0.12) return "schwarz";
+  if (S < 0.2) return l > 0.6 ? "weiß" : "grau";
+  if (H < 15 || H >= 340) return "rot";
+  if (H < 45) return "orange";
+  if (H < 70) return "gelb";
+  if (H < 170) return "grün";
+  if (H < 260) return "blau";
+  return "lila";
+};
+const flagHas = (col: string) => COUNTRIES.filter((c) => c.flag.colors.some((h) => hue(h) === col));
+const SET_IDS = {
+  commonwealth: ["ATG", "AUS", "BHS", "BGD", "BRB", "BLZ", "BWA", "BRN", "CMR", "CAN", "CYP", "DMA", "SWZ", "FJI", "GAB", "GMB", "GHA", "GRD", "GUY", "IND", "JAM", "KEN", "KIR", "LSO", "MWI", "MYS", "MDV", "MLT", "MUS", "MOZ", "NAM", "NRU", "NZL", "NGA", "PAK", "PNG", "RWA", "KNA", "LCA", "VCT", "WSM", "SYC", "SLE", "SGP", "SLB", "ZAF", "LKA", "TZA", "TGO", "TON", "TTO", "TUV", "UGA", "GBR", "VUT", "ZMB"],
+  englisch: ["GBR", "IRL", "MLT", "USA", "CAN", "AUS", "NZL", "IND", "PAK", "PHL", "SGP", "ZAF", "NGA", "GHA", "KEN", "UGA", "TZA", "ZMB", "ZWE", "MWI", "BWA", "NAM", "LSO", "SWZ", "SLE", "LBR", "GMB", "CMR", "RWA", "BDI", "SSD", "SDN", "ERI", "SYC", "MUS", "JAM", "BHS", "BRB", "TTO", "GUY", "BLZ", "ATG", "DMA", "GRD", "KNA", "LCA", "VCT", "FJI", "PNG", "SLB", "VUT", "WSM", "TON", "KIR", "TUV", "NRU", "MHL", "FSM", "PLW"],
+  atlantik: ["ISL", "IRL", "GBR", "FRA", "ESP", "PRT", "MAR", "MRT", "SEN", "GMB", "GNB", "GIN", "SLE", "LBR", "CIV", "GHA", "TGO", "BEN", "NGA", "CMR", "GNQ", "GAB", "COG", "COD", "AGO", "NAM", "ZAF", "CPV", "STP", "CAN", "USA", "MEX", "BLZ", "GTM", "HND", "NIC", "CRI", "PAN", "COL", "VEN", "GUY", "SUR", "BRA", "URY", "ARG", "CUB", "JAM", "HTI", "DOM", "BHS", "BRB", "TTO", "GRD", "VCT", "LCA", "DMA", "ATG", "KNA", "NOR", "BEL", "NLD", "DEU", "DNK"],
+};
+const AU_IDS = COUNTRIES.filter((c) => c.cont === "Afrika").map((c) => c.id);
+const fixed = (key: string, text: string, hint: string, answers: Answer[]): Question => ({ key: "b:" + key, text, hint, answers });
+const byIds = (ids: string[]) => countryAnswers(ids.map((id) => BY_ID[id]).filter(Boolean));
+const C = COUNTRIES;
+const BIG_TEMPLATES: Question[] = [
+  { key: "cont:Afrika", text: `Nenne ein Land ${CONT_TEXT.Afrika}.`, hint: "Je unbekannter das Land, desto tiefer tauchst du.", answers: countryAnswers(ofCont("Afrika")) },
+  { key: "cap:Afrika", text: `Nenne eine Hauptstadt ${CONT_TEXT.Afrika}.`, hint: "Nur die Hauptstadt eines Landes zählt, nicht das Land selbst.", answers: capAnswers(ofCont("Afrika")) },
+  fixed("welt", "Nenne irgendein Land der Welt.", "Alle anerkannten Staaten zählen – je unbekannter, desto tiefer.", countryAnswers(C)),
+  fixed("cap-welt", "Nenne irgendeine Hauptstadt der Welt.", "Nur Hauptstädte von Staaten zählen.", capAnswers(C)),
+  fixed("asoz", "Nenne ein Land in Asien oder Ozeanien.", "Je unbekannter das Land, desto tiefer tauchst du.", countryAnswers(ofCont("Asien", "Ozeanien"))),
+  fixed("cap-asoz", "Nenne eine Hauptstadt in Asien oder Ozeanien.", "Nur die Hauptstadt eines Landes zählt.", capAnswers(ofCont("Asien", "Ozeanien"))),
+  fixed("euas", "Nenne ein Land in Europa oder Asien.", "Je unbekannter das Land, desto tiefer tauchst du.", countryAnswers(ofCont("Europa", "Asien"))),
+  fixed("cap-euas", "Nenne eine Hauptstadt in Europa oder Asien.", "Nur die Hauptstadt eines Landes zählt.", capAnswers(ofCont("Europa", "Asien"))),
+  fixed("pop5", "Nenne ein Land mit mehr als 5 Millionen Einwohnern.", WB, countryAnswers(C.filter((c) => (c.pop ?? 0) > 5e6))),
+  fixed("pop10", "Nenne ein Land mit mehr als 10 Millionen Einwohnern.", WB, countryAnswers(C.filter((c) => (c.pop ?? 0) > 1e7))),
+  fixed("pop20", "Nenne ein Land mit mehr als 20 Millionen Einwohnern.", WB, countryAnswers(C.filter((c) => (c.pop ?? 0) > 2e7))),
+  fixed("pop-klein", "Nenne ein Land mit weniger als 5 Millionen Einwohnern.", WB, countryAnswers(C.filter((c) => c.pop != null && c.pop < 5e6))),
+  fixed("pop10-50", "Nenne ein Land mit 10 bis 50 Millionen Einwohnern.", WB, countryAnswers(C.filter((c) => (c.pop ?? 0) > 1e7 && (c.pop ?? 0) < 5e7))),
+  fixed("area100k", "Nenne ein Land, das größer ist als 100.000 km².", "Zum Vergleich: Island hat etwa 103.000 km².", countryAnswers(C.filter((c) => c.area > 1e5))),
+  fixed("area500k", "Nenne ein Land, das größer ist als 500.000 km².", "Zum Vergleich: Frankreich hat etwa 550.000 km².", countryAnswers(C.filter((c) => c.area > 5e5))),
+  fixed("area-u100k", "Nenne ein Land, das kleiner ist als 100.000 km².", "Zum Vergleich: Österreich hat etwa 84.000 km².", countryAnswers(C.filter((c) => c.area < 1e5))),
+  fixed("area-gt-de", "Nenne ein Land, das größer ist als Deutschland.", "Deutschland hat etwa 357.000 km².", countryAnswers(C.filter((c) => c.area > 357600))),
+  fixed("area-lt-de", "Nenne ein Land, das kleiner ist als Deutschland.", "Deutschland hat etwa 357.000 km².", countryAnswers(C.filter((c) => c.area < 357000))),
+  fixed("kueste", "Nenne ein Land mit Zugang zum Meer.", "Alle Länder, die keine Binnenstaaten sind.", countryAnswers(C.filter((c) => !c.landlocked))),
+  fixed("nb3", "Nenne ein Land mit mindestens drei Nachbarländern.", "Gezählt werden Landgrenzen.", countryAnswers(C.filter((c) => c.borders.length >= 3))),
+  fixed("nb4", "Nenne ein Land mit mindestens vier Nachbarländern.", "Gezählt werden Landgrenzen.", countryAnswers(C.filter((c) => c.borders.length >= 4))),
+  fixed("west", "Nenne ein Land, das (überwiegend) westlich des Nullmeridians liegt.", "Der Nullmeridian verläuft durch Greenwich in London.", countryAnswers(C.filter((c) => c.ll[1] < 0))),
+  fixed("ost-de", "Nenne ein Land, das (überwiegend) östlich von Deutschland liegt.", "Gemeint ist die Himmelsrichtung, nicht nur die Nachbarn.", countryAnswers(C.filter((c) => c.ll[1] > 10))),
+  fixed("bip-arm", "Nenne ein Land mit einem BIP pro Kopf unter 5.000 US-Dollar.", WB, countryAnswers(C.filter((c) => c.gdppc != null && c.gdppc < 5000))),
+  fixed("bip10", "Nenne ein Land mit einem BIP pro Kopf über 10.000 US-Dollar.", WB, countryAnswers(C.filter((c) => (c.gdppc ?? 0) > 1e4))),
+  fixed("bip20", "Nenne ein Land mit einem BIP pro Kopf über 20.000 US-Dollar.", WB, countryAnswers(C.filter((c) => (c.gdppc ?? 0) > 2e4))),
+  fixed("gdp100", "Nenne ein Land mit einer Wirtschaftsleistung über 100 Milliarden US-Dollar.", "Bruttoinlandsprodukt pro Jahr. " + WB, countryAnswers(C.filter((c) => (c.gdp ?? 0) > 1e11))),
+  fixed("gdp50", "Nenne ein Land mit einer Wirtschaftsleistung über 50 Milliarden US-Dollar.", "Bruttoinlandsprodukt pro Jahr. " + WB, countryAnswers(C.filter((c) => (c.gdp ?? 0) > 5e10))),
+  fixed("life70", "Nenne ein Land, in dem die Lebenserwartung unter 70 Jahren liegt.", WB, countryAnswers(C.filter((c) => c.life != null && c.life < 70))),
+  fixed("life75", "Nenne ein Land, in dem die Lebenserwartung über 75 Jahren liegt.", WB, countryAnswers(C.filter((c) => (c.life ?? 0) > 75))),
+  fixed("life78", "Nenne ein Land, in dem die Lebenserwartung über 78 Jahren liegt.", WB, countryAnswers(C.filter((c) => (c.life ?? 0) > 78))),
+  fixed("wald30", "Nenne ein Land, das zu mehr als 30 % mit Wald bedeckt ist.", WB, countryAnswers(C.filter((c) => (c.forest ?? 0) > 30))),
+  fixed("wald50", "Nenne ein Land, das zu mehr als der Hälfte mit Wald bedeckt ist.", WB, countryAnswers(C.filter((c) => (c.forest ?? 0) > 50))),
+  fixed("stadt70", "Nenne ein Land, in dem mehr als 70 % der Menschen in Städten leben.", WB, countryAnswers(C.filter((c) => (c.urban ?? 0) > 70))),
+  fixed("land50", "Nenne ein Land, in dem weniger als die Hälfte der Menschen in Städten lebt.", WB, countryAnswers(C.filter((c) => c.urban != null && c.urban < 50))),
+  fixed("tourismus", "Nenne ein Land mit mehr als einer Million Touristen pro Jahr.", WB, countryAnswers(C.filter((c) => (c.tour ?? 0) > 1e6))),
+  fixed("militaer1", "Nenne ein Land, das mehr als 1 Milliarde US-Dollar im Jahr für sein Militär ausgibt.", WB, countryAnswers(C.filter((c) => (c.mil ?? 0) > 1e9))),
+  fixed("militaer5", "Nenne ein Land, das mehr als 5 Milliarden US-Dollar im Jahr für sein Militär ausgibt.", WB, countryAnswers(C.filter((c) => (c.mil ?? 0) > 5e9))),
+  fixed("cap1m", "Nenne eine Hauptstadt mit mehr als einer Million Einwohnern.", "Einwohner der Stadt selbst, nicht des Landes.", capAnswers(C.filter((c) => (c.capPop ?? 0) > 1e6))),
+  fixed("cap2m", "Nenne eine Hauptstadt mit mehr als zwei Millionen Einwohnern.", "Einwohner der Stadt selbst, nicht des Landes.", capAnswers(C.filter((c) => (c.capPop ?? 0) > 2e6))),
+  fixed("cap-klein", "Nenne eine Hauptstadt mit weniger als 500.000 Einwohnern.", "Einwohner der Stadt selbst, nicht des Landes.", capAnswers(C.filter((c) => c.capPop != null && c.capPop < 5e5))),
+  fixed("cap-pop10", "Nenne die Hauptstadt eines Landes mit mehr als 10 Millionen Einwohnern.", "Es zählt die Einwohnerzahl des Landes.", capAnswers(C.filter((c) => (c.pop ?? 0) > 1e7))),
+  fixed("cap-pop-klein", "Nenne die Hauptstadt eines Landes mit weniger als 5 Millionen Einwohnern.", "Es zählt die Einwohnerzahl des Landes.", capAnswers(C.filter((c) => c.pop != null && c.pop < 5e6))),
+  fixed("cap-area100k", "Nenne die Hauptstadt eines Landes, das größer ist als 100.000 km².", "Es zählt die Fläche des Landes.", capAnswers(C.filter((c) => c.area > 1e5))),
+  fixed("cap-bip10", "Nenne die Hauptstadt eines Landes mit einem BIP pro Kopf über 10.000 US-Dollar.", WB, capAnswers(C.filter((c) => (c.gdppc ?? 0) > 1e4))),
+  fixed("cap-nb3", "Nenne die Hauptstadt eines Landes mit mindestens drei Nachbarländern.", "Gezählt werden Landgrenzen des Landes.", capAnswers(C.filter((c) => c.borders.length >= 3))),
+  fixed("name-lang", "Nenne ein Land, dessen deutscher Name mehr als acht Buchstaben hat.", "Leerzeichen und Bindestriche zählen nicht mit.", countryAnswers(C.filter((c) => c.n.replace(/[\s-]/g, "").length > 8))),
+  fixed("name-kurz", "Nenne ein Land, dessen deutscher Name höchstens sechs Buchstaben hat.", "Wie Irak oder Chile.", countryAnswers(C.filter((c) => c.n.replace(/[\s-]/g, "").length <= 6))),
+  fixed("flagge-rot", "Nenne ein Land mit Rot in der Flagge.", "Auch kleine rote Teile in der Flagge zählen.", countryAnswers(flagHas("rot"))),
+  fixed("flagge-gruen", "Nenne ein Land mit Grün in der Flagge.", "Auch kleine grüne Teile in der Flagge zählen.", countryAnswers(flagHas("grün"))),
+  fixed("flagge-blau", "Nenne ein Land mit Blau in der Flagge.", "Auch kleine blaue Teile in der Flagge zählen.", countryAnswers(flagHas("blau"))),
+  fixed("flagge-gelb", "Nenne ein Land mit Gelb oder Gold in der Flagge.", "Auch kleine gelbe Teile in der Flagge zählen.", countryAnswers(flagHas("gelb"))),
+  fixed("flagge-schwarz", "Nenne ein Land mit Schwarz in der Flagge.", "Auch kleine schwarze Teile in der Flagge zählen.", countryAnswers(flagHas("schwarz"))),
+  fixed("flagge-weiss", "Nenne ein Land mit Weiß in der Flagge.", "Auch kleine weiße Teile in der Flagge zählen.", countryAnswers(flagHas("weiß"))),
+  fixed("commonwealth", "Nenne ein Mitglied des Commonwealth of Nations.", "Die 56 Mitgliedsstaaten.", byIds(SET_IDS.commonwealth)),
+  fixed("englisch", "Nenne ein Land mit Englisch als Amtssprache.", "Staaten, in denen Englisch (Mit-)Amtssprache ist.", byIds(SET_IDS.englisch)),
+  fixed("afrikanische-union", "Nenne ein Mitglied der Afrikanischen Union.", "Alle afrikanischen Staaten.", byIds(AU_IDS)),
+  fixed("atlantik", "Nenne ein Land mit Küste am Atlantik.", "Inklusive Nordsee, Karibik und Golf von Mexiko.", byIds(SET_IDS.atlantik)),
+].filter((q) => q.answers.length >= MIN_ANSWERS);
+
+function pickBig(rng: Rng, n: number): Question[] {
+  const curated = rng.sample(CURATED3, Math.min(4, CURATED3.length));
+  const rest = rng.sample(BIG_TEMPLATES, n - curated.length);
+  return rng.shuffle([...curated, ...rest]);
+}
+
 export const ALL_CURATED = CURATED;
+/** Everything that can come up from 14 Nov 2026 (for checks and stats). */
+export const BIG_POOL = [...CURATED3, ...BIG_TEMPLATES];
 
 export function dailyQuestions(day: string): Question[] {
-  return pickQuestions(makeRng(`${day}:tiefgang`), ROUNDS, day < EXPANDED_FROM);
+  const rng = makeRng(`${day}:tiefgang`);
+  if (day < BIG_FROM) return pickQuestions(rng, ROUNDS, day < EXPANDED_FROM);
+  return pickBig(rng, ROUNDS);
 }
 
 export function randomQuestions(n = ROUNDS): Question[] {
-  return pickQuestions(makeRng(Math.floor(Math.random() * 2 ** 32)), n);
+  return pickBig(makeRng(Math.floor(Math.random() * 2 ** 32)), n);
 }
 
 // ---------- answer checking ----------
