@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { meters, tierOf, type Question } from "@/lib/tiefgang";
 import { OceanFx, type Impact } from "./OceanFx";
+import { useLang } from "@/lib/i18n";
+import { ansName } from "@/lib/tiefgang-i18n";
 
 type Result = { input: string; pts: number; answer?: string; id?: string; perle?: boolean };
 
@@ -11,27 +13,28 @@ const SKY = 220; // pixels of sky above the surface
 const MAX = 7000;
 const WORLD = SKY + (MAX + 400) * PXM;
 const y = (m: number) => SKY + m * PXM;
-const nf = new Intl.NumberFormat("de-DE");
+const nfDe = new Intl.NumberFormat("de-DE");
+const nfEn = new Intl.NumberFormat("en-GB");
 
-const FACTS: [number, string][] = [
-  [40, "Das Sonnenlicht wird schwächer"],
-  [200, "Hier beginnt die Dämmerzone"],
-  [332, "Tiefster Tauchgang mit Tauchgerät"],
-  [530, "Kaiserpinguine tauchen bis hierher"],
-  [1000, "Mitternachtszone – kein Sonnenlicht mehr"],
-  [2000, "Pottwale jagen bis in diese Tiefe"],
-  [3700, "Durchschnittliche Tiefe der Ozeane"],
-  [3800, "Hier liegt das Wrack der Titanic"],
-  [6000, "Hadalzone – nur noch Tiefseegräben"],
-  [7000, "Meeresgrund. Der Marianengraben wäre 11.000 m tief"],
+const FACTS: [number, string, string][] = [
+  [40, "Das Sonnenlicht wird schwächer", "Sunlight fades"],
+  [200, "Hier beginnt die Dämmerzone", "The twilight zone begins"],
+  [332, "Tiefster Tauchgang mit Tauchgerät", "Deepest scuba dive"],
+  [530, "Kaiserpinguine tauchen bis hierher", "Emperor penguins dive this deep"],
+  [1000, "Mitternachtszone – kein Sonnenlicht mehr", "Midnight zone – no more sunlight"],
+  [2000, "Pottwale jagen bis in diese Tiefe", "Sperm whales hunt this deep"],
+  [3700, "Durchschnittliche Tiefe der Ozeane", "Average depth of the oceans"],
+  [3800, "Hier liegt das Wrack der Titanic", "The wreck of the Titanic lies here"],
+  [6000, "Hadalzone – nur noch Tiefseegräben", "Hadal zone – only deep-sea trenches"],
+  [7000, "Meeresgrund. Der Marianengraben wäre 11.000 m tief", "Sea floor. The Mariana Trench would be 11,000 m deep"],
 ];
 
-const TIER_LINES: [number, string, string][] = [
-  [100, "Plankton", "#9fd06f"],
-  [300, "Schwarm", "#8ec5f0"],
-  [550, "Selten", "#f0a0bf"],
-  [800, "Tiefsee", "#c3aaf6"],
-  [1000, "Tiefseeperle", "#f3d272"],
+const TIER_LINES: [number, string, string, string][] = [
+  [100, "Plankton", "#9fd06f", "Plankton"],
+  [300, "Schwarm", "#8ec5f0", "Shoal"],
+  [550, "Selten", "#f0a0bf", "Rare"],
+  [800, "Tiefsee", "#c3aaf6", "Deep sea"],
+  [1000, "Tiefseeperle", "#f3d272", "Deep-sea pearl"],
 ];
 
 function waterGradient() {
@@ -47,6 +50,8 @@ function waterGradient() {
 }
 
 export function OceanScene({ cam, results, questions, sinking, base, impact }: { cam: number; results: Result[]; questions: Question[]; sinking: Result | null; base: number; impact: Impact | null }) {
+  const lang = useLang();
+  const nf = lang === "en" ? nfEn : nfDe;
   const ref = useRef<HTMLDivElement>(null);
   const [vh, setVh] = useState(700);
   useEffect(() => {
@@ -133,19 +138,19 @@ export function OceanScene({ cam, results, questions, sinking, base, impact }: {
         </div>
 
         {/* facts */}
-        {FACTS.map(([m, t]) => (
+        {FACTS.map(([m, tDe, tEn]) => (
           <p key={m} className="absolute left-3 max-w-[62%] rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-bold text-white/70 backdrop-blur-[2px] sm:left-[12%] sm:text-xs" style={{ top: y(m) - 12 }}>
-            <span className="text-[#7fe3d2]">{nf.format(m)} m</span> {t}
+            <span className="text-[#7fe3d2]">{nf.format(m)} m</span> {lang === "en" ? tEn : tDe}
           </p>
         ))}
 
         {/* tier lines for the current dive */}
         {showLines &&
-          TIER_LINES.map(([d, name, c]) => (
-            <div key={name} className="absolute left-0 right-14 flex items-center justify-end gap-2" style={{ top: y(base + d) }}>
+          TIER_LINES.map(([d, nameDe, c, nameEn]) => (
+            <div key={nameDe} className="absolute left-0 right-14 flex items-center justify-end gap-2" style={{ top: y(base + d) }}>
               <span className="h-0 flex-1 border-t-2 border-dashed opacity-60" style={{ borderColor: c }} />
               <span className="rounded px-1.5 py-0.5 text-[10px] font-bold text-ink" style={{ background: c }}>
-                {name} · {d / 10} P.
+                {lang === "en" ? nameEn : nameDe} · {d / 10} {lang === "en" ? "pts" : "P."}
               </span>
             </div>
           ))}
@@ -155,7 +160,7 @@ export function OceanScene({ cam, results, questions, sinking, base, impact }: {
           r.pts > 0 && !(sinking && k === landed.length - 1) ? (
             <div key={k} className="absolute left-[8%] sm:left-[20%]" style={{ top: y(depth) - 12 }}>
               <span className="rounded-lg border-2 border-ink/70 px-2 py-0.5 text-xs font-bold text-ink" style={{ background: tierOf(r).color }}>
-                {r.answer}
+                {ansName(r.answer ?? "", lang)}
               </span>
             </div>
           ) : null
@@ -170,7 +175,7 @@ export function OceanScene({ cam, results, questions, sinking, base, impact }: {
               <span className="sink-bubble absolute -top-8 right-4 h-4 w-4 rounded-full border-2 border-white/50" style={{ animationDelay: "0.6s" }} />
               <span className="absolute -inset-6 rounded-full bg-[#f3d272]/30 blur-xl" />
               <span className="sink-wobble relative block rounded-xl border-[3px] border-ink bg-[#f3d272] px-4 py-2 font-display text-xl font-semibold text-ink shadow-[0_5px_0_rgb(0_0_0_/_0.35)]">
-                {sinking.answer}
+                {ansName(sinking.answer ?? "", lang)}
                 <span className="absolute -bottom-3 left-1/2 h-3 w-1 -translate-x-1/2 bg-ink" />
                 <span className="absolute -bottom-6 left-1/2 h-3 w-5 -translate-x-1/2 rounded-b-full border-[3px] border-ink bg-[#9a8f84]" />
               </span>

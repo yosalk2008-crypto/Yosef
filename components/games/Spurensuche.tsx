@@ -91,7 +91,7 @@ export function Spurensuche() {
           if (alive) setBlocked("wartung");
           return;
         }
-        await loadGoogleMaps();
+        await loadGoogleMaps(lang);
         const keep = saved?.state?.targets;
         if (keep?.length === ROUNDS) {
           if (alive) setTargets(keep);

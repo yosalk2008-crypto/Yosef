@@ -6,7 +6,9 @@ import { dayNumber, msUntilNextDay, utcDate } from "@/lib/daily";
 import { useDaily } from "@/lib/useDaily";
 import { LeaderboardJoin } from "../LeaderboardJoin";
 import { Suggestion } from "../Suggestion";
-import { MAX_PTS, ROUNDS, SECONDS, check, dailyQuestions, emojiFor, meters, randomQuestions, tierOf, type Question } from "@/lib/tiefgang";
+import { MAX_PTS, ROUNDS, SECONDS, check, dailyQuestions, emojiFor, meters, randomQuestions, tierDesc, tierName, tierOf, type Question } from "@/lib/tiefgang";
+import { useLang, useT } from "@/lib/i18n";
+import { ansName, qHint, qText } from "@/lib/tiefgang-i18n";
 import { AnswerExplorer } from "./AnswerExplorer";
 import { Creature } from "./Creatures";
 import { OceanScene } from "./OceanScene";
@@ -16,7 +18,8 @@ type Result = { input: string; pts: number; answer?: string; id?: string; perle?
 type S = { results: Result[]; pending?: number };
 
 const MAX_M = ROUNDS * MAX_PTS * 10;
-const nf = new Intl.NumberFormat("de-DE");
+const nfDe = new Intl.NumberFormat("de-DE");
+const nfEn = new Intl.NumberFormat("en-GB");
 
 /** Ocean colour for a depth fraction 0 (surface) … 1 (7.000 m). */
 function oceanAt(f: number) {
@@ -38,6 +41,9 @@ function oceanAt(f: number) {
 }
 
 export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
+  const lang = useLang();
+  const t_ = useT();
+  const nf = lang === "en" ? nfEn : nfDe;
   const daily = useDaily<S>("tiefgang");
   const [seed, setSeed] = useState(0);
   const questions = useMemo<Question[]>(
@@ -65,7 +71,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
     const s = daily.saved?.state;
     if (!s) return;
     const r = [...s.results];
-    if (s.pending != null && s.pending === r.length) r.push({ input: "", pts: 0, reason: "Seite während der Frage verlassen." });
+    if (s.pending != null && s.pending === r.length) r.push({ input: "", pts: 0, reason: t_("Seite während der Frage verlassen.", "You left the page during the question.") });
     jump.current = true;
     setResults(r);
     if (r.length >= ROUNDS) setPhase("done");
@@ -127,7 +133,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
         score: pts,
         max: ROUNDS * MAX_PTS,
         label: `${nf.format(meters(pts))} m`,
-        share: `Tiefgang #${dayNumber(daily.day)} · ${nf.format(meters(pts))} m\n${r.map((x) => emojiFor(x.pts, x.perle)).join("")}${r.some((x) => x.perle) ? " – Tiefseeperle gefunden!" : ""}`,
+        share: `${t_("Tiefgang", "Deep Dive")} #${dayNumber(daily.day)} · ${nf.format(meters(pts))} m\n${r.map((x) => emojiFor(x.pts, x.perle)).join("")}${r.some((x) => x.perle) ? t_(" – Tiefseeperle gefunden!", " – found a deep-sea pearl!") : ""}`,
         state: { results: r, pending },
       });
     },
@@ -161,9 +167,9 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
     (text: string, timedOut = false) => {
       const quest = questions[results.length];
       let r: Result;
-      if (timedOut) r = { input: text, pts: 0, reason: "Die Zeit ist abgelaufen." };
+      if (timedOut) r = { input: text, pts: 0, reason: t_("Die Zeit ist abgelaufen.", "Time ran out.") };
       else {
-        const v = check(quest, text, sug != null);
+        const v = check(quest, text, sug != null, lang);
         if (!v.ok && v.suggest) {
           setSug(v.suggest);
           return;
@@ -230,14 +236,15 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-[#051a3a]/70 to-transparent px-4 pb-6 pt-3">
         <div className="mx-auto flex max-w-3xl items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-bold text-white/70">Tiefe</p>
+            <p className="text-xs font-bold text-white/70">{t_("Tiefe", "Depth")}</p>
             <p className="font-display text-2xl font-semibold tabular-nums sm:text-3xl">{nf.format(Math.round(cam))} m</p>
           </div>
           <div className="pt-1 text-center">
             <p className="font-display text-sm font-semibold">
-              Tiefgang{mode === "daily" ? ` #${dayNumber(daily.day)}` : " – Endlos"}
+              {t_("Tiefgang", "Deep Dive")}
+              {mode === "daily" ? ` #${dayNumber(daily.day)}` : t_(" – Endlos", " – endless")}
             </p>
-            <div className="mt-1 flex justify-center gap-1" aria-label={`Frage ${Math.min(i + 1, ROUNDS)} von ${ROUNDS}`}>
+            <div className="mt-1 flex justify-center gap-1" aria-label={t_(`Frage ${Math.min(i + 1, ROUNDS)} von ${ROUNDS}`, `Question ${Math.min(i + 1, ROUNDS)} of ${ROUNDS}`)}>
               {Array.from({ length: ROUNDS }).map((_, k) => {
                 const r = results[k];
                 const c = r ? (r.pts > 0 ? tierOf(r).color : "#d6453d") : k === i ? "#ffffff" : "rgb(255 255 255 / 0.25)";
@@ -246,14 +253,14 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xs font-bold text-white/70">Punkte</p>
+            <p className="text-xs font-bold text-white/70">{t_("Punkte", "Points")}</p>
             <p className="font-display text-2xl font-semibold tabular-nums sm:text-3xl">{Math.round(cam / 10)}</p>
           </div>
         </div>
       </div>
       <div className="absolute right-3 top-20 z-30">
         <Link href={mode === "daily" ? "/tiefgang/endlos" : "/tiefgang"} className="rounded-xl bg-white/15 px-3 py-1.5 text-sm font-bold backdrop-blur hover:bg-white/25">
-          {mode === "daily" ? "Endlos" : "Tagesrunde"}
+          {mode === "daily" ? t_("Endlos", "Endless") : t_("Tagesrunde", "Daily round")}
         </Link>
       </div>
 
@@ -264,23 +271,32 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
             <div className="pop mb-2 rounded-[28px] bg-[#082650]/85 p-6 shadow-[0_6px_0_rgb(0_0_0_/_0.3)] backdrop-blur-sm sm:p-7">
               {results.length === 0 ? (
                 <>
-                  <h1 className="text-3xl font-semibold">Tiefgang</h1>
-                  <p className="mt-1 text-lg font-semibold text-white/85">Je seltener deine richtige Antwort, desto tiefer sinkt sie.</p>
+                  <h1 className="text-3xl font-semibold">{t_("Tiefgang", "Deep Dive")}</h1>
+                  <p className="mt-1 text-lg font-semibold text-white/85">{t_("Je seltener deine richtige Antwort, desto tiefer sinkt sie.", "The rarer your correct answer, the deeper it sinks.")}</p>
+                  {lang === "en" ? (
+                    <ul className="mt-4 space-y-1.5 text-[15px] leading-relaxed text-white/85">
+                      <li>{ROUNDS} questions, {SECONDS} seconds each. You can try as often as you like until an answer is right or time is up.</li>
+                      <li>Well-known answers give 10 points, rare ones up to 100. 1 point = 10 metres.</li>
+                      <li>Tiers: plankton, shoal, rare, deep sea – and exactly one <strong>deep-sea pearl</strong> per question, the rarest answer.</li>
+                      <li>Wrong answers only cost time. If time runs out, you get 0 metres. Small typos are forgiven.</li>
+                    </ul>
+                  ) : (
                   <ul className="mt-4 space-y-1.5 text-[15px] leading-relaxed text-white/85">
-                    <li>{ROUNDS} Fragen, je {SECONDS} Sekunden. Du hast beliebig viele Versuche, bis eine Antwort stimmt oder die Zeit um ist.</li>
-                    <li>Bekannte Antworten bringen 10 Punkte, seltene bis zu 100. 1 Punkt = 10 Meter.</li>
-                    <li>Stufen: Plankton, Schwarm, Selten, Tiefsee – und pro Frage genau eine <strong>Tiefseeperle</strong>, die seltenste Antwort.</li>
-                    <li>Falsche Antworten kosten nur Zeit. Ist die Zeit um, gibt es 0 Meter. Kleine Tippfehler verzeihen wir.</li>
-                  </ul>
+                      <li>{ROUNDS} Fragen, je {SECONDS} Sekunden. Du hast beliebig viele Versuche, bis eine Antwort stimmt oder die Zeit um ist.</li>
+                      <li>Bekannte Antworten bringen 10 Punkte, seltene bis zu 100. 1 Punkt = 10 Meter.</li>
+                      <li>Stufen: Plankton, Schwarm, Selten, Tiefsee – und pro Frage genau eine <strong>Tiefseeperle</strong>, die seltenste Antwort.</li>
+                      <li>Falsche Antworten kosten nur Zeit. Ist die Zeit um, gibt es 0 Meter. Kleine Tippfehler verzeihen wir.</li>
+                    </ul>
+                  )}
                 </>
               ) : (
                 <>
-                  <h2 className="text-2xl font-semibold">Frage {i + 1} von {ROUNDS}</h2>
-                  <p className="mt-1 text-white/80">Du bist bei {nf.format(totalM)} m. Bereit für den nächsten Tauchgang?</p>
+                  <h2 className="text-2xl font-semibold">{t_(`Frage ${i + 1} von ${ROUNDS}`, `Question ${i + 1} of ${ROUNDS}`)}</h2>
+                  <p className="mt-1 text-white/80">{t_(`Du bist bei ${nf.format(totalM)} m. Bereit für den nächsten Tauchgang?`, `You’re at ${nf.format(totalM)} m. Ready for the next dive?`)}</p>
                 </>
               )}
               <button type="button" onClick={start} className="btn-primary mt-5 w-full bg-[#f3d272] text-lg text-ink shadow-[0_4px_0_#b8962f] hover:bg-[#f7dc8a]">
-                {results.length === 0 ? "Abtauchen ▼" : "Weiter tauchen ▼"}
+                {results.length === 0 ? t_("Abtauchen ▼", "Dive in ▼") : t_("Weiter tauchen ▼", "Keep diving ▼")}
               </button>
             </div>
           )}
@@ -289,14 +305,16 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
             <div className="pop mb-2" key={"q" + i}>
               <div className="rounded-[28px] bg-[#082650]/85 p-5 shadow-[0_6px_0_rgb(0_0_0_/_0.3)] backdrop-blur-sm sm:p-6">
                 <p className="text-sm font-bold text-[#7fe3d2]">
-                  Frage {i + 1} von {ROUNDS}
+                  {t_(`Frage ${i + 1} von ${ROUNDS}`, `Question ${i + 1} of ${ROUNDS}`)}
                 </p>
-                <h2 className="mt-1 text-[26px] font-semibold leading-snug sm:text-3xl">{shownQ.text}</h2>
-                <p className="mt-1 text-sm font-semibold text-white/65">{shownQ.hint} Seltenere Antworten sinken tiefer.</p>
+                <h2 className="mt-1 text-[26px] font-semibold leading-snug sm:text-3xl">{qText(shownQ, lang)}</h2>
+                <p className="mt-1 text-sm font-semibold text-white/65">
+                  {qHint(shownQ, lang)} {t_("Seltenere Antworten sinken tiefer.", "Rarer answers sink deeper.")}
+                </p>
               </div>
               {phase === "countdown" ? (
                 <p className="mt-4 text-center font-display text-lg font-semibold text-white/85" aria-live="polite">
-                  Abtauchen – die Uhr startet in {Math.max(1, count)} …
+                  {t_(`Abtauchen – die Uhr startet in ${Math.max(1, count)} …`, `Diving – the clock starts in ${Math.max(1, count)} …`)}
                 </p>
               ) : (
                 <form
@@ -321,14 +339,14 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
                     }}
                     className={`input min-w-0 flex-1 text-ink ${shake ? "tg-shake" : ""}`}
                     autoFocus
-                    placeholder="Eine Antwort …"
-                    aria-label="Antwort"
+                    placeholder={t_("Eine Antwort …", "An answer …")}
+                    aria-label={t_("Antwort", "Answer")}
                     autoComplete="off"
                     autoCorrect="off"
                     spellCheck={false}
                   />
                   <button type="submit" className="btn-primary shrink-0 bg-[#f3d272] px-4 text-ink shadow-[0_4px_0_#b8962f] hover:bg-[#f7dc8a]" disabled={!input.trim()}>
-                    Tauchen
+                    {t_("Tauchen", "Dive")}
                   </button>
                 </form>
               )}
@@ -336,7 +354,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
                 <Suggestion
                   dark
                   name={sug}
-                  hint="oder Enter"
+                  hint={t_("oder Enter", "or press Enter")}
                   onTake={() => {
                     setInput(sug);
                     setSug(null);
@@ -349,19 +367,19 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
 
             {phase === "reveal" && last && shownQ && (
               <div className={`pop mb-2 rounded-[28px] bg-white/95 p-5 text-ink shadow-[0_6px_0_rgb(0_0_0_/_0.3)] sm:p-6 ${last.perle ? "ring-4 ring-[#f3d272] shadow-[0_0_60px_rgb(243_210_114_/_0.8)]" : ""}`}>
-                <p className="font-display font-semibold text-ink/60">{shownQ.text}</p>
+                <p className="font-display font-semibold text-ink/60">{qText(shownQ, lang)}</p>
                 {last.pts > 0 ? (
                   <div className="mt-3 flex items-center gap-4">
                     <Creature tier={tierOf(last).key} className={`shrink-0 ${last.perle ? "h-24 w-24" : "h-20 w-20"}`} />
                     <div>
                       <p className="inline-block rounded-full px-3 py-1 font-display text-lg font-semibold" style={{ background: tierOf(last).color }}>
-                        {tierOf(last).name}
+                        {tierName(tierOf(last), lang)}
                       </p>
                       <p className="mt-1 font-display text-4xl font-semibold text-[#0f4c8a] sm:text-5xl">+{nf.format(meters(last.pts))} m</p>
                       <p className="text-lg font-semibold">
-                        {last.answer} – {last.pts} von {MAX_PTS} Punkten
+                        {ansName(last.answer ?? "", lang, shownQ.key)} – {t_(`${last.pts} von ${MAX_PTS} Punkten`, `${last.pts} of ${MAX_PTS} points`)}
                       </p>
-                      <p className="text-sm text-ink/70">{tierOf(last).desc}</p>
+                      <p className="text-sm text-ink/70">{tierDesc(tierOf(last), lang)}</p>
                     </div>
                   </div>
                 ) : (
@@ -374,13 +392,13 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
                   </div>
                 )}
                 <details className="mt-4 rounded-2xl bg-paper p-3">
-                  <summary className="cursor-pointer font-display font-semibold">Alle {shownQ.answers.length} gültigen Antworten ansehen</summary>
+                  <summary className="cursor-pointer font-display font-semibold">{t_(`Alle ${shownQ.answers.length} gültigen Antworten ansehen`, `See all ${shownQ.answers.length} valid answers`)}</summary>
                   <div className="mt-3">
                     <AnswerExplorer q={shownQ} mine={last.id} />
                   </div>
                 </details>
                 <button type="button" onClick={() => (results.length >= ROUNDS ? setPhase("done") : start())} className="btn-primary mt-5 w-full bg-[#0f4c8a] shadow-[0_4px_0_#08294b] hover:bg-[#13599f] sm:w-auto sm:px-8" autoFocus>
-                  {results.length >= ROUNDS ? "Ergebnis ansehen" : "Nächste Frage"}
+                  {results.length >= ROUNDS ? t_("Ergebnis ansehen", "See result") : t_("Nächste Frage", "Next question")}
                 </button>
               </div>
             )}
@@ -393,11 +411,12 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
 }
 
 function Timer({ left }: { left: number }) {
+  const t_ = useT();
   const r = 26;
   const c = 2 * Math.PI * r;
   const danger = left <= 5;
   return (
-    <div className={`relative h-16 w-16 shrink-0 ${danger ? "animate-pulse" : ""}`} role="timer" aria-label={`${left} Sekunden übrig`}>
+    <div className={`relative h-16 w-16 shrink-0 ${danger ? "animate-pulse" : ""}`} role="timer" aria-label={t_(`${left} Sekunden übrig`, `${left} seconds left`)}>
       <svg viewBox="0 0 64 64" className="h-16 w-16 -rotate-90" aria-hidden="true">
         <circle cx="32" cy="32" r={r} fill="none" stroke="#e6dfd5" strokeWidth="7" />
         <circle cx="32" cy="32" r={r} fill="none" stroke={danger ? "#d6453d" : "#0f4c8a"} strokeWidth="7" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - left / SECONDS)} style={{ transition: "stroke-dashoffset 0.2s linear" }} />
@@ -408,6 +427,9 @@ function Timer({ left }: { left: number }) {
 }
 
 function Done({ results, questions, mode, isToday, share, onRestart, totalM }: { results: Result[]; questions: Question[]; mode: string; isToday: boolean; share?: string; onRestart: () => void; totalM: number }) {
+  const lang = useLang();
+  const t_ = useT();
+  const nf = lang === "en" ? nfEn : nfDe;
   const [copied, setCopied] = useState(false);
   const [left, setLeft] = useState("");
   useEffect(() => {
@@ -419,10 +441,10 @@ function Done({ results, questions, mode, isToday, share, onRestart, totalM }: {
     const id = setInterval(tick, 30000);
     return () => clearInterval(id);
   }, []);
-  const text = share || `Tiefgang · ${nf.format(totalM)} m\n${results.map((r) => emojiFor(r.pts, r.perle)).join("")}`;
+  const text = share || `${t_("Tiefgang", "Deep Dive")} · ${nf.format(totalM)} m\n${results.map((r) => emojiFor(r.pts, r.perle)).join("")}`;
   const copy = async () => {
     try {
-      const t = text + "\nkoshertrivia.de/tiefgang";
+      const t = text + (lang === "en" ? "\nkoshertrivia.de/en/tiefgang" : "\nkoshertrivia.de/tiefgang");
       if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) await navigator.share({ text: t });
       else await navigator.clipboard.writeText(t);
       setCopied(true);
@@ -431,11 +453,11 @@ function Done({ results, questions, mode, isToday, share, onRestart, totalM }: {
   };
   return (
     <div className="pop rounded-[28px] bg-white/95 p-5 text-ink shadow-[0_6px_0_rgb(0_0_0_/_0.3)] sm:p-7">
-      <p className="font-display text-lg font-semibold text-ink/60">Deine Tauchtiefe</p>
+      <p className="font-display text-lg font-semibold text-ink/60">{t_("Deine Tauchtiefe", "Your dive depth")}</p>
       <p className="font-display text-6xl font-semibold text-[#0f4c8a]">{nf.format(totalM)} m</p>
       {results.some((r) => r.perle) && (
         <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-[#f3d272] px-3 py-1.5 font-display font-semibold">
-          <Creature tier="perle" className="h-7 w-7" /> Du hast eine Tiefseeperle gefunden!
+          <Creature tier="perle" className="h-7 w-7" /> {t_("Du hast eine Tiefseeperle gefunden!", "You found a deep-sea pearl!")}
         </p>
       )}
       <DiveLog results={results} />
@@ -449,9 +471,9 @@ function Done({ results, questions, mode, isToday, share, onRestart, totalM }: {
                   <span className="flex min-w-0 items-center gap-2.5">
                     <Creature tier={t ? t.key : "none"} className="h-9 w-9 shrink-0" />
                     <span className="min-w-0">
-                      <span className="block text-sm text-ink/60">{questions[k]?.text}</span>
-                      <span className="font-semibold">{r.answer || (r.input ? `„${r.input}“` : "keine Antwort")}</span>
-                      {t && <span className="ml-2 rounded-full px-2 py-0.5 text-xs font-bold" style={{ background: t.color }}>{t.name}</span>}
+                      <span className="block text-sm text-ink/60">{questions[k] ? qText(questions[k], lang) : ""}</span>
+                      <span className="font-semibold">{r.answer ? ansName(r.answer, lang, questions[k]?.key) : r.input ? (lang === "en" ? `“${r.input}”` : `„${r.input}“`) : t_("keine Antwort", "no answer")}</span>
+                      {t && <span className="ml-2 rounded-full px-2 py-0.5 text-xs font-bold" style={{ background: t.color }}>{tierName(t, lang)}</span>}
                     </span>
                   </span>
                   <span className="shrink-0 font-display text-lg font-semibold tabular-nums">{nf.format(meters(r.pts))} m</span>
@@ -466,26 +488,26 @@ function Done({ results, questions, mode, isToday, share, onRestart, totalM }: {
           );
         })}
       </ul>
-      <p className="mt-2 text-sm text-ink/60">Tippe auf eine Frage, um alle gültigen Antworten und die Tiefseeperle zu sehen.</p>
+      <p className="mt-2 text-sm text-ink/60">{t_("Tippe auf eine Frage, um alle gültigen Antworten und die Tiefseeperle zu sehen.", "Tap a question to see all valid answers and the deep-sea pearl.")}</p>
       <pre className="mt-4 whitespace-pre-wrap rounded-2xl bg-paper p-3 font-sans text-sm font-semibold">{text}</pre>
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" onClick={copy} className="btn-primary bg-[#0f4c8a] shadow-[0_4px_0_#08294b] hover:bg-[#13599f]">
-          {copied ? "Kopiert ✓" : "Ergebnis teilen"}
+          {copied ? t_("Kopiert ✓", "Copied ✓") : t_("Ergebnis teilen", "Share result")}
         </button>
         {mode === "daily" ? (
           <Link href="/tiefgang/endlos" className="btn-ghost">
-            Endlos weiterspielen
+            {t_("Endlos weiterspielen", "Keep playing endlessly")}
           </Link>
         ) : (
           <button type="button" onClick={onRestart} className="btn-ghost">
-            Neue Runde
+            {t_("Neue Runde", "New round")}
           </button>
         )}
         <Link href="/" className="btn-ghost">
-          Zur Startseite
+          {t_("Zur Startseite", "Back to home")}
         </Link>
       </div>
-      {mode === "daily" && <p className="mt-4 text-sm text-ink/60">Neue Fragen in {left} Stunden.</p>}
+      {mode === "daily" && <p className="mt-4 text-sm text-ink/60">{t_(`Neue Fragen in ${left} Stunden.`, `New questions in ${left} hours.`)}</p>}
       {mode === "daily" && <LeaderboardJoin day={utcDate()} game="tiefgang" isToday={isToday} />}
     </div>
   );
@@ -493,11 +515,12 @@ function Done({ results, questions, mode, isToday, share, onRestart, totalM }: {
 
 /** Seven dives as vertical lines, each sinking to the depth reached. */
 function DiveLog({ results }: { results: Result[] }) {
+  const t_ = useT();
   const H = 150;
   return (
     <div className="mt-5 rounded-2xl bg-[#0b2a55] p-4 text-white">
-      <p className="font-display font-semibold">Tauch-Logbuch</p>
-      <svg viewBox={`0 0 ${ROUNDS * 40 + 44} ${H + 30}`} className="mt-2 w-full" role="img" aria-label="Tiefe je Frage">
+      <p className="font-display font-semibold">{t_("Tauch-Logbuch", "Dive log")}</p>
+      <svg viewBox={`0 0 ${ROUNDS * 40 + 44} ${H + 30}`} className="mt-2 w-full" role="img" aria-label={t_("Tiefe je Frage", "Depth per question")}>
         {[0, 0.5, 1].map((f) => (
           <g key={f}>
             <line x1="0" x2={ROUNDS * 40} y1={10 + f * H} y2={10 + f * H} stroke="rgb(255 255 255 / 0.15)" strokeDasharray="3 4" />

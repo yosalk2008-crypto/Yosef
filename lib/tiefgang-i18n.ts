@@ -9,11 +9,20 @@ for (const c of ALL_COUNTRIES) {
   if (c.cap && c.capEn) COUNTRY_EN.set(c.cap, c.capEn);
 }
 
+/** The same German word can mean different things depending on the question. */
+const OVERRIDE: Record<string, Record<string, string>> = {
+  "k:waehrung": { Franken: "Franc" },
+  "k:fluss-europa": { Ural: "Ural" },
+  "k:fluss-lang": { Ural: "Ural" },
+  "k:fluss-afrika": { Save: "Save" },
+};
+const en = (name: string, key?: string) => (key && OVERRIDE[key]?.[name]) ?? COUNTRY_EN.get(name) ?? exo(name);
+
 /** An answer's name in the current language (countries, capitals and known exonyms get their English name). */
-export const ansName = (name: string, lang: Lang) => (lang === "en" ? COUNTRY_EN.get(name) ?? exo(name) : name);
+export const ansName = (name: string, lang: Lang, key?: string) => (lang === "en" ? en(name, key) : name);
 /** English alternatives for an answer, so English spellings are accepted everywhere. */
-export const ansAltsEn = (name: string) => {
-  const e = COUNTRY_EN.get(name) ?? exo(name);
+export const ansAltsEn = (name: string, key?: string) => {
+  const e = en(name, key);
   return e !== name ? [e] : [];
 };
 

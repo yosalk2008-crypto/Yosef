@@ -19,5 +19,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/impressum",
     "/datenschutz",
   ];
-  return paths.map((p) => ({ url: site.url + p }));
+  return paths.flatMap((p) => [
+    { url: site.url + p, alternates: { languages: { de: site.url + p, en: site.url + "/en" + p } } },
+    { url: site.url + "/en" + p, alternates: { languages: { de: site.url + p, en: site.url + "/en" + p } } },
+  ]);
 }

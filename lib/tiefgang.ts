@@ -4,6 +4,7 @@ import { BEKANNTHEIT } from "./data/bekanntheit";
 import { KATALOG, cleanAnswers, type KatalogPrompt } from "./data/tiefgang-katalog";
 import { EXTEND, KATALOG3 } from "./data/tiefgang-katalog3";
 import { makeRng, type Rng } from "./rng";
+import { ansAltsEn, ansName } from "./tiefgang-i18n";
 
 /**
  * Tiefgang: reverse trivia. Every valid answer is worth 10–100 points; the less well-known
@@ -15,14 +16,16 @@ import { makeRng, type Rng } from "./rng";
 
 export type Answer = { id: string; name: string; alt: string[]; pts: number; perle?: boolean };
 
-export type Tier = { key: string; name: string; desc: string; color: string };
+export type Tier = { key: string; name: string; desc: string; nameEn: string; descEn: string; color: string };
 export const TIERS: Tier[] = [
-  { key: "perle", name: "Tiefseeperle", desc: "Die seltenste Antwort überhaupt – es gibt nur eine pro Frage.", color: "#f3d272" },
-  { key: "tiefsee", name: "Tiefsee", desc: "Daran denkt kaum jemand.", color: "#c3aaf6" },
-  { key: "selten", name: "Selten", desc: "Ziemlich ausgefallen.", color: "#f0a0bf" },
-  { key: "schwarm", name: "Schwarm", desc: "Solide – du schwimmst mit dem Schwarm.", color: "#8ec5f0" },
-  { key: "plankton", name: "Plankton", desc: "Richtig, aber darauf kommen sehr viele.", color: "#9fd06f" },
+  { key: "perle", name: "Tiefseeperle", desc: "Die seltenste Antwort überhaupt – es gibt nur eine pro Frage.", nameEn: "Deep-sea pearl", descEn: "The rarest answer of all – there’s only one per question.", color: "#f3d272" },
+  { key: "tiefsee", name: "Tiefsee", desc: "Daran denkt kaum jemand.", nameEn: "Deep sea", descEn: "Hardly anyone thinks of that.", color: "#c3aaf6" },
+  { key: "selten", name: "Selten", desc: "Ziemlich ausgefallen.", nameEn: "Rare", descEn: "Pretty unusual.", color: "#f0a0bf" },
+  { key: "schwarm", name: "Schwarm", desc: "Solide – du schwimmst mit dem Schwarm.", nameEn: "Shoal", descEn: "Solid – you’re swimming with the shoal.", color: "#8ec5f0" },
+  { key: "plankton", name: "Plankton", desc: "Richtig, aber darauf kommen sehr viele.", nameEn: "Plankton", descEn: "Correct, but lots of people think of it.", color: "#9fd06f" },
 ];
+export const tierName = (t: Tier, lang: "de" | "en") => (lang === "en" ? t.nameEn : t.name);
+export const tierDesc = (t: Tier, lang: "de" | "en") => (lang === "en" ? t.descEn : t.desc);
 export function tierOf(a: { pts: number; perle?: boolean }): Tier {
   if (a.perle) return TIERS[0];
   if (a.pts >= 80) return TIERS[1];
@@ -361,22 +364,29 @@ function lev(a: string, b: string) {
 export type Verdict = { ok: true; answer: Answer } | { ok: false; reason: string; suggest?: string };
 
 /** `suggested`: the player already saw a "Meintest du …?" for this input and kept it, so typos now count as wrong. */
-export function check(q: Question, input: string, suggested = false): Verdict {
+export function check(q: Question, input: string, suggested = false, lang: "de" | "en" = "de"): Verdict {
+  const en = lang === "en";
   const x = canon(input);
-  if (!x) return { ok: false, reason: "Keine Antwort eingegeben." };
+  if (!x) return { ok: false, reason: en ? "No answer entered." : "Keine Antwort eingegeben." };
   const nx = norm(input);
-  const exact = q.answers.find((a) => [a.name, ...a.alt].some((n) => norm(n) === nx));
+  // English names count too (on both language versions)
+  const names = (a: Answer) => [a.name, ...a.alt, ...ansAltsEn(a.name, q.key)];
+  const exact = q.answers.find((a) => names(a).some((n) => norm(n) === nx));
   if (exact) return { ok: true, answer: exact };
+  const shown = (a: Answer) => ansName(a.name, lang, q.key);
   const typo = (a: Answer): Verdict =>
-    suggested ? { ok: false, reason: `„${input.trim()}“ ist nicht richtig geschrieben – gemeint war wohl ${a.name}.` } : { ok: false, reason: "", suggest: a.name };
-  const near = q.answers.find((a) => [a.name, ...a.alt].some((n) => canon(n) === x));
+    suggested
+      ? { ok: false, reason: en ? `“${input.trim()}” is misspelt – you probably meant ${shown(a)}.` : `„${input.trim()}“ ist nicht richtig geschrieben – gemeint war wohl ${a.name}.` }
+      : { ok: false, reason: "", suggest: shown(a) };
+  const near = q.answers.find((a) => names(a).some((n) => canon(n) === x));
   if (near) return typo(near);
   // "Niger" must not be read as a typo of "Nigeria"
   const exactOther = COUNTRIES.find((c) => [c.n, ...c.alt].some((n) => canon(n) === x) || (c.cap && canon(c.cap) === x));
-  if (exactOther && !q.key.startsWith("k:")) return { ok: false, reason: `„${input.trim()}“ passt nicht zu dieser Frage.` };
+  const misfit = en ? `“${input.trim()}” doesn’t fit this question.` : `„${input.trim()}“ passt nicht zu dieser Frage.`;
+  if (exactOther && !q.key.startsWith("k:")) return { ok: false, reason: misfit };
   let best: { a: Answer; d: number } | null = null;
   for (const a of q.answers) {
-    for (const name of [a.name, ...a.alt]) {
+    for (const name of names(a)) {
       // compare with and without the "-Stadt" stripping, so "Basel-Statd" still finds "Basel-Stadt"
       const k = canon(name);
       const full = norm(name).replace(/\s+/g, "");
@@ -388,8 +398,8 @@ export function check(q: Question, input: string, suggested = false): Verdict {
   if (best) return typo(best.a);
   // a real country/capital that does not fit this question?
   const other = COUNTRIES.find((c) => [c.n, ...c.alt].some((n) => canon(n) === x) || (c.cap && canon(c.cap) === x));
-  if (other) return { ok: false, reason: `„${input.trim()}“ passt nicht zu dieser Frage.` };
-  return { ok: false, reason: `„${input.trim()}“ kennen wir nicht als gültige Antwort.` };
+  if (other) return { ok: false, reason: misfit };
+  return { ok: false, reason: en ? `We don’t know “${input.trim()}” as a valid answer.` : `„${input.trim()}“ kennen wir nicht als gültige Antwort.` };
 }
 
 export function emojiFor(pts: number, perle = false) {

@@ -9,7 +9,7 @@ const KEY = "AIzaSyAq4ReUx4PbNMVdsgcY5gecrVRP-SWS-Tk";
 
 let loading: Promise<typeof google> | null = null;
 
-export function loadGoogleMaps(): Promise<typeof google> {
+export function loadGoogleMaps(lang: "de" | "en" = "de"): Promise<typeof google> {
   if (typeof window === "undefined") return Promise.reject(new Error("no window"));
   if (window.google?.maps?.StreetViewPanorama) return Promise.resolve(window.google);
   if (loading) return loading;
@@ -17,7 +17,7 @@ export function loadGoogleMaps(): Promise<typeof google> {
     const cb = "__geografikMaps";
     (window as unknown as Record<string, () => void>)[cb] = () => resolve(window.google);
     const s = document.createElement("script");
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${KEY}&v=weekly&language=de&region=DE&callback=${cb}&loading=async`;
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${KEY}&v=weekly&language=${lang}&region=${lang === "en" ? "GB" : "DE"}&callback=${cb}&loading=async`;
     s.async = true;
     s.onerror = () => {
       loading = null;

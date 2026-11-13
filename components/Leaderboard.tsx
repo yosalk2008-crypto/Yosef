@@ -99,8 +99,8 @@ export function Leaderboard() {
                   </span>
                 </span>
                 <span className="shrink-0 text-right font-display text-xl font-semibold tabular-nums">
-                  {new Intl.NumberFormat("de-DE").format(r.points)}
-                  {max && <span className="text-sm text-muted"> / {new Intl.NumberFormat("de-DE").format(max)}</span>}
+                  {new Intl.NumberFormat(lang === "en" ? "en-GB" : "de-DE").format(r.points)}
+                  {max && <span className="text-sm text-muted"> / {new Intl.NumberFormat(lang === "en" ? "en-GB" : "de-DE").format(max)}</span>}
                 </span>
               </li>
             ))}

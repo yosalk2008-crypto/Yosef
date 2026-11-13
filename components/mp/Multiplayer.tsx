@@ -35,7 +35,7 @@ import {
   type QView,
   type RoomState,
 } from "@/lib/mp";
-import { MAX_PTS, check, emojiFor, meters, tierOf, type Answer, type Question } from "@/lib/tiefgang";
+import { MAX_PTS, check, emojiFor, meters, tierName, tierOf, type Answer, type Question } from "@/lib/tiefgang";
 import { OceanScene } from "../tiefgang/OceanScene";
 import { Creature } from "../tiefgang/Creatures";
 import type { Impact } from "../tiefgang/OceanFx";
@@ -943,7 +943,7 @@ function TiefgangInput({ qkey, timeUp, onDone, dark = false }: { qkey: string; t
 
   const submit = () => {
     if (timeUp) return;
-    const r = check(q, v, sug?.for === v);
+    const r = check(q, v, sug?.for === v, lang);
     if (r.ok) return onDone(r.answer);
     if (r.suggest) {
       setSug({ name: r.suggest, for: v });
@@ -1502,7 +1502,7 @@ function TgQuestion({
                 <Creature tier={tierOf(mineNow).key} className={`shrink-0 ${mineNow.perle ? "h-20 w-20" : "h-16 w-16"}`} />
                 <div>
                   <p className="inline-block rounded-full px-3 py-0.5 font-display font-semibold" style={{ background: tierOf(mineNow).color }}>
-                    {tierOf(mineNow).name}
+                    {tierName(tierOf(mineNow), lang)}
                   </p>
                   <p className="font-display text-3xl font-semibold text-[#0f4c8a]">+{nfDe.format(meters(mineNow.pts))} m</p>
                   <p className="font-semibold">
