@@ -33,7 +33,10 @@ import {
   type QView,
   type RoomState,
 } from "@/lib/mp";
-import { check, emojiFor, type Answer, type Question } from "@/lib/tiefgang";
+import { MAX_PTS, check, emojiFor, meters, tierOf, type Answer, type Question } from "@/lib/tiefgang";
+import { OceanScene } from "../tiefgang/OceanScene";
+import { Creature } from "../tiefgang/Creatures";
+import type { Impact } from "../tiefgang/OceanFx";
 import { Suggestion } from "../Suggestion";
 import { GameArt } from "../GameArt";
 import { DailyGame } from "@/app/taeglich/[spiel]/DailyGame";
@@ -286,6 +289,7 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
   const [conn, setConn] = useState<Conn>(host ? "ok" : "verbinde");
   const [mine, setMine] = useState<{ round: number; i: number; msg: AnswerMsg; label: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [dive, setDive] = useState<{ round: number; list: DiveR[] }>({ round: -1, list: [] });
   const ch = useRef<RealtimeChannel | null>(null);
   const H = useRef<HostSave | null>(null);
   const membersRef = useRef<Record<string, Member>>({});
@@ -508,11 +512,12 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
   // ---------------- answering (everyone, admin included) ----------------
 
   const myAns = mine && st && mine.round === st.round && mine.i === st.i && st.phase !== "lobby" ? mine : null;
-  const answer = (part: Pick<AnswerMsg, "choice" | "tg" | "daily">, label: string) => {
+  const answer = (part: Pick<AnswerMsg, "choice" | "tg" | "daily">, label: string, d?: Omit<DiveR, "i">) => {
     const s = stRef.current;
     if (!s || s.phase !== "frage" || myAns) return;
     const msg: AnswerMsg = { pid: me, i: s.i, ...part };
     setMine({ round: s.round, i: s.i, msg, label });
+    if (d) setDive((x) => ({ round: s.round, list: [...(x.round === s.round ? x.list.filter((r) => r.i !== s.i) : []), { ...d, i: s.i }] }));
     if (host) onAnswer(msg);
     else send("answer", msg);
   };
@@ -555,9 +560,9 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
       ) : st.phase === "lobby" ? (
         <LobbyView st={st} host={host} members={members} me={me} busy={busy} onSetting={setting} onStart={start} />
       ) : st.phase === "frage" && st.q ? (
-        <QuestionView st={st} q={st.q} members={members} me={me} host={host} myAns={myAns} offset={host ? 0 : offset.current} onAnswer={answer} onForce={reveal} />
+        <QuestionView st={st} q={st.q} members={members} me={me} host={host} myAns={myAns} offset={host ? 0 : offset.current} onAnswer={answer} onForce={reveal} dive={dive.round === st.round ? dive.list : []} />
       ) : st.phase === "aufloesung" && st.q && st.reveal ? (
-        <RevealView st={st} q={st.q} me={me} host={host} onNext={nextQ} />
+        <RevealView st={st} q={st.q} me={me} host={host} onNext={nextQ} dive={dive.round === st.round ? dive.list : []} />
       ) : st.phase === "ende" ? (
         <EndView st={st} me={me} host={host} onLobby={toLobby} />
       ) : null}
@@ -809,6 +814,7 @@ function QuestionView({
   offset,
   onAnswer,
   onForce,
+  dive,
 }: {
   st: RoomState;
   q: QView;
@@ -817,14 +823,17 @@ function QuestionView({
   host: boolean;
   myAns: { label: string } | null;
   offset: number;
-  onAnswer: (part: Pick<AnswerMsg, "choice" | "tg" | "daily">, label: string) => void;
+  onAnswer: (part: Pick<AnswerMsg, "choice" | "tg" | "daily">, label: string, d?: Omit<DiveR, "i">) => void;
   onForce: () => void;
+  dive: DiveR[];
 }) {
   const left = useCountdown(st.endsAt ? st.endsAt + offset : 0);
   const present = Object.keys(members);
   const doneN = present.filter((id) => st.done.includes(id)).length;
   const g = gameOf(st.game);
 
+  if (q.kind === "tiefgang")
+    return <TgQuestion st={st} q={q} members={members} me={me} host={host} myAns={myAns} left={left} onAnswer={onAnswer} onForce={onForce} dive={dive} />;
   if (q.kind === "daily")
     return <DailyRound st={st} q={q} members={members} me={me} host={host} myAns={myAns} left={left} onAnswer={onAnswer} onForce={onForce} />;
 
@@ -849,7 +858,6 @@ function QuestionView({
         <h2 className={`font-display font-semibold leading-tight ${q.kind === "choice" && q.img ? "text-center text-2xl" : "mt-3 text-[28px] sm:text-4xl"}`}>
           {questionText(st, q)}
         </h2>
-        {q.kind === "tiefgang" && <p className="mt-2 font-semibold text-white/80">{q.hint}</p>}
       </div>
 
       <div className="mt-5">
@@ -870,9 +878,7 @@ function QuestionView({
               </button>
             ))}
           </div>
-        ) : (
-          <TiefgangInput qkey={q.key} timeUp={left === 0} onDone={(a) => (a ? onAnswer({ tg: { id: a.id } }, a.name) : onAnswer({ tg: null }, "Keine Antwort"))} />
-        )}
+        ) : null}
       </div>
 
       <div className="mt-7">
@@ -890,7 +896,7 @@ function QuestionView({
   );
 }
 
-function TiefgangInput({ qkey, timeUp, onDone }: { qkey: string; timeUp: boolean; onDone: (a: Answer | null) => void }) {
+function TiefgangInput({ qkey, timeUp, onDone, dark = false }: { qkey: string; timeUp: boolean; onDone: (a: Answer | null) => void; dark?: boolean }) {
   const q = useMemo<Question | undefined>(() => tiefgangQ(qkey), [qkey]);
   const [v, setV] = useState("");
   const [sug, setSug] = useState<{ name: string; for: string } | null>(null);
@@ -940,13 +946,13 @@ function TiefgangInput({ qkey, timeUp, onDone }: { qkey: string; timeUp: boolean
             setErr("");
           }}
         />
-        <button type="submit" className="btn-primary" disabled={timeUp || !v.trim()}>
-          Antworten
+        <button type="submit" className={`btn-primary ${dark ? "bg-[#f3d272] text-ink shadow-[0_4px_0_#b8962f] hover:bg-[#f7dc8a]" : ""}`} disabled={timeUp || !v.trim()}>
+          {dark ? "Tauchen" : "Antworten"}
         </button>
       </form>
-      {sug && <Suggestion name={sug.name} onTake={() => { setV(sug.name); setSug(null); }} hint="oder nochmal Enter, wenn du deine Schreibweise meinst" />}
-      {err && <p className="mt-2 font-semibold text-bad">{err} Versuch es nochmal.</p>}
-      <button type="button" className="mt-3 text-[15px] font-semibold text-muted underline underline-offset-2 hover:text-ink" onClick={() => onDone(null)}>
+      {sug && <Suggestion dark={dark} name={sug.name} onTake={() => { setV(sug.name); setSug(null); }} hint="oder nochmal Enter, wenn du deine Schreibweise meinst" />}
+      {err && <p className={`mt-2 font-semibold ${dark ? "text-[#ffb4ae]" : "text-bad"}`}>{err} Versuch es nochmal.</p>}
+      <button type="button" className={`mt-3 text-[15px] font-semibold underline underline-offset-2 ${dark ? "text-white/70 hover:text-white" : "text-muted hover:text-ink"}`} onClick={() => onDone(null)}>
         Passen – mir fällt nichts ein
       </button>
     </div>
@@ -955,7 +961,7 @@ function TiefgangInput({ qkey, timeUp, onDone }: { qkey: string; timeUp: boolean
 
 // ---------------- reveal ----------------
 
-function RevealView({ st, q, me, host, onNext }: { st: RoomState; q: QView; me: string; host: boolean; onNext: () => void }) {
+function RevealView({ st, q, me, host, onNext, dive }: { st: RoomState; q: QView; me: string; host: boolean; onNext: () => void; dive: DiveR[] }) {
   const rv = st.reveal!;
   const ids = Object.keys(rv.answers);
   const nameOf = (id: string) => st.names[id] ?? "?";
@@ -1018,6 +1024,7 @@ function RevealView({ st, q, me, host, onNext }: { st: RoomState; q: QView; me: 
         </ul>
       ) : (
         <div className="mt-4">
+          <TgStage total={myDepth(st, me, dive)} list={dive} className="mb-4 h-[260px] sm:h-[300px]" />
           <ul className="grid gap-2">
             {[...ids]
               .sort((a, b) => (rv.answers[b]?.pts ?? -1) - (rv.answers[a]?.pts ?? -1))
@@ -1296,6 +1303,182 @@ function DailyReveal({ st, q, me, host, onNext }: { st: RoomState; q: Extract<QV
           </button>
         ) : (
           <p className="font-semibold text-muted">Der Admin startet gleich {last ? "den Endstand" : "die nächste Runde"} …</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------- Tiefgang: the dive ----------------
+
+type DiveR = { i: number; input: string; pts: number; answer?: string; id?: string; perle?: boolean };
+
+/** My depth in metres: my own answers this game, or the admin's score after a reload. */
+function myDepth(st: RoomState, me: string, dive: DiveR[]) {
+  const local = dive.reduce((a, r) => a + r.pts, 0);
+  return meters(Math.max(local, st.scores[me] ?? 0));
+}
+
+/** The ocean from the Tiefgang game: the camera glides down as your answers sink. */
+function TgStage({ total, list, className = "", children }: { total: number; list: DiveR[]; className?: string; children?: React.ReactNode }) {
+  const [cam, setCam] = useState(total);
+  const camRef = useRef(total);
+  const [sinking, setSinking] = useState<DiveR | null>(null);
+  const [base, setBase] = useState(total);
+  const [impact, setImpact] = useState<Impact | null>(null);
+  const seen = useRef(list.length);
+
+  // a new answer worth 0 points: just a splash
+  useEffect(() => {
+    if (list.length <= seen.current) return;
+    seen.current = list.length;
+    const last = list[list.length - 1];
+    if (last && last.pts <= 0) setImpact({ at: Date.now(), kind: "miss" });
+  }, [list]);
+
+  useEffect(() => {
+    const from = camRef.current;
+    const to = total;
+    if (from === to) return;
+    const last = list[list.length - 1];
+    const sink = to > from && !!last && last.pts > 0 && Math.abs(from + meters(last.pts) - to) < 1;
+    if (sink) {
+      setBase(from);
+      setSinking(last);
+    }
+    const dur = sink ? Math.min(4800, 1400 + Math.abs(to - from) * 3.2) : 700;
+    const ease = (x: number) => (sink ? 1 - Math.pow(1 - x, 2.4) : 1 - Math.pow(1 - x, 3));
+    const t0 = performance.now();
+    let raf = 0;
+    const step = (t: number) => {
+      const k = Math.min(1, (t - t0) / dur);
+      const v = from + (to - from) * ease(k);
+      camRef.current = v;
+      setCam(v);
+      if (k < 1) raf = requestAnimationFrame(step);
+      else if (sink) {
+        setSinking(null);
+        setImpact({ at: Date.now(), kind: tierOf(last).key as Impact["kind"] });
+      }
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total]);
+
+  return (
+    <div className={`relative overflow-hidden rounded-[28px] text-white shadow-[0_5px_0_#061a3d] ${className}`}>
+      <OceanScene cam={cam} results={list} questions={[]} sinking={sinking} base={sinking ? base : total} impact={impact} />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between bg-gradient-to-b from-[#051a3a]/70 to-transparent px-4 pb-5 pt-3">
+        <div>
+          <p className="text-xs font-bold text-white/70">Deine Tiefe</p>
+          <p className="font-display text-2xl font-semibold tabular-nums">{nfDe.format(Math.round(cam))} m</p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs font-bold text-white/70">Punkte</p>
+          <p className="font-display text-2xl font-semibold tabular-nums">{Math.round(cam / 10)}</p>
+        </div>
+      </div>
+      {children && <div className="absolute inset-x-0 bottom-0 z-20 max-h-[78%] overflow-y-auto p-3 sm:p-4">{children}</div>}
+    </div>
+  );
+}
+const nfDe = new Intl.NumberFormat("de-DE");
+
+function TgQuestion({
+  st,
+  q,
+  members,
+  me,
+  host,
+  myAns,
+  left,
+  onAnswer,
+  onForce,
+  dive,
+}: {
+  st: RoomState;
+  q: Extract<QView, { kind: "tiefgang" }>;
+  members: Record<string, Member>;
+  me: string;
+  host: boolean;
+  myAns: { label: string } | null;
+  left: number | null;
+  onAnswer: (part: Pick<AnswerMsg, "choice" | "tg" | "daily">, label: string, d?: Omit<DiveR, "i">) => void;
+  onForce: () => void;
+  dive: DiveR[];
+}) {
+  const present = Object.keys(members);
+  const doneN = present.filter((id) => st.done.includes(id)).length;
+  const mineNow = dive.find((r) => r.i === st.i);
+
+  return (
+    <div>
+      <QHead st={st}>
+        {left != null && (
+          <span className={`grid h-12 w-12 place-items-center rounded-full border-[3px] border-ink font-display text-xl font-semibold tabular-nums ${left <= 5 ? "bg-bad text-white" : "bg-white"}`} aria-label={`${left} Sekunden übrig`}>
+            {left}
+          </span>
+        )}
+      </QHead>
+      <TgStage total={myDepth(st, me, dive)} list={dive} className="mt-3 h-[min(72dvh,640px)] min-h-[500px]">
+        {myAns ? (
+          <div className="pop rounded-[24px] bg-white/95 p-5 text-ink shadow-[0_6px_0_rgb(0_0_0_/_0.3)]" role="status">
+            <p className="font-display font-semibold text-ink/60">{q.text}</p>
+            {mineNow && mineNow.pts > 0 ? (
+              <div className="mt-2 flex items-center gap-4">
+                <Creature tier={tierOf(mineNow).key} className={`shrink-0 ${mineNow.perle ? "h-20 w-20" : "h-16 w-16"}`} />
+                <div>
+                  <p className="inline-block rounded-full px-3 py-0.5 font-display font-semibold" style={{ background: tierOf(mineNow).color }}>
+                    {tierOf(mineNow).name}
+                  </p>
+                  <p className="font-display text-3xl font-semibold text-[#0f4c8a]">+{nfDe.format(meters(mineNow.pts))} m</p>
+                  <p className="font-semibold">
+                    {mineNow.answer} – {mineNow.pts} von {MAX_PTS} Punkten
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-2 flex items-center gap-4">
+                <Creature tier="none" className="h-14 w-14 shrink-0" />
+                <p className="font-display text-3xl font-semibold text-bad">0 m</p>
+              </div>
+            )}
+            <p className="mt-3 font-semibold text-muted">
+              Warte auf die anderen … {doneN} von {present.length} fertig
+            </p>
+          </div>
+        ) : (
+          <div className="pop" key={"q" + st.i}>
+            <div className="rounded-[24px] bg-[#082650]/85 p-5 shadow-[0_6px_0_rgb(0_0_0_/_0.3)] backdrop-blur-sm">
+              <h2 className="text-[24px] font-semibold leading-snug sm:text-3xl">{q.text}</h2>
+              <p className="mt-1 text-sm font-semibold text-white/65">{q.hint} Seltenere Antworten sinken tiefer.</p>
+            </div>
+            <div className="mt-3 rounded-[24px] bg-[#082650]/85 p-3 backdrop-blur-sm">
+              <TiefgangInput
+                qkey={q.key}
+                timeUp={left === 0}
+                dark
+                onDone={(a) =>
+                  a
+                    ? onAnswer({ tg: { id: a.id } }, a.name, { input: a.name, pts: a.pts, answer: a.name, id: a.id, perle: a.perle })
+                    : onAnswer({ tg: null }, "Keine Antwort", { input: "", pts: 0 })
+                }
+              />
+            </div>
+          </div>
+        )}
+      </TgStage>
+
+      <div className="mt-6">
+        <p className="mb-2 font-semibold" aria-live="polite">
+          {doneN} von {present.length} haben geantwortet
+        </p>
+        <Players members={members} me={me} done={st.done} />
+        {host && doneN < present.length && (
+          <button type="button" className="btn-ghost mt-4" onClick={onForce}>
+            Nicht mehr warten – Antworten zeigen
+          </button>
         )}
       </div>
     </div>
