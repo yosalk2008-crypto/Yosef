@@ -28,6 +28,11 @@ type Props = {
 };
 
 const W = 1000;
+/** Deep enough that the Vatican or Monaco fill the screen. */
+const MAX_ZOOM = 200;
+/** Tiny entities get a dot; tapping within this many screen pixels of it counts. */
+const DOT_PX = 6;
+const HIT_PX = 18;
 
 export function MapView({
   shapes,
@@ -102,10 +107,20 @@ export function MapView({
   );
 
   const zoomAt = useCallback((p: { x: number; y: number }, factor: number, base = t) => {
-    const k = Math.min(40, Math.max(1, base.k * factor));
+    const k = Math.min(MAX_ZOOM, Math.max(1, base.k * factor));
     const f = k / base.k;
     return { k, x: p.x - (p.x - base.x) * f, y: p.y - (p.y - base.y) * f };
   }, [t]);
+
+  // screen pixels per map unit, so dots and tap areas keep a finger-friendly size on every screen
+  const [ppu, setPpu] = useState(0.5);
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setPpu(el.getBoundingClientRect().width / W || 0.5));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const clamp = useCallback(
     (v: typeof t) => {
@@ -127,6 +142,9 @@ export function MapView({
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, [toSvg, clamp]);
+
+  // small on screen = less than about 12 × 12 pixels at the current zoom
+  const dotIds = dots ? shapes.filter((s) => paths[s.id] && dots(s.id) && areas[s.id] * (t.k * ppu) ** 2 < 110).map((s) => s.id) : [];
 
   const onPointerDown = (e: React.PointerEvent) => {
     (e.target as Element).setPointerCapture?.(e.pointerId);
@@ -159,15 +177,27 @@ export function MapView({
     const wasClick = pointers.current.size === 1 && gesture.current.moved <= 4;
     pointers.current.delete(e.pointerId);
     if (!wasClick || !onPick) return;
-    // find what is under the pointer (pointer capture retargets events)
-    const el = document.elementFromPoint(e.clientX, e.clientY) as Element | null;
-    const id = el?.closest("[data-id]")?.getAttribute("data-id");
-    if (id && !LAND_ONLY.has(id)) onPick(id);
+    // what is under the finger (pointer capture retargets events)
+    const under = (document.elementFromPoint(e.clientX, e.clientY) as Element | null)?.closest("[data-id]")?.getAttribute("data-id") ?? null;
+    // a tap close to a tiny state's dot picks the nearest one – generously over the sea or a tiny state,
+    // but only right at the dot when the finger is on a larger country
+    const generous = !under || dotIds.includes(under);
+    const p = toSvg(e.clientX, e.clientY);
+    const mx = (p.x - t.x) / t.k;
+    const my = (p.y - t.y) / t.k;
+    const reach = (generous ? HIT_PX : DOT_PX + 8) / (ppu * t.k);
+    let near: { id: string; d: number } | null = null;
+    for (const id of dotIds) {
+      const [cx, cy] = centroids[id];
+      const d = Math.hypot(cx - mx, cy - my);
+      if (d <= reach && (!near || d < near.d)) near = { id, d };
+    }
+    if (near && !LAND_ONLY.has(near.id)) return onPick(near.id);
+    if (under && !LAND_ONLY.has(under)) onPick(under);
   };
 
   const zoomBtn = (f: number) => setT((cur) => clamp(zoomAtStatic({ x: W / 2, y: H / 2 }, f, cur)));
 
-  const dotIds = dots ? shapes.filter((s) => paths[s.id] && dots(s.id) && areas[s.id] * t.k * t.k < 10).map((s) => s.id) : [];
 
   return (
     <div className={`relative overflow-hidden rounded-2xl bg-sea ${className}`}>
@@ -204,7 +234,7 @@ export function MapView({
               data-id={id}
               cx={centroids[id][0]}
               cy={centroids[id][1]}
-              r={4 / t.k}
+              r={DOT_PX / (ppu * t.k)}
               fill={(dotFill || fill)(id)}
               stroke="#475569"
               strokeWidth={1}
@@ -215,10 +245,10 @@ export function MapView({
         </g>
       </svg>
       <div className="absolute right-2 top-2 flex flex-col gap-1">
-        <button type="button" onClick={() => zoomBtn(1.6)} className="map-btn" aria-label="Hineinzoomen">
+        <button type="button" onClick={() => zoomBtn(2)} className="map-btn" aria-label="Hineinzoomen">
           +
         </button>
-        <button type="button" onClick={() => zoomBtn(1 / 1.6)} className="map-btn" aria-label="Herauszoomen">
+        <button type="button" onClick={() => zoomBtn(1 / 2)} className="map-btn" aria-label="Herauszoomen">
           −
         </button>
         <button type="button" onClick={() => setT({ k: 1, x: 0, y: 0 })} className="map-btn text-xs" aria-label="Ansicht zurücksetzen">
@@ -230,7 +260,7 @@ export function MapView({
 }
 
 function zoomAtStatic(p: { x: number; y: number }, factor: number, base: { k: number; x: number; y: number }) {
-  const k = Math.min(40, Math.max(1, base.k * factor));
+  const k = Math.min(MAX_ZOOM, Math.max(1, base.k * factor));
   const f = k / base.k;
   return { k, x: p.x - (p.x - base.x) * f, y: p.y - (p.y - base.y) * f };
 }
