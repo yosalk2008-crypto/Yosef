@@ -274,6 +274,11 @@ export function Spurensuche() {
     };
   }, [full]);
 
+  // small corner map: no zoom buttons, they would cover it
+  useEffect(() => {
+    map.current?.setOptions({ zoomControl: bigMap || !playing });
+  }, [bigMap, playing, ready]);
+
   const backToStart = () => {
     if (!targets || !pano.current) return;
     const t = targets[Math.min(round, ROUNDS - 1)];
