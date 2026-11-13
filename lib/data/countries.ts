@@ -1,9 +1,13 @@
 import raw from "./countries.json";
+import en from "./countries-en.json";
 
 export type Country = {
   id: string; // ISO 3166-1 alpha-3 (Kosovo: XKX)
   iso2: string;
   n: string; // German name
+  /** English name and capital (both are also accepted as answers in German) */
+  nEn: string;
+  capEn: string | null;
   alt: string[];
   cont: Continent;
   sub: string;
@@ -34,7 +38,12 @@ export type Continent = "Europa" | "Asien" | "Afrika" | "Nordamerika" | "Südame
  * step in Grenzgang and are part of the region quizzes (ALL_COUNTRIES).
  */
 const EXCLUDED = new Set(["ISR"]);
-const RAW_ALL = raw as unknown as Country[];
+const EN = en as unknown as Record<string, [string, string | null, string[]]>;
+const uniq = (xs: (string | null | undefined)[], not: (string | null)[]) => [...new Set(xs.filter((x): x is string => !!x && !not.includes(x)))];
+const RAW_ALL = (raw as unknown as Country[]).map((c) => {
+  const [nEn, capEn, alts] = EN[c.id] ?? [c.n, c.cap, []];
+  return { ...c, nEn, capEn, alt: uniq([...c.alt, nEn, ...alts], [c.n]), capAlt: uniq([...c.capAlt, capEn], [c.cap]) };
+});
 const RAW_BORDERS = new Map(RAW_ALL.map((c) => [c.id, new Set(c.borders)]));
 /** Borders only count if both countries list each other (the source data has Sri Lanka → India one-way). */
 export const ALL_COUNTRIES: Country[] = RAW_ALL.map((c) => ({ ...c, borders: c.borders.filter((b) => RAW_BORDERS.get(b)?.has(c.id)) }));
@@ -70,6 +79,21 @@ export const SUBREGION_DE: Record<string, string> = {
   Micronesia: "Mikronesien",
   Polynesia: "Polynesien",
 };
+
+export const CONTINENT_EN: Record<Continent, string> = {
+  Europa: "Europe",
+  Asien: "Asia",
+  Afrika: "Africa",
+  Nordamerika: "North America",
+  Südamerika: "South America",
+  Ozeanien: "Oceania",
+};
+
+/** Name / capital / continent / subregion in the current language. */
+export const cName = (c: { n: string; nEn: string }, lang: "de" | "en") => (lang === "en" ? c.nEn : c.n);
+export const cCap = (c: { cap: string | null; capEn: string | null }, lang: "de" | "en") => (lang === "en" ? c.capEn : c.cap);
+export const contName = (k: Continent, lang: "de" | "en") => (lang === "en" ? CONTINENT_EN[k] : k);
+export const subName = (sub: string, lang: "de" | "en") => (lang === "en" ? sub : SUBREGION_DE[sub] ?? sub);
 
 export function flagUrl(iso2: string) {
   return `/flags/${iso2}.svg`;

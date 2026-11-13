@@ -56,7 +56,7 @@ export function ShapeOutline({
     return geoPath(proj)(s) || "";
   }, [shape, size, pad]);
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} className={className} role="img" aria-label={label || "Umriss"}>
+    <svg viewBox={`0 0 ${size} ${size}`} className={className} role="img" aria-label={label || "Umriss / outline"}>
       <path d={d} fill={fill} stroke="none" />
     </svg>
   );

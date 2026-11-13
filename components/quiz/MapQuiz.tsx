@@ -5,11 +5,15 @@ import { LAND_ONLY, useShapes } from "@/lib/geo";
 import { randomRng } from "@/lib/rng";
 import { MapView } from "../MapView";
 import { QuizEnd, QuizHeader, mapSetup, questionCount, useEntities, useQuizParams } from "./common";
+import { useLang, useT } from "@/lib/i18n";
+import { regionLabel } from "@/lib/data/regions";
 
 const TRY_COLORS = ["#16a34a", "#eab308", "#f97316", "#dc2626"]; // found on 1st … 4th try
 const MAX_TRIES = 4;
 
 export function MapQuiz() {
+  const tt = useT();
+  const lang = useLang();
   const params = useQuizParams();
   const all = useEntities(params.region);
   const shapes = useShapes(params.region.shapes);
@@ -89,15 +93,15 @@ export function MapQuiz() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 pb-16 pt-6 sm:pt-10">
-      <QuizHeader title="Auf der Karte" region={params.region} done={Math.min(i, order.length)} total={order.length} score={score} />
+      <QuizHeader title={tt("Auf der Karte", "On the map")} region={params.region} done={Math.min(i, order.length)} total={order.length} score={score} />
       {!done && target && (
         <div className="sticky top-16 z-20 mb-3 flex items-center justify-between gap-3 rounded-2xl bg-ink px-4 py-3 text-white shadow-lg">
           <p className="text-lg font-bold sm:text-xl">
-            <span className="text-slate-400">Wo liegt</span> {target.name}?
+            <span className="text-slate-400">{tt("Wo liegt", "Where is")}</span> {target.name}?
           </p>
-          <span className="flex gap-1.5" aria-label={params.oneLife ? "1-Leben-Modus" : `Versuch ${tries + 1} von ${MAX_TRIES}`}>
+          <span className="flex gap-1.5" aria-label={params.oneLife ? tt("1-Leben-Modus", "One-life mode") : tt(`Versuch ${tries + 1} von ${MAX_TRIES}`, `Try ${tries + 1} of ${MAX_TRIES}`)}>
             {params.oneLife ? (
-              <span className="rounded-full bg-rose-500 px-2.5 py-1 text-xs font-bold">1 Leben</span>
+              <span className="rounded-full bg-rose-500 px-2.5 py-1 text-xs font-bold">{tt("1 Leben", "1 life")}</span>
             ) : (
               TRY_COLORS.map((c, k) => <span key={c} className="h-3 w-3 rounded-full" style={{ background: k === tries ? c : k < tries ? "#475569" : "#1e293b", outline: k === tries ? "2px solid white" : "none" }} />)
             )}
@@ -115,10 +119,10 @@ export function MapQuiz() {
         onPick={done ? undefined : pick}
         dots={() => true}
         aspect={params.region.shapes === "world" ? 1.6 : 1.4}
-        label={`Karte: ${params.region.label}`}
+        label={`${tt("Karte", "Map")}: ${regionLabel(params.region, lang)}`}
       />
       <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted">
-        {["1. Versuch", "2. Versuch", "3. Versuch", "4. Versuch"].map((l, k) => (
+        {[1, 2, 3, 4].map((x) => tt(`${x}. Versuch`, `Try ${x}`)).map((l, k) => (
           <span key={l} className="flex items-center gap-1.5">
             <span className="h-3 w-3 rounded-sm" style={{ background: TRY_COLORS[k] }} />
             {l}
@@ -126,7 +130,7 @@ export function MapQuiz() {
         ))}
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-sm bg-[#7f1d1d]" />
-          nicht gefunden
+          {tt("nicht gefunden", "not found")}
         </span>
       </div>
       {done && (
@@ -139,7 +143,8 @@ export function MapQuiz() {
             onRestart={restart}
             extra={
               <p className="mt-2 text-sm text-muted">
-                {dead ? "Ein Fehler im 1-Leben-Modus beendet das Spiel. " : ""}Beim ersten Versuch gefunden: <strong className="text-ink">{firstTry}</strong>
+                {dead ? tt("Ein Fehler im 1-Leben-Modus beendet das Spiel. ", "One mistake ends the game in one-life mode. ") : ""}
+                {tt("Beim ersten Versuch gefunden", "Found on the first try")}: <strong className="text-ink">{firstTry}</strong>
               </p>
             }
           />

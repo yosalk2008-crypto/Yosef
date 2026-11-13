@@ -1,10 +1,11 @@
 "use client";
 
 import { LeaderboardJoin } from "./LeaderboardJoin";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useEffect, useState } from "react";
 import { dayNumber, formatDay, msUntilNextDay, utcDate, type GameKey } from "@/lib/daily";
-import { GAME_BY_KEY, GAMES } from "@/lib/games";
+import { GAME_BY_KEY, GAMES, gTitle } from "@/lib/games";
+import { useLang, useT } from "@/lib/i18n";
 import { Icon } from "./Icon";
 import { useMpDaily } from "@/lib/mpDaily";
 import { GameArt } from "./GameArt";
@@ -24,6 +25,8 @@ export function GameShell({
 }) {
   const info = GAME_BY_KEY[game];
   const mp = useMpDaily();
+  const lang = useLang();
+  const t = useT();
   const [help, setHelp] = useState(false);
   useEffect(() => {
     try {
@@ -44,22 +47,22 @@ export function GameShell({
           </span>
           <div className="min-w-0">
             <h1 className="text-[24px] font-semibold leading-tight sm:text-3xl">
-              {info.title} <span className="text-ink/55">#{dayNumber(day)}</span>
+              {gTitle(info, lang)} <span className="text-ink/55">#{dayNumber(day)}</span>
             </h1>
             <p className="text-sm font-semibold text-ink/70">
-              {formatDay(day)}
+              {formatDay(day, lang)}
               {!isToday && !mp && (
                 <>
                   {" – "}
                   <Link href="/archiv" className="underline underline-offset-2">
-                    aus dem Archiv
+                    {t("aus dem Archiv", "from the archive")}
                   </Link>
                 </>
               )}
             </p>
           </div>
         </div>
-        <button type="button" onClick={() => setHelp(true)} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/60 hover:bg-white" aria-haspopup="dialog" aria-label="Regeln">
+        <button type="button" onClick={() => setHelp(true)} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/60 hover:bg-white" aria-haspopup="dialog" aria-label={t("Regeln", "Rules")}>
           <Icon d="M9.1 9a3 3 0 015.8 1c0 2-3 2.5-3 4.5M12 18h.01M12 21a9 9 0 100-18 9 9 0 000 18z" className="h-6 w-6" />
         </button>
       </div>
@@ -71,11 +74,11 @@ export function GameShell({
               <GameArt game={game} className="h-16 w-24" />
             </div>
             <h2 id="rules-title" className="text-center text-2xl font-semibold">
-              So geht {info.title}
+              {t("So geht", "How to play")} {gTitle(info, lang)}
             </h2>
             <div className="mt-3 space-y-2 text-[15px] leading-relaxed text-muted [&_strong]:text-ink">{rules}</div>
             <button type="button" className="btn-primary mt-6 w-full" onClick={() => setHelp(false)} autoFocus>
-              Los geht&apos;s
+              {t("Los geht's", "Let's go")}
             </button>
           </div>
         </div>
@@ -100,6 +103,8 @@ export function ResultCard({
   children?: React.ReactNode;
 }) {
   const mp = useMpDaily();
+  const lang = useLang();
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const [left, setLeft] = useState("");
   useEffect(() => {
@@ -115,7 +120,7 @@ export function ResultCard({
     return () => clearInterval(id);
   }, []);
   const copy = async () => {
-    const text = share + "\nkoshertrivia.de";
+    const text = share + (lang === "en" ? "\nkoshertrivia.de/en" : "\nkoshertrivia.de");
     try {
       if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) await navigator.share({ text });
       else await navigator.clipboard.writeText(text);
@@ -141,21 +146,21 @@ export function ResultCard({
       <pre className="mt-4 whitespace-pre-wrap rounded-2xl bg-paper p-3 font-sans text-sm font-semibold">{share}</pre>
       <div className="mt-4 flex flex-wrap gap-2">
         <button type="button" onClick={copy} className="btn-primary">
-          {copied ? "Kopiert ✓" : "Ergebnis teilen"}
+          {copied ? t("Kopiert ✓", "Copied ✓") : t("Ergebnis teilen", "Share result")}
         </button>
         <Link href="/" className="btn-ghost">
-          Alle Tagesspiele
+          {t("Alle Tagesspiele", "All daily games")}
         </Link>
       </div>
-      {isToday && <p className="mt-4 text-sm text-muted">Nächstes Rätsel in {left}</p>}
+      {isToday && <p className="mt-4 text-sm text-muted">{t("Nächstes Rätsel in", "Next puzzle in")} {left}</p>}
       <LeaderboardJoin day={utcDate()} game={current} isToday={isToday} />
       <div className="mt-5 border-t-2 border-line pt-4">
-        <p className="mb-2 text-sm font-semibold">Weiterspielen</p>
+        <p className="mb-2 text-sm font-semibold">{t("Weiterspielen", "Keep playing")}</p>
         <div className="flex flex-wrap gap-2">
           {next.map((g) => (
             <Link key={g.key} href={`/taeglich/${g.key}`} className="chunk flex items-center gap-1.5 !rounded-2xl py-1.5 pl-1.5 pr-3 font-display font-semibold" style={{ background: g.bg, ["--edge" as string]: g.edge }}>
               <GameArt game={g.key} className="h-7 w-9" />
-              {g.title}
+              {gTitle(g, lang)}
             </Link>
           ))}
         </div>

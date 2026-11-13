@@ -6,11 +6,15 @@ import { utcDate, type GameKey } from "@/lib/daily";
 import { GAME_BY_KEY } from "@/lib/games";
 import { LB_GAMES, fetchBoard, getName, nameProblem, setName, submitAllToday, type Row } from "@/lib/leaderboard";
 import { GameArt } from "./GameArt";
+import { useLang, useT } from "@/lib/i18n";
+import { gTitle } from "@/lib/games";
 
 type Scope = "heute" | "gesamt";
 
 export function Leaderboard() {
   const sp = useSearchParams();
+  const lang = useLang();
+  const t = useT();
   const [scope, setScope] = useState<Scope>("heute");
   const [game, setGame] = useState<GameKey | "alle">("alle");
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -40,16 +44,16 @@ export function Leaderboard() {
 
   return (
     <div className="mt-6">
-      <div className="flex gap-2" role="tablist" aria-label="Zeitraum">
+      <div className="flex gap-2" role="tablist" aria-label={t("Zeitraum", "Period")}>
         {(["heute", "gesamt"] as Scope[]).map((s) => (
           <button key={s} type="button" role="tab" aria-selected={scope === s} onClick={() => setScope(s)} className="chip" aria-pressed={scope === s}>
-            {s === "heute" ? "Heute" : "Alle Zeit"}
+            {s === "heute" ? t("Heute", "Today") : t("Alle Zeit", "All time")}
           </button>
         ))}
       </div>
-      <div className="mt-3 flex flex-wrap gap-2" aria-label="Spiel">
+      <div className="mt-3 flex flex-wrap gap-2" aria-label={t("Spiel", "Game")}>
         <button type="button" onClick={() => setGame("alle")} className="chip" aria-pressed={game === "alle"}>
-          Alle Spiele
+          {t("Alle Spiele", "All games")}
         </button>
         {LB_GAMES.map((g) => (
           <button key={g.key} type="button" onClick={() => setGame(g.key)} className="chip gap-1.5 pl-1.5" aria-pressed={game === g.key}>
@@ -60,7 +64,7 @@ export function Leaderboard() {
             ) : (
               <span className="grid h-7 w-8 place-items-center rounded-lg bg-[#16528f] text-xs text-white">🌊</span>
             )}
-            {g.title}
+            {GAME_BY_KEY[g.key] ? gTitle(GAME_BY_KEY[g.key], lang) : t("Tiefgang", "Deep Dive")}
           </button>
         ))}
       </div>
@@ -68,11 +72,14 @@ export function Leaderboard() {
       <NameBar name={name} onChange={setNameState} />
 
       <div className="card mt-4 overflow-hidden">
-        {error && <p className="p-5 font-semibold text-bad">Die Bestenliste ist gerade nicht erreichbar. Versuch es gleich noch einmal.</p>}
+        {error && <p className="p-5 font-semibold text-bad">{t("Die Bestenliste ist gerade nicht erreichbar. Versuch es gleich noch einmal.", "The leaderboard can’t be reached right now. Try again in a moment.")}</p>}
         {!error && rows === null && <div className="h-64 animate-pulse bg-paper" />}
         {!error && rows?.length === 0 && (
           <p className="p-6 text-muted">
-            Noch niemand eingetragen. Spiel {game === "alle" ? "ein Tagesspiel" : "dieses Spiel"} und trag deinen Namen ein – dann stehst du ganz oben.
+            {t(
+              `Noch niemand eingetragen. Spiel ${game === "alle" ? "ein Tagesspiel" : "dieses Spiel"} und trag deinen Namen ein – dann stehst du ganz oben.`,
+              `Nobody here yet. Play ${game === "alle" ? "a daily game" : "this game"} and enter your name – you’ll go straight to the top.`
+            )}
           </p>
         )}
         {!error && rows && rows.length > 0 && (
@@ -85,10 +92,10 @@ export function Leaderboard() {
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-display text-lg font-semibold">
                     {r.name}
-                    {r.is_me && <span className="ml-2 text-sm text-brand">(du)</span>}
+                    {r.is_me && <span className="ml-2 text-sm text-brand">({t("du", "you")})</span>}
                   </span>
                   <span className="text-sm text-muted">
-                    {game === "alle" ? `${r.games} ${r.games === 1 ? "Spiel" : "Spiele"}` : r.label}
+                    {game === "alle" ? `${r.games} ${r.games === 1 ? t("Spiel", "game") : t("Spiele", "games")}` : r.label}
                   </span>
                 </span>
                 <span className="shrink-0 text-right font-display text-xl font-semibold tabular-nums">
@@ -100,21 +107,23 @@ export function Leaderboard() {
           </ol>
         )}
       </div>
-      {me && me.rank > 50 && <p className="mt-3 text-sm font-semibold">Du bist auf Platz {me.rank}.</p>}
+      {me && me.rank > 50 && <p className="mt-3 text-sm font-semibold">{t(`Du bist auf Platz ${me.rank}.`, `You are in place ${me.rank}.`)}</p>}
     </div>
   );
 }
 
 function NameBar({ name, onChange }: { name: string | null; onChange: (n: string) => void }) {
+  const lang = useLang();
+  const t = useT();
   const [edit, setEdit] = useState(false);
   const [draft, setDraft] = useState("");
   const [err, setErr] = useState<string | null>(null);
   if (name && !edit)
     return (
       <p className="mt-4 text-sm text-muted">
-        Du spielst als <strong className="text-ink">{name}</strong>.{" "}
+        {t("Du spielst als", "You’re playing as")} <strong className="text-ink">{name}</strong>.{" "}
         <button type="button" className="font-bold text-brand underline" onClick={() => (setDraft(name), setEdit(true))}>
-          Name ändern
+          {t("Name ändern", "Change name")}
         </button>
       </p>
     );
@@ -123,7 +132,7 @@ function NameBar({ name, onChange }: { name: string | null; onChange: (n: string
       className="mt-4 flex flex-wrap gap-2"
       onSubmit={async (e) => {
         e.preventDefault();
-        const p = nameProblem(draft);
+        const p = nameProblem(draft, lang);
         if (p) return setErr(p);
         setName(draft);
         onChange(draft.trim());
@@ -132,12 +141,12 @@ function NameBar({ name, onChange }: { name: string | null; onChange: (n: string
         onChange(draft.trim() + "");
       }}
     >
-      <input value={draft} onChange={(e) => (setDraft(e.target.value), setErr(null))} maxLength={20} placeholder="Dein Name" className="input min-w-0 flex-1" aria-label="Name" />
+      <input value={draft} onChange={(e) => (setDraft(e.target.value), setErr(null))} maxLength={20} placeholder={t("Dein Name", "Your name")} className="input min-w-0 flex-1" aria-label="Name" />
       <button type="submit" className="btn-primary">
-        {name ? "Speichern" : "Mitmachen"}
+        {name ? t("Speichern", "Save") : t("Mitmachen", "Join")}
       </button>
       {err && <p className="w-full text-sm font-bold text-bad">{err}</p>}
-      {name && <p className="w-full text-xs text-muted">Neue Ergebnisse erscheinen unter dem neuen Namen; deine Gesamtwertung übernimmt ihn ebenfalls.</p>}
+      {name && <p className="w-full text-xs text-muted">{t("Neue Ergebnisse erscheinen unter dem neuen Namen; deine Gesamtwertung übernimmt ihn ebenfalls.", "New results appear under the new name; your all-time total takes it over too.")}</p>}
     </form>
   );
 }

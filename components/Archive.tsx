@@ -1,15 +1,18 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useEffect, useMemo, useState } from "react";
 import { LAUNCH, allResults, spurensucheInArchive, dayNumber, formatDay, useStoreVersion, utcDate } from "@/lib/daily";
-import { GAMES } from "@/lib/games";
+import { GAMES, gTitle } from "@/lib/games";
 import { Icon } from "./Icon";
 import { GameArt } from "./GameArt";
+import { useLang, useT } from "@/lib/i18n";
 
-const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+const WEEKDAYS = { de: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"], en: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"] };
 
 export function Archive() {
+  const lang = useLang();
+  const t = useT();
   const v = useStoreVersion();
   const [today, setToday] = useState<string | null>(null);
   const [month, setMonth] = useState<{ y: number; m: number } | null>(null);
@@ -38,7 +41,7 @@ export function Archive() {
 
   if (!month || !today) return <div className="mt-8 h-96 animate-pulse rounded-2xl bg-line" />;
 
-  const label = new Date(Date.UTC(month.y, month.m, 15)).toLocaleDateString("de-DE", { month: "long", year: "numeric", timeZone: "UTC" });
+  const label = new Date(Date.UTC(month.y, month.m, 15)).toLocaleDateString(lang === "en" ? "en-GB" : "de-DE", { month: "long", year: "numeric", timeZone: "UTC" });
   const canPrev = `${month.y}-${String(month.m + 1).padStart(2, "0")}` > LAUNCH.slice(0, 7);
   const canNext = `${month.y}-${String(month.m + 1).padStart(2, "0")}` < today.slice(0, 7);
   const shift = (d: number) =>
@@ -53,16 +56,16 @@ export function Archive() {
     <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_320px]">
       <div className="card p-4 sm:p-5">
         <div className="mb-4 flex items-center justify-between">
-          <button type="button" className="btn-ghost px-3" onClick={() => shift(-1)} disabled={!canPrev} aria-label="Vorheriger Monat">
+          <button type="button" className="btn-ghost px-3" onClick={() => shift(-1)} disabled={!canPrev} aria-label={t("Vorheriger Monat", "Previous month")}>
             <Icon d="M15 18l-6-6 6-6" />
           </button>
           <p className="text-lg font-bold capitalize">{label}</p>
-          <button type="button" className="btn-ghost px-3" onClick={() => shift(1)} disabled={!canNext} aria-label="Nächster Monat">
+          <button type="button" className="btn-ghost px-3" onClick={() => shift(1)} disabled={!canNext} aria-label={t("Nächster Monat", "Next month")}>
             <Icon d="M9 18l6-6-6-6" />
           </button>
         </div>
         <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-muted">
-          {WEEKDAYS.map((w) => (
+          {WEEKDAYS[lang].map((w) => (
             <div key={w} className="py-1">
               {w}
             </div>
@@ -81,7 +84,7 @@ export function Archive() {
                 disabled={!playable}
                 onClick={() => setSel(d)}
                 aria-pressed={active}
-                aria-label={`${formatDay(d)}${n ? `, ${n} von ${GAMES.length} gespielt` : ""}`}
+                aria-label={`${formatDay(d, lang)}${n ? t(`, ${n} von ${GAMES.length} gespielt`, `, ${n} of ${GAMES.length} played`) : ""}`}
                 className={`relative aspect-square rounded-lg text-sm font-semibold transition disabled:opacity-25 ${
                   active ? "bg-ink text-white" : n === GAMES.length ? "bg-green-100 text-green-900" : n ? "bg-brand-soft text-ink" : "bg-surface hover:bg-line"
                 }`}
@@ -95,8 +98,8 @@ export function Archive() {
       </div>
       {sel && (
         <div className="card p-5">
-          <p className="text-sm font-semibold text-muted">Rätsel #{dayNumber(sel)}</p>
-          <p className="text-xl font-display font-semibold">{formatDay(sel)}</p>
+          <p className="text-sm font-semibold text-muted">{t("Rätsel", "Puzzle")} #{dayNumber(sel)}</p>
+          <p className="text-xl font-display font-semibold">{formatDay(sel, lang)}</p>
           <ul className="mt-4 space-y-1.5">
             {GAMES.map((g) => {
               const r = res[sel]?.[g.key];
@@ -108,7 +111,7 @@ export function Archive() {
                       <span className="grid h-9 w-11 place-items-center rounded-xl" style={{ background: g.bg }}>
                         <GameArt game={g.key} className="h-7 w-9" />
                       </span>
-                      {g.title}
+                      {gTitle(g, lang)}
                     </span>
                     <span className="text-sm text-muted">{r?.done ? `✓ ${r.label}` : "→"}</span>
                   </Link>

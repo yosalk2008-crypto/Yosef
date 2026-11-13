@@ -9,6 +9,8 @@ import { makeRng } from "@/lib/rng";
 import { useDaily } from "@/lib/useDaily";
 import { GameShell, ResultCard } from "../GameShell";
 import { SolutionRow, Solutions } from "../Solutions";
+import { useLang, useT } from "@/lib/i18n";
+import { cName } from "@/lib/data/countries";
 
 const ROUNDS = 5;
 const REF = "DEU";
@@ -29,7 +31,9 @@ function targets(day: string) {
   return rng.shuffle(bands.map(([lo, hi]) => rng.pick(POOL.filter((c) => c.area >= lo && c.area < hi)).id));
 }
 
-const fmt = (v: number) => new Intl.NumberFormat("de-DE").format(Math.round(v)) + " km²";
+let LOC = "de-DE";
+const fmt = (v: number) => new Intl.NumberFormat(LOC).format(Math.round(v)) + " km²";
+const num = (v: number) => v.toLocaleString(LOC);
 const toArea = (s: number) => Math.pow(10, Math.log10(MIN_A) + s * (Math.log10(MAX_A) - Math.log10(MIN_A)));
 const toSlider = (a: number) => (Math.log10(a) - Math.log10(MIN_A)) / (Math.log10(MAX_A) - Math.log10(MIN_A));
 
@@ -43,6 +47,9 @@ type S = { guesses: number[] };
 
 export function Massstab() {
   const { day, isToday, loaded, saved, persist } = useDaily<S>("massstab");
+  const lang = useLang();
+  const t = useT();
+  LOC = lang === "en" ? "en-GB" : "de-DE";
   const ids = useMemo(() => targets(day), [day]);
   const [local, setLocal] = useState<number[] | null>(null);
   const guesses = local ?? saved?.state?.guesses ?? [];
@@ -69,8 +76,8 @@ export function Massstab() {
       done,
       score: sum,
       max: ROUNDS * 10,
-      label: `${sum.toLocaleString("de-DE")}/${ROUNDS * 10}`,
-      share: `Maßstab #${dayNumber(day)} · ${sum.toLocaleString("de-DE")}/${ROUNDS * 10}\n${pts.map(emoji).join("")}`,
+      label: `${num(sum)}/${ROUNDS * 10}`,
+      share: `${t("Maßstab", "To Scale")} #${dayNumber(day)} · ${num(sum)}/${ROUNDS * 10}\n${pts.map(emoji).join("")}`,
       state: { guesses: next },
     });
   };
@@ -89,11 +96,23 @@ export function Massstab() {
       isToday={isToday}
       rules={
         <>
-          <p>
-            Links siehst du <strong>Deutschland</strong>, rechts ein anderes Land. Beide sind flächentreu dargestellt – aber das rechte hat die falsche Größe.
-          </p>
-          <p>Zieh den Regler, bis das Land so groß ist wie in Wirklichkeit. Je genauer, desto mehr Punkte (max. 10 pro Runde, {ROUNDS} Runden).</p>
-          <p>Tipp: Weltkarten in Mercator-Projektion lassen Länder nahe den Polen viel zu groß aussehen.</p>
+          {lang === "en" ? (
+            <>
+              <p>
+                On the left is <strong>Germany</strong>, on the right another country. Both are drawn true to area – but the one on the right has the wrong size.
+              </p>
+              <p>Move the slider until the country is as big as it really is. The closer, the more points (max. 10 per round, {ROUNDS} rounds).</p>
+              <p>Tip: world maps in the Mercator projection make countries near the poles look far too big.</p>
+            </>
+          ) : (
+            <>
+              <p>
+                Links siehst du <strong>Deutschland</strong>, rechts ein anderes Land. Beide sind flächentreu dargestellt – aber das rechte hat die falsche Größe.
+              </p>
+              <p>Zieh den Regler, bis das Land so groß ist wie in Wirklichkeit. Je genauer, desto mehr Punkte (max. 10 pro Runde, {ROUNDS} Runden).</p>
+              <p>Tipp: Weltkarten in Mercator-Projektion lassen Länder nahe den Polen viel zu groß aussehen.</p>
+            </>
+          )}
         </>
       }
     >
@@ -103,20 +122,20 @@ export function Massstab() {
         <>
           <div className="mb-3 flex items-center justify-between text-sm">
             <span className="font-semibold">
-              Runde {Math.min(shown + 1, ROUNDS)} von {ROUNDS}
+              {t("Runde", "Round")} {Math.min(shown + 1, ROUNDS)} {t("von", "of")} {ROUNDS}
             </span>
-            <span className="text-muted">Punkte: {total.toLocaleString("de-DE")}</span>
+            <span className="text-muted">{t("Punkte", "Points")}: {num(total)}</span>
           </div>
           <div className="card overflow-hidden">
             <Compare refShape={shapes.byId[REF]} target={shapes.byId[target.id]} guessArea={guessArea} trueArea={target.area} refArea={BY_ID[REF].area} revealed={revealed} />
             <div className="grid grid-cols-2 border-t border-line text-center text-sm">
               <div className="border-r border-line p-3">
-                <p className="font-bold">Deutschland</p>
+                <p className="font-bold">{t("Deutschland", "Germany")}</p>
                 <p className="text-muted">{fmt(BY_ID[REF].area)}</p>
               </div>
               <div className="p-3">
-                <p className="font-bold">{target.n}</p>
-                <p className="text-muted">{revealed ? `echt: ${fmt(target.area)}` : "Größe?"}</p>
+                <p className="font-bold">{cName(target, lang)}</p>
+                <p className="text-muted">{revealed ? `${t("echt", "actual")}: ${fmt(target.area)}` : t("Größe?", "Size?")}</p>
               </div>
             </div>
           </div>
@@ -124,7 +143,7 @@ export function Massstab() {
           {!revealed && (
             <div className="card mt-4 p-4">
               <label htmlFor="size" className="mb-3 block text-sm font-semibold">
-                Größe von {target.n} einstellen
+                {t(`Größe von ${target.n} einstellen`, `Set the size of ${target.nEn}`)}
               </label>
               <input
                 id="size"
@@ -135,14 +154,14 @@ export function Massstab() {
                 value={slider}
                 onChange={(e) => setSlider(+e.target.value)}
                 className="slider bg-gradient-to-r from-sky-100 to-sky-400"
-                aria-valuetext={`${Math.round((toArea(slider) / BY_ID[REF].area) * 100)} Prozent von Deutschland`}
+                aria-valuetext={`${Math.round((toArea(slider) / BY_ID[REF].area) * 100)} ${t("Prozent von Deutschland", "percent of Germany")}`}
               />
               <div className="mt-2 flex justify-between text-xs text-muted">
-                <span>kleiner</span>
-                <span>größer</span>
+                <span>{t("kleiner", "smaller")}</span>
+                <span>{t("größer", "bigger")}</span>
               </div>
               <button type="button" onClick={submit} className="btn-primary mt-4 w-full">
-                Größe festlegen
+                {t("Größe festlegen", "Lock in size")}
               </button>
             </div>
           )}
@@ -150,14 +169,14 @@ export function Massstab() {
           {reveal != null && (
             <div className="card pop mt-4 flex flex-wrap items-center justify-between gap-3 p-4">
               <div>
-                <p className="text-2xl font-display font-semibold">{points[reveal].toLocaleString("de-DE")} / 10 Punkte</p>
+                <p className="text-2xl font-display font-semibold">{num(points[reveal])} / 10 {t("Punkte", "points")}</p>
                 <p className="text-sm text-muted">
-                  Dein Tipp: {fmt(guesses[reveal])} · echt: {fmt(target.area)} ({Math.round((target.area / BY_ID[REF].area) * 100)} % von Deutschland)
+                  {t("Dein Tipp", "Your guess")}: {fmt(guesses[reveal])} · {t("echt", "actual")}: {fmt(target.area)} ({Math.round((target.area / BY_ID[REF].area) * 100)} % {t("von Deutschland", "of Germany")})
                 </p>
               </div>
               {round < ROUNDS && (
                 <button type="button" onClick={nextRound} className="btn-primary">
-                  Nächste Runde
+                  {t("Nächste Runde", "Next round")}
                 </button>
               )}
             </div>
@@ -165,16 +184,16 @@ export function Massstab() {
 
           {over && (reveal == null || reveal === ROUNDS - 1) && (
             <>
-              <Solutions note="Flächen im Vergleich zu Deutschland (357.114 km²).">
+              <Solutions note={t("Flächen im Vergleich zu Deutschland (357.114 km²).", "Areas compared with Germany (357,114 km²).")}>
                 {ids.map((id, i) => {
                   const c = BY_ID[id];
-                  const km = (a: number) => `${new Intl.NumberFormat("de-DE").format(Math.round(a))} km² (${new Intl.NumberFormat("de-DE").format(Math.round((a / BY_ID[REF].area) * 100))} % von Deutschland)`;
+                  const km = (a: number) => `${fmt(a)} (${new Intl.NumberFormat(LOC).format(Math.round((a / BY_ID[REF].area) * 100))} % ${t("von Deutschland", "of Germany")})`;
                   return (
-                    <SolutionRow key={id} iso2={c.iso2} title={c.n} right={km(c.area)} yours={km(guesses[i])} badge={{ text: `${points[i].toLocaleString("de-DE")} / 10`, pts: points[i], max: 10 }} />
+                    <SolutionRow key={id} iso2={c.iso2} title={cName(c, lang)} right={km(c.area)} yours={km(guesses[i])} badge={{ text: `${num(points[i])} / 10`, pts: points[i], max: 10 }} />
                   );
                 })}
               </Solutions>
-              <ResultCard title="Dein Ergebnis" score={`${total.toLocaleString("de-DE")} / ${ROUNDS * 10}`} share={saved?.share || ""} isToday={isToday} current="massstab" />
+              <ResultCard title={t("Dein Ergebnis", "Your result")} score={`${num(total)} / ${ROUNDS * 10}`} share={saved?.share || ""} isToday={isToday} current="massstab" />
             </>
           )}
         </>
@@ -234,7 +253,7 @@ function Compare({
   void refArea;
 
   return (
-    <svg viewBox={`0 0 ${vbW} ${vbH}`} className="block aspect-[16/9] w-full bg-sea" role="img" aria-label="Größenvergleich">
+    <svg viewBox={`0 0 ${vbW} ${vbH}`} className="block aspect-[16/9] w-full bg-sea" role="img" aria-label="Größenvergleich / size comparison">
       <path d={geo.r.d} transform={`translate(${rx} ${ry})`} fill="#64748b" />
       {showTrue && (
         <path

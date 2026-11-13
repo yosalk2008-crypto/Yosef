@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { geoAlbersUsa, geoEqualEarth, geoMercator, geoPath, type GeoProjection } from "d3-geo";
 import { LAND_ONLY, type Shape } from "@/lib/geo";
+import { useT } from "@/lib/i18n";
 
 export type MapProjection = "world" | "mercator" | "usa";
 
@@ -48,9 +49,10 @@ export function MapView({
   dotFill,
   aspect = 1.9,
   className = "",
-  label = "Karte",
+  label,
 }: Props) {
   const H = Math.round(W / aspect);
+  const tt = useT();
   const fitKey = (fit || shapes).map((s) => s.id).join(",") + (fitBox ? fitBox.flat().join(",") : "");
 
   const { paths, centroids, areas } = useMemo(() => {
@@ -206,7 +208,7 @@ export function MapView({
         viewBox={`0 0 ${W} ${H}`}
         className="block h-auto w-full touch-none select-none"
         role="img"
-        aria-label={label}
+        aria-label={label ?? tt("Karte", "Map")}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -245,13 +247,13 @@ export function MapView({
         </g>
       </svg>
       <div className="absolute right-2 top-2 flex flex-col gap-1">
-        <button type="button" onClick={() => zoomBtn(2)} className="map-btn" aria-label="Hineinzoomen">
+        <button type="button" onClick={() => zoomBtn(2)} className="map-btn" aria-label={tt("Hineinzoomen", "Zoom in")}>
           +
         </button>
-        <button type="button" onClick={() => zoomBtn(1 / 2)} className="map-btn" aria-label="Herauszoomen">
+        <button type="button" onClick={() => zoomBtn(1 / 2)} className="map-btn" aria-label={tt("Herauszoomen", "Zoom out")}>
           −
         </button>
-        <button type="button" onClick={() => setT({ k: 1, x: 0, y: 0 })} className="map-btn text-xs" aria-label="Ansicht zurücksetzen">
+        <button type="button" onClick={() => setT({ k: 1, x: 0, y: 0 })} className="map-btn text-xs" aria-label={tt("Ansicht zurücksetzen", "Reset view")}>
           ⟲
         </button>
       </div>

@@ -2,14 +2,18 @@
 
 import { bestMatch, canon } from "@/lib/fuzzy";
 import { Suggestion } from "../Suggestion";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { norm } from "@/lib/data/countries";
 import { useShapes } from "@/lib/geo";
 import { MapView } from "../MapView";
 import { mapSetup, saveBest, useEntities, useQuizParams } from "./common";
+import { useLang, useT } from "@/lib/i18n";
+import { regionLabel } from "@/lib/data/regions";
 
 export function NameAllQuiz() {
+  const tt = useT();
+  const lang = useLang();
   const params = useQuizParams();
   const all = useEntities(params.region);
   const shapes = useShapes(params.region.shapes);
@@ -113,11 +117,11 @@ export function NameAllQuiz() {
     <div className="mx-auto max-w-5xl px-4 pb-16 pt-6 sm:pt-10">
       <p className="text-sm font-semibold text-muted">
         <Link href="/quiz" className="hover:text-ink">
-          Quizze
+          {tt("Quizze", "Quizzes")}
         </Link>{" "}
-        / {params.region.label}
+        / {regionLabel(params.region, lang)}
       </p>
-      <h1 className="text-2xl font-display font-semibold tracking-tight sm:text-3xl">Alle nennen</h1>
+      <h1 className="text-2xl font-display font-semibold tracking-tight sm:text-3xl">{tt("Alle nennen", "Name them all")}</h1>
 
       <div className="sticky top-16 z-20 mt-4 rounded-2xl bg-ink p-3 text-white shadow-lg">
         <div className="flex items-center gap-3">
@@ -132,20 +136,20 @@ export function NameAllQuiz() {
                   onEnter();
                 }
               }}
-              placeholder="Name eintippen …"
+              placeholder={tt("Name eintippen …", "Type a name …")}
               className="input flex-1 border-transparent text-ink"
-              aria-label="Name eintippen"
+              aria-label={tt("Name eintippen", "Type a name")}
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
             />
           ) : phase === "ready" ? (
             <button type="button" onClick={start} className="btn-primary flex-1 bg-teal-400 text-ink hover:bg-teal-300">
-              Start – {params.region.minutes} Minuten
+              {tt(`Start – ${params.region.minutes} Minuten`, `Start – ${params.region.minutes} minutes`)}
             </button>
           ) : (
             <button type="button" onClick={start} className="btn-primary flex-1 bg-teal-400 text-ink hover:bg-teal-300">
-              Nochmal
+              {tt("Nochmal", "Again")}
             </button>
           )}
           <div className="text-right tabular-nums">
@@ -157,9 +161,9 @@ export function NameAllQuiz() {
         </div>
         {phase === "running" && (
           <div className="mt-2 flex items-center justify-between text-sm text-slate-300">
-            <span aria-live="polite">{last ? `✓ ${last}` : "Tipp einfach los – richtige Namen werden sofort erkannt."}</span>
+            <span aria-live="polite">{last ? `✓ ${last}` : tt("Tipp einfach los – richtige Namen werden sofort erkannt.", "Just start typing – correct names are recognised instantly.")}</span>
             <button type="button" onClick={() => setPhase("over")} className="font-semibold text-white underline-offset-2 hover:underline">
-              Aufgeben
+              {tt("Aufgeben", "Give up")}
             </button>
           </div>
         )}
@@ -167,7 +171,7 @@ export function NameAllQuiz() {
           <Suggestion
             dark
             name={all.find((e) => e.id === sug)!.name}
-            hint="oder Enter"
+            hint={tt("oder Enter", "or press Enter")}
             onTake={() => {
               accept(sug);
               inputRef.current?.focus();
@@ -186,20 +190,20 @@ export function NameAllQuiz() {
           fill={fill}
           dots={() => true}
           aspect={params.region.shapes === "world" ? 1.6 : 1.4}
-          label={`Karte: ${params.region.label}`}
+          label={`${tt("Karte", "Map")}: ${regionLabel(params.region, lang)}`}
         />
       </div>
 
       {phase === "over" && (
         <section className="card pop mt-6 p-6" aria-live="polite">
-          <p className="text-sm font-semibold text-muted">{found.length === total ? "Alle gefunden!" : "Zeit um"}</p>
+          <p className="text-sm font-semibold text-muted">{found.length === total ? tt("Alle gefunden!", "Found them all!") : tt("Zeit um", "Time’s up")}</p>
           <p className="mt-1 text-5xl font-display font-semibold tracking-tight">
             {found.length} / {total}
           </p>
-          {best != null && <p className="mt-1 text-muted">Dein Rekord: {best} %</p>}
+          {best != null && <p className="mt-1 text-muted">{tt("Dein Rekord", "Your record")}: {best} %</p>}
           {missing.length > 0 && (
             <div className="mt-5">
-              <p className="mb-2 text-sm font-bold">Gefehlt haben ({missing.length})</p>
+              <p className="mb-2 text-sm font-bold">{tt("Gefehlt haben", "Missed")} ({missing.length})</p>
               <p className="text-sm leading-relaxed text-muted">{missing.map((e) => e.name).join(" · ")}</p>
             </div>
           )}

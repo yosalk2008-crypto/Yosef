@@ -9,6 +9,8 @@ import { makeRng } from "@/lib/rng";
 import { useDaily } from "@/lib/useDaily";
 import { GameShell, ResultCard } from "../GameShell";
 import { ShapeOutline } from "../Shape";
+import { useLang, useT, type Lang } from "@/lib/i18n";
+import { cCap, cName } from "@/lib/data/countries";
 
 /**
  * Viererbande: four countries, each shown four ways – flag, outline, capital and one fact.
@@ -19,19 +21,22 @@ type Kind = "flag" | "shape" | "cap" | "fact";
 const KINDS: Kind[] = ["flag", "shape", "cap", "fact"];
 type FactKey = "pop" | "gdppc" | "tour" | "area" | "life";
 
-const nf = (d = 0) => new Intl.NumberFormat("de-DE", { maximumFractionDigits: d });
-function factText(c: Country, k: FactKey): { label: string; value: string } {
+const nf = (d = 0, lang: Lang = "de") => new Intl.NumberFormat(lang === "en" ? "en-GB" : "de-DE", { maximumFractionDigits: d });
+function factText(c: Country, k: FactKey, lang: Lang = "de"): { label: string; value: string } {
+  const en = lang === "en";
   switch (k) {
     case "pop":
-      return { label: "Einwohner", value: fmtBig(c.pop!) };
+      return { label: en ? "Population" : "Einwohner", value: fmtBig(c.pop!, "", lang) };
     case "gdppc":
-      return { label: "BIP pro Kopf", value: nf().format(Math.round(c.gdppc! / 100) * 100) + " $" };
+      return en
+        ? { label: "GDP per capita", value: "$" + nf(0, lang).format(Math.round(c.gdppc! / 100) * 100) }
+        : { label: "BIP pro Kopf", value: nf().format(Math.round(c.gdppc! / 100) * 100) + " $" };
     case "tour":
-      return { label: "Touristen pro Jahr", value: fmtBig(c.tour!) };
+      return { label: en ? "Tourists per year" : "Touristen pro Jahr", value: fmtBig(c.tour!, "", lang) };
     case "area":
-      return { label: "Fläche", value: nf().format(Math.round(c.area / 1000) * 1000) + " km²" };
+      return { label: en ? "Area" : "Fläche", value: nf(0, lang).format(Math.round(c.area / 1000) * 1000) + " km²" };
     case "life":
-      return { label: "Lebenserwartung", value: nf(1).format(c.life!) + " Jahre" };
+      return { label: en ? "Life expectancy" : "Lebenserwartung", value: nf(1, lang).format(c.life!) + (en ? " years" : " Jahre") };
   }
 }
 
@@ -75,6 +80,8 @@ type S = { guesses: string[][] };
 
 export function Viererbande() {
   const { day, isToday, loaded, saved, persist } = useDaily<S>("viererbande");
+  const lang = useLang();
+  const t = useT();
   const puzzle = useMemo(() => makePuzzle(day), [day]);
   const shapes = useShapes("world");
   const [local, setLocal] = useState<string[][] | null>(null);
@@ -104,17 +111,17 @@ export function Viererbande() {
     if (sel.length !== 4) return;
     const key = [...sel].sort().join();
     if (guesses.some((g) => [...g].sort().join() === key)) {
-      setMsg("Diese Kombination hattest du schon.");
+      setMsg(t("Diese Kombination hattest du schon.", "You already tried that combination."));
       return;
     }
     const next = [...guesses, sel];
     setLocal(next);
     const best = Math.max(...puzzle.groups.map((_, gi) => sel.filter((t) => groupOf(t) === gi).length));
     if (best === 4) {
-      setMsg(`Richtig – das ist ${BY_ID[puzzle.groups[groupOf(sel[0])].country].n}!`);
+      setMsg(t(`Richtig – das ist ${BY_ID[puzzle.groups[groupOf(sel[0])].country].n}!`, `Correct – that’s ${BY_ID[puzzle.groups[groupOf(sel[0])].country].nEn}!`));
       setSel([]);
     } else {
-      setMsg(best === 3 ? "Fast – eine Kachel gehört zu einem anderen Land." : "Leider falsch.");
+      setMsg(best === 3 ? t("Fast – eine Kachel gehört zu einem anderen Land.", "Close – one tile belongs to another country.") : t("Leider falsch.", "Not quite."));
       setShake(true);
       setTimeout(() => setShake(false), 350);
     }
@@ -125,9 +132,11 @@ export function Viererbande() {
       won: nSolved === 4,
       score: nSolved,
       max: 4,
-      label: nSolved === 4 ? `${nMistakes} Fehler` : `${nSolved}/4`,
+      label: nSolved === 4 ? t(`${nMistakes} Fehler`, `${nMistakes} ${nMistakes === 1 ? "mistake" : "mistakes"}`) : `${nSolved}/4`,
       share:
-        `Viererbande #${dayNumber(day)} · ${nSolved}/4${nSolved === 4 ? ` mit ${nMistakes} Fehler${nMistakes === 1 ? "" : "n"}` : ""}\n` +
+        (lang === "en"
+          ? `Gang of Four #${dayNumber(day)} · ${nSolved}/4${nSolved === 4 ? ` with ${nMistakes} ${nMistakes === 1 ? "mistake" : "mistakes"}` : ""}\n`
+          : `Viererbande #${dayNumber(day)} · ${nSolved}/4${nSolved === 4 ? ` mit ${nMistakes} Fehler${nMistakes === 1 ? "" : "n"}` : ""}\n`) +
         next.map((gs) => gs.map((t) => COLORS[groupOf(t)].emoji).join("")).join("\n"),
       state: { guesses: next },
     });
@@ -142,12 +151,25 @@ export function Viererbande() {
       isToday={isToday}
       rules={
         <>
-          <p>
-            Vier Länder verstecken sich in 16 Kacheln. Jedes Land kommt viermal vor: als <strong>Flagge</strong>, als <strong>Umriss</strong>, mit seiner{" "}
-            <strong>Hauptstadt</strong> und mit einem <strong>Fakt</strong> wie Einwohnerzahl, BIP pro Kopf oder Touristen.
-          </p>
-          <p>Wähle die vier Kacheln, die zum selben Land gehören, und tippe auf „Prüfen“. Alle vier Länder liegen auf demselben Kontinent.</p>
-          <p>Du darfst dir {MAX_MISTAKES} Fehler erlauben.</p>
+          {lang === "en" ? (
+            <>
+              <p>
+                Four countries are hidden in 16 tiles. Each country appears four times: as a <strong>flag</strong>, an <strong>outline</strong>, its{" "}
+                <strong>capital</strong> and a <strong>fact</strong> such as population, GDP per capita or tourists.
+              </p>
+              <p>Pick the four tiles that belong to the same country and tap “Check”. All four countries are on the same continent.</p>
+              <p>You can make {MAX_MISTAKES} mistakes.</p>
+            </>
+          ) : (
+            <>
+              <p>
+                Vier Länder verstecken sich in 16 Kacheln. Jedes Land kommt viermal vor: als <strong>Flagge</strong>, als <strong>Umriss</strong>, mit seiner{" "}
+                <strong>Hauptstadt</strong> und mit einem <strong>Fakt</strong> wie Einwohnerzahl, BIP pro Kopf oder Touristen.
+              </p>
+              <p>Wähle die vier Kacheln, die zum selben Land gehören, und tippe auf „Prüfen“. Alle vier Länder liegen auf demselben Kontinent.</p>
+              <p>Du darfst dir {MAX_MISTAKES} Fehler erlauben.</p>
+            </>
+          )}
         </>
       }
     >
@@ -159,16 +181,16 @@ export function Viererbande() {
             {shownGroups.map((gi) => {
               const g = puzzle.groups[gi];
               const c = BY_ID[g.country];
-              const f = factText(c, g.fact);
+              const f = factText(c, g.fact, lang);
               return (
                 <div key={gi} className="pop flex items-center gap-3 rounded-2xl p-3" style={{ background: COLORS[gi].bg, boxShadow: "0 4px 0 rgb(0 0 0 / 0.12)" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={flagUrl(c.iso2)} alt="" className="h-9 w-auto rounded-md border-2 border-ink/80" />
-                  <ShapeOutline shape={shapes.byId[c.id]} fill="#2c2a35" className="h-10 w-10 shrink-0" size={100} label={`Umriss von ${c.n}`} />
+                  <ShapeOutline shape={shapes.byId[c.id]} fill="#2c2a35" className="h-10 w-10 shrink-0" size={100} label={t(`Umriss von ${c.n}`, `Outline of ${c.nEn}`)} />
                   <div className="min-w-0">
-                    <p className="font-display text-lg font-semibold leading-tight">{c.n}</p>
+                    <p className="font-display text-lg font-semibold leading-tight">{cName(c, lang)}</p>
                     <p className="text-sm font-semibold text-ink/75">
-                      Hauptstadt {c.cap} – {f.label}: {f.value}
+                      {t("Hauptstadt", "Capital")} {cCap(c, lang)} – {f.label}: {f.value}
                     </p>
                   </div>
                 </div>
@@ -178,14 +200,14 @@ export function Viererbande() {
           {!over && (
             <div className={`mt-2 grid grid-cols-4 gap-2 sm:gap-2.5 ${shake ? "shake" : ""}`}>
               {tiles.map((t) => (
-                <Tile key={t} tile={t} fact={puzzle.groups[groupOf(t)].fact} selected={sel.includes(t)} onClick={() => toggle(t)} shape={shapes.byId[t.split(":")[0]]} />
+                <Tile key={t} tile={t} fact={puzzle.groups[groupOf(t)].fact} selected={sel.includes(t)} onClick={() => toggle(t)} shape={shapes.byId[t.split(":")[0]]} lang={lang} />
               ))}
             </div>
           )}
           {!over && (
             <>
-              <div className="mt-4 flex items-center justify-center gap-2 text-sm font-semibold text-muted" aria-label={`Noch ${MAX_MISTAKES - mistakes} Fehler erlaubt`}>
-                Fehler übrig:
+              <div className="mt-4 flex items-center justify-center gap-2 text-sm font-semibold text-muted" aria-label={t(`Noch ${MAX_MISTAKES - mistakes} Fehler erlaubt`, `${MAX_MISTAKES - mistakes} mistakes left`)}>
+                {t("Fehler übrig:", "Mistakes left:")}
                 {Array.from({ length: MAX_MISTAKES }).map((_, i) => (
                   <span key={i} className={`h-3.5 w-3.5 rounded-full ${i < MAX_MISTAKES - mistakes ? "bg-ink" : "bg-line"}`} />
                 ))}
@@ -195,21 +217,21 @@ export function Viererbande() {
               </p>
               <div className="mt-3 flex flex-wrap justify-center gap-2">
                 <button type="button" className="btn-ghost" onClick={() => setOrder(makeRng(Math.random() * 1e9).shuffle(tiles))}>
-                  Mischen
+                  {t("Mischen", "Shuffle")}
                 </button>
                 <button type="button" className="btn-ghost" onClick={() => setSel([])} disabled={!sel.length}>
-                  Abwählen
+                  {t("Abwählen", "Deselect")}
                 </button>
                 <button type="button" className="btn-primary" onClick={check} disabled={sel.length !== 4}>
-                  Prüfen
+                  {t("Prüfen", "Check")}
                 </button>
               </div>
             </>
           )}
           {over && (
             <ResultCard
-              title={won ? "Alle Länder gefunden" : "Keine Fehler mehr übrig"}
-              score={won ? `${mistakes} Fehler` : `${solved.length}/4 Länder`}
+              title={won ? t("Alle Länder gefunden", "All countries found") : t("Keine Fehler mehr übrig", "No mistakes left")}
+              score={won ? t(`${mistakes} Fehler`, `${mistakes} ${mistakes === 1 ? "mistake" : "mistakes"}`) : t(`${solved.length}/4 Länder`, `${solved.length}/4 countries`)}
               share={saved?.share || ""}
               isToday={isToday}
               current="viererbande"
@@ -221,7 +243,8 @@ export function Viererbande() {
   );
 }
 
-function Tile({ tile, fact, selected, onClick, shape }: { tile: string; fact: FactKey; selected: boolean; onClick: () => void; shape?: Shape }) {
+function Tile({ tile, fact, selected, onClick, shape, lang }: { tile: string; fact: FactKey; selected: boolean; onClick: () => void; shape?: Shape; lang: Lang }) {
+  const en = lang === "en";
   const [id, kind] = tile.split(":") as [string, Kind];
   const c = BY_ID[id];
   let content: React.ReactNode;
@@ -229,15 +252,15 @@ function Tile({ tile, fact, selected, onClick, shape }: { tile: string; fact: Fa
   if (kind === "flag") {
     // eslint-disable-next-line @next/next/no-img-element
     content = <img src={flagUrl(c.iso2)} alt="" className="max-h-[62%] w-[80%] rounded-md object-contain shadow-sm" draggable={false} />;
-    label = "Flagge";
+    label = en ? "Flag" : "Flagge";
   } else if (kind === "shape") {
     content = shape ? <ShapeOutline shape={shape} fill={selected ? "#ffffff" : "#2c2a35"} className="absolute inset-[8%] h-[84%] w-[84%]" size={120} pad={0.03} /> : null;
-    label = "Umriss";
+    label = en ? "Outline" : "Umriss";
   } else if (kind === "cap") {
-    content = <span className="font-display text-[15px] font-bold leading-tight break-words [hyphens:auto] sm:text-xl">{c.cap}</span>;
-    label = `Hauptstadt ${c.cap}`;
+    content = <span className="font-display text-[15px] font-bold leading-tight break-words [hyphens:auto] sm:text-xl">{cCap(c, lang)}</span>;
+    label = `${en ? "Capital" : "Hauptstadt"} ${cCap(c, lang)}`;
   } else {
-    const f = factText(c, fact);
+    const f = factText(c, fact, lang);
     content = (
       <span className="flex flex-col items-center justify-center leading-tight">
         <span className={`block text-[10px] font-bold sm:text-xs ${selected ? "text-white/75" : "text-muted"}`}>{f.label}</span>

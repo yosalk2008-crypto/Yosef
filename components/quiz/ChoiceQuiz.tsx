@@ -10,12 +10,14 @@ import { randomRng } from "@/lib/rng";
 import { ShapeOutline } from "../Shape";
 import { Suggestion } from "../Suggestion";
 import { QuizEnd, QuizHeader, questionCount, useEntities, useQuizParams } from "./common";
+import { useT } from "@/lib/i18n";
 
 type Q = { e: Entity; options: Entity[] };
 
-const TITLES: Record<string, string> = { flaggen: "Flaggen-Quiz", hauptstaedte: "Hauptstädte-Quiz", umrisse: "Umrisse-Quiz" };
+const TITLES: Record<string, [string, string]> = { flaggen: ["Flaggen-Quiz", "Flag quiz"], hauptstaedte: ["Hauptstädte-Quiz", "Capitals quiz"], umrisse: ["Umrisse-Quiz", "Outline quiz"] };
 
 export function ChoiceQuiz({ typ }: { typ: QuizType }) {
+  const tt = useT();
   const params = useQuizParams();
   const all = useEntities(params.region);
   const shapes = useShapes(params.region.shapes);
@@ -117,7 +119,7 @@ export function ChoiceQuiz({ typ }: { typ: QuizType }) {
 
   return (
     <div className="mx-auto max-w-2xl px-4 pb-16 pt-6 sm:pt-10">
-      <QuizHeader title={TITLES[typ]} region={params.region} done={Math.min(i, questions.length)} total={questions.length} score={score} />
+      <QuizHeader title={tt(...TITLES[typ])} region={params.region} done={Math.min(i, questions.length)} total={questions.length} score={score} />
       {done ? (
         <QuizEnd bestKey={`${typ}:${params.region.key}:${params.n}:${params.typing ? "t" : "c"}`} score={score} total={questions.length} missed={missed} onRestart={restart} />
       ) : (
@@ -125,12 +127,12 @@ export function ChoiceQuiz({ typ }: { typ: QuizType }) {
           <div className="card grid min-h-[220px] place-items-center p-5 sm:min-h-[260px]" style={typ === "flaggen" ? { background: "var(--color-surface)" } : undefined}>
             {typ === "flaggen" && q.e.iso2 && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={flagUrl(q.e.iso2)} alt="Gesuchte Flagge" className="max-h-52 w-auto max-w-full rounded-lg border border-black/10 shadow-md" />
+              <img src={flagUrl(q.e.iso2)} alt={tt("Gesuchte Flagge", "Flag to guess")} className="max-h-52 w-auto max-w-full rounded-lg border border-black/10 shadow-md" />
             )}
-            {typ === "umrisse" && shapes?.byId[q.e.id] && <ShapeOutline shape={shapes.byId[q.e.id]} fill="#0f766e" className="h-56 w-56" size={300} label="Gesuchter Umriss" />}
+            {typ === "umrisse" && shapes?.byId[q.e.id] && <ShapeOutline shape={shapes.byId[q.e.id]} fill="#0f766e" className="h-56 w-56" size={300} label={tt("Gesuchter Umriss", "Outline to guess")} />}
             {typ === "hauptstaedte" && (
               <p className="text-center text-2xl font-display font-semibold sm:text-3xl">
-                <span className="mb-1 block text-sm font-semibold text-muted">Hauptstadt von</span>
+                <span className="mb-1 block text-sm font-semibold text-muted">{tt("Hauptstadt von", "Capital of")}</span>
                 {q.e.name}
               </p>
             )}
@@ -162,10 +164,10 @@ export function ChoiceQuiz({ typ }: { typ: QuizType }) {
           {answered && (
             <div className="mt-4 flex items-center justify-between gap-3">
               <p className={`font-bold ${picked === q.e.id || typed?.ok ? "text-ok" : "text-bad"}`} role="status">
-                {picked === q.e.id || typed?.ok ? "Richtig!" : `Richtig wäre: ${answerText(q.e)}`}
+                {picked === q.e.id || typed?.ok ? tt("Richtig!", "Correct!") : `${tt("Richtig wäre", "The answer was")}: ${answerText(q.e)}`}
               </p>
               <button type="button" onClick={next} className="btn-primary" autoFocus>
-                Weiter
+                {tt("Weiter", "Next")}
               </button>
             </div>
           )}
@@ -176,6 +178,7 @@ export function ChoiceQuiz({ typ }: { typ: QuizType }) {
 }
 
 function TypeAnswer({ onSubmit, result }: { onSubmit: (t: string, suggested: string | null) => string | null; result: { text: string; ok: boolean } | null }) {
+  const tt = useT();
   const [t, setT] = useState("");
   const [sug, setSug] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -199,17 +202,17 @@ function TypeAnswer({ onSubmit, result }: { onSubmit: (t: string, suggested: str
         }}
         disabled={!!result}
         autoFocus
-        placeholder="Hauptstadt eintippen …"
+        placeholder={tt("Hauptstadt eintippen …", "Type the capital …")}
         className={`input flex-1 ${result ? (result.ok ? "border-ok" : "border-bad") : ""}`}
-        aria-label="Hauptstadt"
+        aria-label={tt("Hauptstadt", "Capital")}
         autoComplete="off"
         spellCheck={false}
       />
       <button type="submit" className="btn-primary" disabled={!!result || !t.trim()}>
-        Prüfen
+        {tt("Prüfen", "Check")}
       </button>
     </form>
-    {sug && !result && <Suggestion name={sug} hint="oder Enter" onTake={() => { setT(sug); setSug(null); inputRef.current?.focus(); }} />}
+    {sug && !result && <Suggestion name={sug} hint={tt("oder Enter", "or press Enter")} onTake={() => { setT(sug); setSug(null); inputRef.current?.focus(); }} />}
     </>
   );
 }

@@ -2,15 +2,17 @@ import { COUNTRIES, type Country } from "./data/countries";
 
 export type MetricKey = "pop" | "area" | "gdppc" | "gdp" | "life" | "mil" | "tour" | "forest" | "urban" | "capPop";
 
-const nf = (d = 0) => new Intl.NumberFormat("de-DE", { maximumFractionDigits: d, minimumFractionDigits: d });
+type Lang = "de" | "en";
+const nf = (d = 0, lang: Lang = "de") => new Intl.NumberFormat(lang === "en" ? "en-GB" : "de-DE", { maximumFractionDigits: d, minimumFractionDigits: d });
 
-export function fmtBig(v: number, unit = "") {
+export function fmtBig(v: number, unit = "", lang: Lang = "de") {
   const u = unit ? " " + unit : "";
-  if (v >= 1e12) return nf(1).format(v / 1e12) + " Bio." + u;
-  if (v >= 1e9) return nf(1).format(v / 1e9) + " Mrd." + u;
-  if (v >= 1e6) return nf(1).format(v / 1e6) + " Mio." + u;
-  if (v >= 1e4) return nf(0).format(Math.round(v / 1000)) + " Tsd." + u;
-  return nf(0).format(v) + u;
+  const en = lang === "en";
+  if (v >= 1e12) return nf(1, lang).format(v / 1e12) + (en ? " tn" : " Bio.") + u;
+  if (v >= 1e9) return nf(1, lang).format(v / 1e9) + (en ? " bn" : " Mrd.") + u;
+  if (v >= 1e6) return nf(1, lang).format(v / 1e6) + (en ? " m" : " Mio.") + u;
+  if (v >= 1e4) return nf(0, lang).format(Math.round(v / 1000)) + (en ? "k" : " Tsd.") + u;
+  return nf(0, lang).format(v) + u;
 }
 
 export const METRICS: Record<MetricKey, { label: string; short: string; question: string; fmt: (v: number) => string }> = {
@@ -25,6 +27,20 @@ export const METRICS: Record<MetricKey, { label: string; short: string; question
   urban: { label: "Anteil Stadtbevölkerung", short: "Stadt", question: "einen höheren Anteil Stadtbevölkerung", fmt: (v) => nf(1).format(v) + " %" },
   capPop: { label: "Einwohner der Hauptstadt", short: "Hauptstadt", question: "eine größere Hauptstadt", fmt: (v) => fmtBig(v) },
 };
+
+export const METRICS_EN: Record<MetricKey, { label: string; short: string; question: string; fmt: (v: number) => string }> = {
+  pop: { label: "Population", short: "Population", question: "a larger population", fmt: (v) => fmtBig(v, "", "en") },
+  area: { label: "Area", short: "Area", question: "a larger area", fmt: (v) => nf(0, "en").format(v) + " km²" },
+  gdppc: { label: "GDP per capita", short: "GDP/capita", question: "a higher GDP per capita", fmt: (v) => "$" + nf(0, "en").format(v) },
+  gdp: { label: "Economic output (GDP)", short: "GDP", question: "a higher GDP", fmt: (v) => "$" + fmtBig(v, "", "en") },
+  life: { label: "Life expectancy", short: "Life exp.", question: "a higher life expectancy", fmt: (v) => nf(1, "en").format(v) + " years" },
+  mil: { label: "Military spending", short: "Military", question: "higher military spending", fmt: (v) => "$" + fmtBig(v, "", "en") },
+  tour: { label: "Tourists per year", short: "Tourists", question: "more tourists per year", fmt: (v) => fmtBig(v, "", "en") },
+  forest: { label: "Forest cover", short: "Forest", question: "more forest cover", fmt: (v) => nf(1, "en").format(v) + " %" },
+  urban: { label: "Urban population share", short: "Urban", question: "a larger urban population share", fmt: (v) => nf(1, "en").format(v) + " %" },
+  capPop: { label: "Population of the capital", short: "Capital", question: "a larger capital", fmt: (v) => fmtBig(v, "", "en") },
+};
+export const metricsOf = (lang: Lang) => (lang === "en" ? METRICS_EN : METRICS);
 
 export function val(c: Country, k: MetricKey): number | null {
   const v = c[k as keyof Country];

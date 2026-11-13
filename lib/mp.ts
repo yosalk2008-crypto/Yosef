@@ -17,36 +17,50 @@ export type DailyId = Exclude<GameKey, "tiefgang" | "spurensuche">;
 export type GameId = "koscher" | "halal" | "flaggen" | "hauptstaedte" | "tiefgang" | DailyId;
 export const isDaily = (g: GameId): g is DailyId => GAMES.some((x) => x.key === g);
 
-export const MP_GAMES: { id: GameId; title: string; desc: string; bg: string; edge: string; light: boolean }[] = [
-  { id: "koscher", title: "Ist das koscher?", desc: "Erlaubt, verboten oder kommt drauf an", bg: "linear-gradient(160deg, #1f4fd1, #0a1630)", edge: "#050c1f", light: true },
-  { id: "halal", title: "Ist das halal?", desc: "Halal, haram, makruh oder kommt drauf an", bg: "linear-gradient(160deg, #12a06d, #062a20)", edge: "#03170f", light: true },
-  { id: "tiefgang", title: "Tiefgang", desc: "Je seltener die richtige Antwort, desto mehr Punkte", bg: "linear-gradient(160deg, #3f96d6, #0a2656)", edge: "#061a3d", light: true },
-  { id: "flaggen", title: "Flaggen raten", desc: "Welches Land hat diese Flagge?", bg: "#6aa8f0", edge: "#4b88d1", light: false },
-  { id: "hauptstaedte", title: "Hauptstädte", desc: "Vier Städte, eine ist die Hauptstadt", bg: "#f3d272", edge: "#c9a43c", light: false },
+type MpGame = { id: GameId; title: string; desc: string; titleEn: string; descEn: string; bg: string; edge: string; light: boolean };
+export const MP_GAMES: MpGame[] = [
+  { id: "koscher", title: "Ist das koscher?", desc: "Erlaubt, verboten oder kommt drauf an", titleEn: "Is it kosher?", descEn: "Allowed, forbidden or it depends", bg: "linear-gradient(160deg, #1f4fd1, #0a1630)", edge: "#050c1f", light: true },
+  { id: "halal", title: "Ist das halal?", desc: "Halal, haram, makruh oder kommt drauf an", titleEn: "Is it halal?", descEn: "Halal, haram, makruh or it depends", bg: "linear-gradient(160deg, #12a06d, #062a20)", edge: "#03170f", light: true },
+  { id: "tiefgang", title: "Tiefgang", desc: "Je seltener die richtige Antwort, desto mehr Punkte", titleEn: "Deep Dive", descEn: "The rarer the correct answer, the more points", bg: "linear-gradient(160deg, #3f96d6, #0a2656)", edge: "#061a3d", light: true },
+  { id: "flaggen", title: "Flaggen raten", desc: "Welches Land hat diese Flagge?", titleEn: "Guess the flag", descEn: "Which country has this flag?", bg: "#6aa8f0", edge: "#4b88d1", light: false },
+  { id: "hauptstaedte", title: "Hauptstädte", desc: "Vier Städte, eine ist die Hauptstadt", titleEn: "Capitals", descEn: "Four cities, one is the capital", bg: "#f3d272", edge: "#c9a43c", light: false },
 ];
 /** The daily games, each round a random puzzle from the archive. */
 export const MP_DAILY = GAMES.filter((g) => g.key !== "spurensuche" && g.key !== "tiefgang").map((g) => ({
   id: g.key as DailyId,
   title: g.title,
   desc: g.tagline,
+  titleEn: g.titleEn,
+  descEn: g.taglineEn,
   bg: g.bg,
   edge: g.edge,
   light: false,
 }));
 export const gameOf = (id: GameId) => [...MP_GAMES, ...MP_DAILY].find((g) => g.id === id) ?? MP_GAMES[0];
+export const gameTitle = (id: GameId, lang: "de" | "en") => (lang === "en" ? gameOf(id).titleEn : gameOf(id).title);
+export const gameDesc = (g: { desc: string; descEn: string }, lang: "de" | "en") => (lang === "en" ? g.descEn : g.desc);
 
 // ---------- shared room state (sent by the admin to everyone) ----------
 
-export type Opt = { id: string; label: string };
+/** Questions carry both languages, so German and English players can share a room. */
+export type Opt = { id: string; label: string; labelEn?: string };
 export type QView =
-  | { kind: "choice"; text: string; cat?: string; img?: string; options: Opt[] }
+  | { kind: "choice"; text: string; cat?: string; img?: string; options: Opt[]; textEn?: string; catEn?: string }
   | { kind: "tiefgang"; key: string; text: string; hint: string }
   | { kind: "daily"; game: DailyId; day: string };
 /** A question as only the admin knows it (with the solution). */
-export type HostQ = { view: QView; correct?: string; explain?: string; src?: string };
+export type HostQ = { view: QView; correct?: string; explain?: string; src?: string; explainEn?: string; srcEn?: string };
 /** One player's answer as everyone sees it after the question. */
 export type PAns = { label: string; choice?: string; ok: boolean; pts: number; share?: string };
-export type Reveal = { correct?: string; explain?: string; src?: string; answers: Record<string, PAns | null>; rare?: { name: string; pts: number }[] };
+export type Reveal = {
+  correct?: string;
+  explain?: string;
+  src?: string;
+  explainEn?: string;
+  srcEn?: string;
+  answers: Record<string, PAns | null>;
+  rare?: { name: string; pts: number; id?: string }[];
+};
 export type Phase = "lobby" | "frage" | "aufloesung" | "ende";
 
 export type RoomState = {
@@ -113,6 +127,26 @@ async function dataset(file: string, global: string): Promise<RawQ[]> {
 }
 
 const HALAL_LABEL: Record<string, string> = { halal: "Halal", haram: "Haram", makruh: "Makruh", kommt: "Kommt drauf an" };
+const HALAL_LABEL_EN: Record<string, string> = { halal: "Halal", haram: "Haram", makruh: "Makruh", kommt: "It depends" };
+/** English texts keyed by the German question: [question, explanation, source] */
+type EnMap = Record<string, [string, string, string]>;
+async function english(file: string, global: string): Promise<EnMap> {
+  const w = window as unknown as Record<string, unknown>;
+  try {
+    if (!w[global]) await loadScript(`${file}?mp=${utcDate()}`);
+  } catch {}
+  return (w[global] as EnMap) || {};
+}
+export const CAT_EN: Record<string, string> = {
+  Essen: "Food",
+  Alltag: "Everyday life",
+  Feiertage: "Holidays",
+  Körper: "Body",
+  Schabbat: "Shabbat",
+  "Gebet & Fasten": "Prayer & fasting",
+  Geld: "Money",
+  Miteinander: "Relationships",
+};
 
 export async function buildQuestions(game: GameId, n: number): Promise<HostQ[]> {
   const rng = randomRng();
@@ -125,33 +159,52 @@ export async function buildQuestions(game: GameId, n: number): Promise<HostQ[]> 
   }
   if (game === "koscher") {
     const raw = await dataset("/koscher/data.js", "QUESTIONS");
+    const en = await english("/koscher/data.en.js", "QUESTIONS_EN");
     return rng.sample(raw, Math.min(n, raw.length)).map((r) => {
       const food = r.cat === "Essen";
+      const e = en[r.q];
       return {
         view: {
           kind: "choice",
           text: r.q,
           cat: r.cat,
+          textEn: e?.[0],
+          catEn: CAT_EN[r.cat],
           options: [
-            { id: "ja", label: food ? "Koscher" : "Erlaubt" },
-            { id: "nein", label: food ? "Nicht koscher" : "Verboten" },
-            { id: "kommt", label: "Kommt drauf an" },
+            { id: "ja", label: food ? "Koscher" : "Erlaubt", labelEn: food ? "Kosher" : "Allowed" },
+            { id: "nein", label: food ? "Nicht koscher" : "Verboten", labelEn: food ? "Not kosher" : "Forbidden" },
+            { id: "kommt", label: "Kommt drauf an", labelEn: "It depends" },
           ],
         },
         correct: r.a,
         explain: r.e,
         src: r.src,
+        explainEn: e?.[1],
+        srcEn: e?.[2],
       };
     });
   }
   if (game === "halal") {
     const raw = await dataset("/halal/data.js", "HALAL");
-    return rng.sample(raw, Math.min(n, raw.length)).map((r) => ({
-      view: { kind: "choice", text: r.q, cat: r.cat, options: ["halal", "haram", "makruh", "kommt"].map((id) => ({ id, label: HALAL_LABEL[id] })) },
-      correct: r.a,
-      explain: r.e,
-      src: r.src,
-    }));
+    const en = await english("/halal/data.en.js", "HALAL_EN");
+    return rng.sample(raw, Math.min(n, raw.length)).map((r) => {
+      const e = en[r.q];
+      return {
+        view: {
+          kind: "choice",
+          text: r.q,
+          cat: r.cat,
+          textEn: e?.[0],
+          catEn: CAT_EN[r.cat],
+          options: ["halal", "haram", "makruh", "kommt"].map((id) => ({ id, label: HALAL_LABEL[id], labelEn: HALAL_LABEL_EN[id] })),
+        },
+        correct: r.a,
+        explain: r.e,
+        src: r.src,
+        explainEn: e?.[1],
+        srcEn: e?.[2],
+      };
+    });
   }
   if (game === "flaggen" || game === "hauptstaedte") {
     const flags = game === "flaggen";
@@ -161,10 +214,15 @@ export async function buildQuestions(game: GameId, n: number): Promise<HostQ[]> 
         pool.filter((o) => o.id !== e.id && o.capital !== e.capital),
         3
       );
-      const options = rng.shuffle([e, ...others]).map((o) => ({ id: o.id, label: flags ? o.name : o.capital! }));
+      const options = rng.shuffle([e, ...others]).map((o) => ({ id: o.id, label: flags ? o.name : o.capital!, labelEn: flags ? o.nameEn : o.capitalEn! }));
       return flags
-        ? { view: { kind: "choice", text: "Welches Land hat diese Flagge?", img: flagUrl(e.iso2!), options }, correct: e.id, explain: e.capital ? `Die Hauptstadt von ${e.name} ist ${e.capital}.` : undefined }
-        : { view: { kind: "choice", text: `Was ist die Hauptstadt von ${e.name}?`, options }, correct: e.id };
+        ? {
+            view: { kind: "choice", text: "Welches Land hat diese Flagge?", textEn: "Which country has this flag?", img: flagUrl(e.iso2!), options },
+            correct: e.id,
+            explain: e.capital ? `Die Hauptstadt von ${e.name} ist ${e.capital}.` : undefined,
+            explainEn: e.capitalEn ? `The capital of ${e.nameEn} is ${e.capitalEn}.` : undefined,
+          }
+        : { view: { kind: "choice", text: `Was ist die Hauptstadt von ${e.name}?`, textEn: `What is the capital of ${e.nameEn}?`, options }, correct: e.id };
     });
   }
   return randomQuestions(n).map((q) => ({ view: { kind: "tiefgang", key: q.key, text: q.text, hint: q.hint } }));
@@ -196,7 +254,7 @@ export function judge(hq: HostQ, msg: AnswerMsg): PAns | null {
 export function rareAnswers(key: string, k = 3) {
   const q = tiefgangQ(key);
   if (!q) return [];
-  return [...q.answers].sort((a, b) => b.pts - a.pts).slice(0, k).map((a) => ({ name: a.name, pts: a.pts }));
+  return [...q.answers].sort((a, b) => b.pts - a.pts).slice(0, k).map((a) => ({ name: a.name, pts: a.pts, id: a.id }));
 }
 
 // ---------- connection ----------

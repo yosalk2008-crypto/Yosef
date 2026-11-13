@@ -1,12 +1,14 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getName, nameProblem } from "@/lib/leaderboard";
 import {
   MP_DAILY,
+  gameDesc,
+  gameTitle,
   countsFor,
   isDaily,
   timesFor,
@@ -39,9 +41,11 @@ import { Creature } from "../tiefgang/Creatures";
 import type { Impact } from "../tiefgang/OceanFx";
 import { Suggestion } from "../Suggestion";
 import { GameArt } from "../GameArt";
-import { DailyGame } from "@/app/taeglich/[spiel]/DailyGame";
+import { DailyGame } from "@/app/(de)/taeglich/[spiel]/DailyGame";
 import { MpDailyContext, mpLoad, type MpDaily } from "@/lib/mpDaily";
 import { dayNumber, formatDay, type DailyResult } from "@/lib/daily";
+import { localHref, useLang, useT, type Lang } from "@/lib/i18n";
+import { ansName, qHint, qText } from "@/lib/tiefgang-i18n";
 
 type Member = { name: string; host: boolean };
 type LobbyEntry = { code: string; title: string; game: GameId; players: number; phase: Phase };
@@ -65,6 +69,8 @@ function storeName(n: string) {
 // ======================================================================
 
 export function Multiplayer() {
+  const lang = useLang();
+  const t = useT();
   const params = useSearchParams();
   const router = useRouter();
   const urlCode = cleanCode(params.get("code") || "");
@@ -92,7 +98,7 @@ export function Multiplayer() {
       sessionStorage.setItem("kt:mp:in", code);
     } catch {}
     setJoined({ code, host });
-    router.replace(`/multiplayer?code=${code}`, { scroll: false });
+    router.replace(localHref(lang, `/multiplayer?code=${code}`), { scroll: false });
   };
   const leave = () => {
     if (joined) saveHost(joined.code, null);
@@ -100,7 +106,7 @@ export function Multiplayer() {
       sessionStorage.removeItem("kt:mp:in");
     } catch {}
     setJoined(null);
-    router.replace("/multiplayer", { scroll: false });
+    router.replace(localHref(lang, "/multiplayer"), { scroll: false });
   };
 
   if (!me) return <div className="min-h-[60vh]" aria-busy="true" />;
@@ -113,39 +119,45 @@ export function Multiplayer() {
 // ======================================================================
 
 function Start({ name, setName, initialCode, onEnter }: { name: string; setName: (s: string) => void; initialCode: string; onEnter: (code: string, host: boolean) => void }) {
+  const lang = useLang();
+  const t = useT();
   const [code, setCode] = useState(initialCode);
   const [err, setErr] = useState("");
   const invited = validCode(initialCode);
-  const problem = name.trim() ? nameProblem(name) : "Gib zuerst deinen Namen ein.";
+  const problem = name.trim() ? nameProblem(name, lang) : t("Gib zuerst deinen Namen ein.", "Enter your name first.");
 
   const go = (c: string, host: boolean) => {
     if (problem) return setErr(problem);
-    if (!host && !validCode(c)) return setErr("Der Code hat 5 Zeichen, zum Beispiel K7QXM.");
+    if (!host && !validCode(c)) return setErr(t("Der Code hat 5 Zeichen, zum Beispiel K7QXM.", "The code has 5 characters, e.g. K7QXM."));
     setErr("");
     onEnter(c, host);
   };
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-16 pt-6 sm:pt-10">
-      <h1 className="text-[32px] font-semibold leading-tight sm:text-[44px]">Mit Freunden spielen</h1>
+      <h1 className="text-[32px] font-semibold leading-tight sm:text-[44px]">{t("Mit Freunden spielen", "Play with friends")}</h1>
       <p className="mt-2 max-w-xl text-lg text-muted">
         {invited ? (
           <>
-            Du wurdest zum Server <strong className="font-display text-ink">{initialCode}</strong> eingeladen. Gib deinen Namen ein und tritt bei.
+            {t("Du wurdest zum Server", "You’ve been invited to server")} <strong className="font-display text-ink">{initialCode}</strong>
+            {t(" eingeladen. Gib deinen Namen ein und tritt bei.", ". Enter your name and join.")}
           </>
         ) : (
-          "Erstelle einen Server oder tritt einem bei. Alle bekommen dieselbe Frage, und wenn alle geantwortet haben, vergleicht ihr eure Antworten."
+          t(
+            "Erstelle einen Server oder tritt einem bei. Alle bekommen dieselbe Frage, und wenn alle geantwortet haben, vergleicht ihr eure Antworten.",
+            "Create a server or join one. Everyone gets the same question, and once everyone has answered you compare your answers."
+          )
         )}
       </p>
 
       <label className="mt-7 block">
-        <span className="mb-1.5 block font-display text-lg font-semibold">Dein Name</span>
+        <span className="mb-1.5 block font-display text-lg font-semibold">{t("Dein Name", "Your name")}</span>
         <input
           className="input max-w-sm"
           value={name}
           maxLength={20}
           autoComplete="nickname"
-          placeholder="z. B. Sam"
+          placeholder={t("z. B. Sam", "e.g. Sam")}
           onChange={(e) => {
             setName(e.target.value);
             setErr("");
@@ -157,24 +169,24 @@ function Start({ name, setName, initialCode, onEnter }: { name: string; setName:
       {invited ? (
         <div className="mt-5 flex flex-wrap gap-3">
           <button type="button" className="btn-primary" onClick={() => go(initialCode, false)}>
-            Server {initialCode} beitreten
+            {t(`Server ${initialCode} beitreten`, `Join server ${initialCode}`)}
           </button>
           <Link href="/multiplayer" className="btn-ghost">
-            Anderen Server wählen
+            {t("Anderen Server wählen", "Choose another server")}
           </Link>
         </div>
       ) : (
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <div className="card flex flex-col p-5">
-            <h2 className="text-2xl font-semibold">Server erstellen</h2>
-            <p className="mt-1 flex-1 text-muted">Du bist der Admin und entscheidest, welches Spiel gespielt wird.</p>
+            <h2 className="text-2xl font-semibold">{t("Server erstellen", "Create a server")}</h2>
+            <p className="mt-1 flex-1 text-muted">{t("Du bist der Admin und entscheidest, welches Spiel gespielt wird.", "You’re the admin and decide which game is played.")}</p>
             <button type="button" className="btn-primary mt-4" onClick={() => go(newCode(), true)}>
-              Server erstellen
+              {t("Server erstellen", "Create server")}
             </button>
           </div>
           <div className="card flex flex-col p-5">
-            <h2 className="text-2xl font-semibold">Code eingeben</h2>
-            <p className="mt-1 text-muted">Den Code bekommst du vom Admin.</p>
+            <h2 className="text-2xl font-semibold">{t("Code eingeben", "Enter a code")}</h2>
+            <p className="mt-1 text-muted">{t("Den Code bekommst du vom Admin.", "You get the code from the admin.")}</p>
             <div className="mt-4 flex gap-2">
               <input
                 className="input min-w-0 flex-1 text-center font-display text-xl uppercase tracking-[0.25em]"
@@ -182,7 +194,7 @@ function Start({ name, setName, initialCode, onEnter }: { name: string; setName:
                 placeholder="K7QXM"
                 inputMode="text"
                 autoCapitalize="characters"
-                aria-label="Server-Code"
+                aria-label={t("Server-Code", "Server code")}
                 onChange={(e) => {
                   setCode(cleanCode(e.target.value));
                   setErr("");
@@ -190,7 +202,7 @@ function Start({ name, setName, initialCode, onEnter }: { name: string; setName:
                 onKeyDown={(e) => e.key === "Enter" && go(code, false)}
               />
               <button type="button" className="btn-primary" onClick={() => go(code, false)}>
-                Beitreten
+                {t("Beitreten", "Join")}
               </button>
             </div>
           </div>
@@ -208,6 +220,8 @@ function Start({ name, setName, initialCode, onEnter }: { name: string; setName:
 }
 
 function OpenServers({ onJoin }: { onJoin: (code: string) => void }) {
+  const lang = useLang();
+  const t = useT();
   const [list, setList] = useState<LobbyEntry[] | null>(null);
   useEffect(() => {
     const c = realtime().channel("kt:lobby");
@@ -227,23 +241,23 @@ function OpenServers({ onJoin }: { onJoin: (code: string) => void }) {
 
   return (
     <section className="mt-10">
-      <h2 className="text-2xl font-semibold">Offene Server</h2>
+      <h2 className="text-2xl font-semibold">{t("Offene Server", "Open servers")}</h2>
       {list == null ? (
-        <p className="mt-2 text-muted">Suche Server …</p>
+        <p className="mt-2 text-muted">{t("Suche Server …", "Looking for servers …")}</p>
       ) : list.length === 0 ? (
-        <p className="mt-2 text-muted">Gerade ist kein öffentlicher Server offen. Erstelle einfach selbst einen und schick den Code an deine Freunde.</p>
+        <p className="mt-2 text-muted">{t("Gerade ist kein öffentlicher Server offen. Erstelle einfach selbst einen und schick den Code an deine Freunde.", "No public server is open right now. Just create one and send the code to your friends.")}</p>
       ) : (
         <ul className="mt-3 grid gap-2.5">
           {list.map((e) => (
             <li key={e.code} className="card flex items-center gap-3 px-4 py-3">
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-display text-lg font-semibold">{e.title}</span>
+                <span className="block truncate font-display text-lg font-semibold">{serverName(e.title, lang)}</span>
                 <span className="block text-[15px] text-muted">
-                  {gameOf(e.game)?.title} · {e.players} {e.players === 1 ? "Spieler" : "Spieler"} · {e.phase === "lobby" ? "wartet auf den Start" : "Spiel läuft"}
+                  {gameTitle(e.game, lang)} · {e.players} {e.players === 1 ? t("Spieler", "player") : t("Spieler", "players")} · {e.phase === "lobby" ? t("wartet auf den Start", "waiting to start") : t("Spiel läuft", "game in progress")}
                 </span>
               </span>
               <button type="button" className="btn-ghost shrink-0" onClick={() => onJoin(e.code)}>
-                Beitreten
+                {t("Beitreten", "Join")}
               </button>
             </li>
           ))}
@@ -265,7 +279,7 @@ function freshState(code: string, me: string, name: string): RoomState {
     round: 0,
     code,
     hostId: me,
-    title: `Server von ${name}`,
+    title: name,
     pub: true,
     game: "koscher",
     n: 10,
@@ -284,6 +298,8 @@ function freshState(code: string, me: string, name: string): RoomState {
 }
 
 function Room({ code, me, name, host, onLeave }: { code: string; me: string; name: string; host: boolean; onLeave: () => void }) {
+  const lang = useLang();
+  const t = useT();
   const [st, setSt] = useState<RoomState | null>(null);
   const [members, setMembers] = useState<Record<string, Member>>({});
   const [conn, setConn] = useState<Conn>(host ? "ok" : "verbinde");
@@ -527,16 +543,16 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
   if (conn === "fehlt" || conn === "weg" || conn === "zu" || conn === "fehler") {
     const text =
       conn === "fehlt"
-        ? `Den Server ${code} gibt es nicht oder der Admin ist gerade nicht online. Prüf den Code und versuch es noch einmal.`
+        ? t(`Den Server ${code} gibt es nicht oder der Admin ist gerade nicht online. Prüf den Code und versuch es noch einmal.`, `Server ${code} doesn’t exist or the admin isn’t online right now. Check the code and try again.`)
         : conn === "zu"
-          ? "Der Admin hat den Server geschlossen."
-          : "Der Admin hat den Server verlassen. Sobald er zurückkommt, geht es hier weiter.";
+          ? t("Der Admin hat den Server geschlossen.", "The admin closed the server.")
+          : t("Der Admin hat den Server verlassen. Sobald er zurückkommt, geht es hier weiter.", "The admin left the server. As soon as they’re back, the game continues here.");
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
-        <h1 className="text-3xl font-semibold">{conn === "fehlt" ? "Server nicht gefunden" : conn === "zu" ? "Server geschlossen" : "Admin weg"}</h1>
+        <h1 className="text-3xl font-semibold">{conn === "fehlt" ? t("Server nicht gefunden", "Server not found") : conn === "zu" ? t("Server geschlossen", "Server closed") : t("Admin weg", "Admin gone")}</h1>
         <p className="mt-3 text-lg text-muted">{text}</p>
         <button type="button" className="btn-primary mt-6" onClick={onLeave}>
-          Zur Server-Auswahl
+          {t("Zur Server-Auswahl", "Back to servers")}
         </button>
       </div>
     );
@@ -544,7 +560,7 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
   if (!st) {
     return (
       <div className="mx-auto max-w-xl px-4 py-16 text-center" aria-busy="true">
-        <p className="font-display text-2xl font-semibold">Verbinde mit Server {code} …</p>
+        <p className="font-display text-2xl font-semibold">{t(`Verbinde mit Server ${code} …`, `Connecting to server ${code} …`)}</p>
       </div>
     );
   }
@@ -556,7 +572,7 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
     <div className="mx-auto max-w-3xl px-4 pb-16 pt-5 sm:pt-8">
       <RoomBar st={st} members={members} me={me} />
       {full ? (
-        <p className="mt-8 text-center text-lg font-semibold">Der Server ist voll ({MAX_PLAYERS} Spieler).</p>
+        <p className="mt-8 text-center text-lg font-semibold">{t(`Der Server ist voll (${MAX_PLAYERS} Spieler).`, `The server is full (${MAX_PLAYERS} players).`)}</p>
       ) : st.phase === "lobby" ? (
         <LobbyView st={st} host={host} members={members} me={me} busy={busy} onSetting={setting} onStart={start} />
       ) : st.phase === "frage" && st.q ? (
@@ -570,11 +586,11 @@ function Room({ code, me, name, host, onLeave }: { code: string; me: string; nam
       <div className="mt-10 flex flex-wrap justify-center gap-3 border-t-2 border-line pt-6">
         {host ? (
           <button type="button" className="btn-ghost" onClick={close}>
-            Server schließen
+            {t("Server schließen", "Close server")}
           </button>
         ) : (
           <button type="button" className="btn-ghost" onClick={onLeave}>
-            Server verlassen
+            {t("Server verlassen", "Leave server")}
           </button>
         )}
       </div>
@@ -599,10 +615,12 @@ function Avatar({ id, name, size = 36, dim = false }: { id: string; name: string
 }
 
 function RoomBar({ st, members, me }: { st: RoomState; members: Record<string, Member>; me: string }) {
+  const lang = useLang();
+  const t = useT();
   const [copied, setCopied] = useState(false);
   const share = async () => {
-    const url = `${location.origin}/multiplayer?code=${st.code}`;
-    const text = `Spiel mit mir auf Koshertrivia – Server-Code ${st.code}`;
+    const url = `${location.origin}${lang === "en" ? "/en" : ""}/multiplayer?code=${st.code}`;
+    const text = t(`Spiel mit mir auf Koshertrivia – Server-Code ${st.code}`, `Play with me on Koshertrivia – server code ${st.code}`);
     try {
       if (navigator.share && matchMedia("(pointer: coarse)").matches) return await navigator.share({ title: "Koshertrivia", text, url });
       await navigator.clipboard.writeText(url);
@@ -614,7 +632,7 @@ function RoomBar({ st, members, me }: { st: RoomState; members: Record<string, M
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="min-w-0">
-        <p className="truncate font-display text-lg font-semibold text-muted">{st.title}</p>
+        <p className="truncate font-display text-lg font-semibold text-muted">{serverName(st.title, lang)}</p>
         <p className="flex items-center gap-2">
           <span className="text-muted">Code</span>
           <span className="font-display text-3xl font-semibold tracking-[0.18em]">{st.code}</span>
@@ -622,18 +640,20 @@ function RoomBar({ st, members, me }: { st: RoomState; members: Record<string, M
       </div>
       <div className="flex items-center gap-3">
         <span className="font-semibold text-muted" aria-live="polite">
-          {n} {n === 1 ? "Spieler" : "Spieler"} online
+          {n} {n === 1 ? t("Spieler", "player") : t("Spieler", "players")} online
         </span>
         <button type="button" className="btn-ghost" onClick={share}>
-          {copied ? "Link kopiert" : "Einladen"}
+          {copied ? t("Link kopiert", "Link copied") : t("Einladen", "Invite")}
         </button>
       </div>
-      <span className="sr-only">{members[me] ? "Du bist verbunden." : ""}</span>
+      <span className="sr-only">{members[me] ? t("Du bist verbunden.", "You’re connected.") : ""}</span>
     </div>
   );
 }
 
 function Players({ members, me, done }: { members: Record<string, Member>; me: string; done?: string[] }) {
+  const lang = useLang();
+  const t = useT();
   const list = Object.entries(members).sort((a, b) => Number(b[1].host) - Number(a[1].host) || a[1].name.localeCompare(b[1].name));
   return (
     <ul className="flex flex-wrap gap-2">
@@ -644,10 +664,10 @@ function Players({ members, me, done }: { members: Record<string, Member>; me: s
             <Avatar id={id} name={m.name} size={30} />
             <span className="font-semibold">
               {m.name}
-              {id === me && <span className="text-muted"> (du)</span>}
+              {id === me && <span className="text-muted"> ({t("du", "you")})</span>}
             </span>
             {m.host && <span className="rounded-full bg-[#f3d272] px-2 text-xs font-bold">Admin</span>}
-            {done && (ok ? <span className="font-bold text-ok" aria-label="hat geantwortet">✓</span> : <span className="text-muted" aria-label="denkt noch">…</span>)}
+            {done && (ok ? <span className="font-bold text-ok" aria-label={t("hat geantwortet", "answered")}>✓</span> : <span className="text-muted" aria-label={t("denkt noch", "still thinking")}>…</span>)}
           </li>
         );
       })}
@@ -674,15 +694,17 @@ function LobbyView({
   onSetting: (p: Partial<RoomState>) => void;
   onStart: () => void;
 }) {
+  const lang = useLang();
+  const t = useT();
   const g = gameOf(st.game);
   return (
     <div className="mt-6">
-      <h2 className="mb-2 text-xl font-semibold">Im Server</h2>
+      <h2 className="mb-2 text-xl font-semibold">{t("Im Server", "On the server")}</h2>
       <Players members={members} me={me} />
 
       {host ? (
         <div className="mt-8">
-          <h2 className="text-2xl font-semibold">Welches Spiel?</h2>
+          <h2 className="text-2xl font-semibold">{t("Welches Spiel?", "Which game?")}</h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {MP_GAMES.map((x) => {
               const on = x.id === st.game;
@@ -695,8 +717,8 @@ function LobbyView({
                   className={`chunk relative px-4 py-3.5 text-left ${x.light ? "text-white" : "text-ink"} ${on ? "outline outline-4 outline-offset-2 outline-ink" : ""}`}
                   style={{ background: x.bg, ["--edge" as string]: x.edge }}
                 >
-                  <span className="block font-display text-xl font-semibold">{x.title}</span>
-                  <span className={`block text-[15px] font-semibold ${x.light ? "text-white/80" : "text-ink/70"}`}>{x.desc}</span>
+                  <span className="block font-display text-xl font-semibold">{lang === "en" ? x.titleEn : x.title}</span>
+                  <span className={`block text-[15px] font-semibold ${x.light ? "text-white/80" : "text-ink/70"}`}>{gameDesc(x, lang)}</span>
                   {on && (
                     <span className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full bg-white text-ink" aria-hidden="true">
                       ✓
@@ -707,8 +729,8 @@ function LobbyView({
             })}
           </div>
 
-          <h3 className="mt-6 text-xl font-semibold">Tägliche Spiele</h3>
-          <p className="text-[15px] text-muted">Jede Runde ist ein zufälliges Rätsel aus dem Archiv. Wenn alle fertig sind, vergleicht ihr eure Ergebnisse.</p>
+          <h3 className="mt-6 text-xl font-semibold">{t("Tägliche Spiele", "Daily games")}</h3>
+          <p className="text-[15px] text-muted">{t("Jede Runde ist ein zufälliges Rätsel aus dem Archiv. Wenn alle fertig sind, vergleicht ihr eure Ergebnisse.", "Each round is a random puzzle from the archive. Once everyone is done, you compare your results.")}</p>
           <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             {MP_DAILY.map((x) => {
               const on = x.id === st.game;
@@ -722,7 +744,7 @@ function LobbyView({
                   style={{ background: x.bg, ["--edge" as string]: x.edge }}
                 >
                   <GameArt game={x.id} className="h-9 w-12 shrink-0" />
-                  <span className="text-[15px] leading-tight">{x.title}</span>
+                  <span className="text-[15px] leading-tight">{lang === "en" ? x.titleEn : x.title}</span>
                 </button>
               );
             })}
@@ -730,7 +752,7 @@ function LobbyView({
 
           <div className="mt-6 grid gap-5 sm:grid-cols-2">
             <fieldset>
-              <legend className="mb-2 font-display text-lg font-semibold">{isDaily(st.game) ? "Runden" : "Fragen"}</legend>
+              <legend className="mb-2 font-display text-lg font-semibold">{isDaily(st.game) ? t("Runden", "Rounds") : t("Fragen", "Questions")}</legend>
               <div className="flex flex-wrap gap-2">
                 {countsFor(st.game).map((n) => (
                   <button key={n} type="button" className="chip" aria-pressed={st.n === n} onClick={() => onSetting({ n })}>
@@ -740,11 +762,11 @@ function LobbyView({
               </div>
             </fieldset>
             <fieldset>
-              <legend className="mb-2 font-display text-lg font-semibold">{isDaily(st.game) ? "Zeit pro Runde" : "Zeit pro Frage"}</legend>
+              <legend className="mb-2 font-display text-lg font-semibold">{isDaily(st.game) ? t("Zeit pro Runde", "Time per round") : t("Zeit pro Frage", "Time per question")}</legend>
               <div className="flex flex-wrap gap-2">
-                {timesFor(st.game).map((t) => (
-                  <button key={t} type="button" className="chip" aria-pressed={st.secs === t} onClick={() => onSetting({ secs: t })}>
-                    {t ? (t >= 60 ? `${t / 60} Min` : `${t} s`) : "Ohne Limit"}
+                {timesFor(st.game).map((tm) => (
+                  <button key={tm} type="button" className="chip" aria-pressed={st.secs === tm} onClick={() => onSetting({ secs: tm })}>
+                    {tm ? (tm >= 60 ? `${tm / 60} Min` : `${tm} s`) : t("Ohne Limit", "No limit")}
                   </button>
                 ))}
               </div>
@@ -754,26 +776,30 @@ function LobbyView({
           <label className="mt-6 flex cursor-pointer items-start gap-3">
             <input type="checkbox" className="mt-1 h-5 w-5 accent-[#2c2a35]" checked={st.pub} onChange={(e) => onSetting({ pub: e.target.checked })} />
             <span>
-              <span className="block font-semibold">In „Offene Server“ anzeigen</span>
-              <span className="block text-[15px] text-muted">Aus: Nur wer den Code hat, kann beitreten.</span>
+              <span className="block font-semibold">{t("In „Offene Server“ anzeigen", "Show in “Open servers”")}</span>
+              <span className="block text-[15px] text-muted">{t("Aus: Nur wer den Code hat, kann beitreten.", "Off: only people with the code can join.")}</span>
             </span>
           </label>
 
           <button type="button" className="btn-primary mt-7 w-full text-lg sm:w-auto" disabled={busy} onClick={onStart}>
-            {busy ? "Lade …" : `${g.title} starten`}
+            {busy ? t("Lade …", "Loading …") : t(`${g.title} starten`, `Start ${g.titleEn}`)}
           </button>
-          <p className="mt-2 text-[15px] text-muted">Wer später dazukommt, steigt bei der nächsten {isDaily(st.game) ? "Runde" : "Frage"} ein.</p>
+          <p className="mt-2 text-[15px] text-muted">{isDaily(st.game) ? t("Wer später dazukommt, steigt bei der nächsten Runde ein.", "Anyone joining later starts with the next round.") : t("Wer später dazukommt, steigt bei der nächsten Frage ein.", "Anyone joining later starts with the next question.")}</p>
         </div>
       ) : (
         <div className="card mt-8 p-6 text-center">
-          <p className="text-muted">Der Admin hat ausgewählt</p>
-          <p className="mt-1 font-display text-3xl font-semibold">{g.title}</p>
+          <p className="text-muted">{t("Der Admin hat ausgewählt", "The admin picked")}</p>
+          <p className="mt-1 font-display text-3xl font-semibold">{lang === "en" ? g.titleEn : g.title}</p>
           <p className="mt-1 font-semibold text-muted">
-            {isDaily(st.game)
-              ? `${st.n} ${st.n === 1 ? "Runde" : "Runden"} · ${st.secs ? `${st.secs / 60} Minuten pro Runde` : "ohne Zeitlimit"}`
-              : `${st.n} Fragen · ${st.secs ? `${st.secs} Sekunden pro Frage` : "ohne Zeitlimit"}`}
+            {lang === "en"
+              ? isDaily(st.game)
+                ? `${st.n} ${st.n === 1 ? "round" : "rounds"} · ${st.secs ? `${st.secs / 60} minutes per round` : "no time limit"}`
+                : `${st.n} questions · ${st.secs ? `${st.secs} seconds per question` : "no time limit"}`
+              : isDaily(st.game)
+                ? `${st.n} ${st.n === 1 ? "Runde" : "Runden"} · ${st.secs ? `${st.secs / 60} Minuten pro Runde` : "ohne Zeitlimit"}`
+                : `${st.n} Fragen · ${st.secs ? `${st.secs} Sekunden pro Frage` : "ohne Zeitlimit"}`}
           </p>
-          <p className="mt-5 font-semibold">Warte, bis der Admin das Spiel startet …</p>
+          <p className="mt-5 font-semibold">{t("Warte, bis der Admin das Spiel startet …", "Waiting for the admin to start the game …")}</p>
         </div>
       )}
     </div>
@@ -793,11 +819,16 @@ function useCountdown(endsAt: number) {
 }
 
 function QHead({ st, children }: { st: RoomState; children?: React.ReactNode }) {
+  const lang = useLang();
+  const t = useT();
   const g = gameOf(st.game);
   return (
     <div className="mt-6 flex items-center justify-between gap-3">
       <p className="font-display text-lg font-semibold">
-        {g.title} <span className="text-muted">· {isDaily(st.game) ? "Runde" : "Frage"} {st.i + 1} von {st.total}</span>
+        {lang === "en" ? g.titleEn : g.title}{" "}
+        <span className="text-muted">
+          · {isDaily(st.game) ? t("Runde", "Round") : t("Frage", "Question")} {st.i + 1} {t("von", "of")} {st.total}
+        </span>
       </p>
       {children}
     </div>
@@ -827,6 +858,8 @@ function QuestionView({
   onForce: () => void;
   dive: DiveR[];
 }) {
+  const lang = useLang();
+  const t = useT();
   const left = useCountdown(st.endsAt ? st.endsAt + offset : 0);
   const present = Object.keys(members);
   const doneN = present.filter((id) => st.done.includes(id)).length;
@@ -841,40 +874,40 @@ function QuestionView({
     <div>
       <QHead st={st}>
         {left != null && (
-          <span className={`grid h-12 w-12 place-items-center rounded-full border-[3px] border-ink font-display text-xl font-semibold tabular-nums ${left <= 5 ? "bg-bad text-white" : "bg-white"}`} aria-label={`${left} Sekunden übrig`}>
+          <span className={`grid h-12 w-12 place-items-center rounded-full border-[3px] border-ink font-display text-xl font-semibold tabular-nums ${left <= 5 ? "bg-bad text-white" : "bg-white"}`} aria-label={t(`${left} Sekunden übrig`, `${left} seconds left`)}>
             {left}
           </span>
         )}
       </QHead>
 
       <div className={`chunk mt-3 px-5 py-6 sm:px-8 sm:py-8 ${g.light ? "text-white" : "text-ink"}`} style={{ background: g.bg, ["--edge" as string]: g.edge }}>
-        {q.kind === "choice" && q.cat && <span className={`rounded-full px-3 py-1 text-sm font-bold ${g.light ? "bg-white/15" : "bg-white/60"}`}>{q.cat}</span>}
+        {q.kind === "choice" && q.cat && <span className={`rounded-full px-3 py-1 text-sm font-bold ${g.light ? "bg-white/15" : "bg-white/60"}`}>{lang === "en" ? q.catEn ?? q.cat : q.cat}</span>}
         {q.kind === "choice" && q.img && (
           <div className="mx-auto mb-4 mt-1 flex w-full max-w-sm items-center justify-center rounded-2xl bg-surface p-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={q.img} alt="Flagge" className="max-h-44 w-auto rounded-md border-2 border-ink/15" />
+            <img src={q.img} alt={t("Flagge", "Flag")} className="max-h-44 w-auto rounded-md border-2 border-ink/15" />
           </div>
         )}
         <h2 className={`font-display font-semibold leading-tight ${q.kind === "choice" && q.img ? "text-center text-2xl" : "mt-3 text-[28px] sm:text-4xl"}`}>
-          {questionText(st, q)}
+          {questionText(st, q, lang)}
         </h2>
       </div>
 
       <div className="mt-5">
         {myAns ? (
           <div className="card p-5 text-center" role="status">
-            <p className="text-muted">Deine Antwort</p>
+            <p className="text-muted">{t("Deine Antwort", "Your answer")}</p>
             <p className="font-display text-2xl font-semibold">{myAns.label}</p>
-            <p className="mt-3 font-semibold">Warte auf die anderen …</p>
+            <p className="mt-3 font-semibold">{t("Warte auf die anderen …", "Waiting for the others …")}</p>
           </div>
         ) : q.kind === "choice" ? (
           <div className={`grid gap-3 ${q.options.length === 4 ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
             {q.options.map((o, k) => (
-              <button key={o.id} type="button" className="btn-ghost min-h-[60px] justify-start gap-3 px-4 text-left text-lg" onClick={() => onAnswer({ choice: o.id }, o.label)}>
+              <button key={o.id} type="button" className="btn-ghost min-h-[60px] justify-start gap-3 px-4 text-left text-lg" onClick={() => onAnswer({ choice: o.id }, optLabel(o, lang))}>
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface font-display text-base" aria-hidden="true">
                   {"ABCD"[k]}
                 </span>
-                {o.label}
+                {optLabel(o, lang)}
               </button>
             ))}
           </div>
@@ -883,12 +916,12 @@ function QuestionView({
 
       <div className="mt-7">
         <p className="mb-2 font-semibold" aria-live="polite">
-          {doneN} von {present.length} haben geantwortet
+          {t(`${doneN} von ${present.length} haben geantwortet`, `${doneN} of ${present.length} have answered`)}
         </p>
         <Players members={members} me={me} done={st.done} />
         {host && doneN < present.length && (
           <button type="button" className="btn-ghost mt-4" onClick={onForce}>
-            Nicht mehr warten – Antworten zeigen
+            {t("Nicht mehr warten – Antworten zeigen", "Stop waiting – show answers")}
           </button>
         )}
       </div>
@@ -897,6 +930,8 @@ function QuestionView({
 }
 
 function TiefgangInput({ qkey, timeUp, onDone, dark = false }: { qkey: string; timeUp: boolean; onDone: (a: Answer | null) => void; dark?: boolean }) {
+  const lang = useLang();
+  const t = useT();
   const q = useMemo<Question | undefined>(() => tiefgangQ(qkey), [qkey]);
   const [v, setV] = useState("");
   const [sug, setSug] = useState<{ name: string; for: string } | null>(null);
@@ -904,7 +939,7 @@ function TiefgangInput({ qkey, timeUp, onDone, dark = false }: { qkey: string; t
   const [shake, setShake] = useState(0);
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => ref.current?.focus(), []);
-  if (!q) return <p className="font-semibold text-bad">Diese Frage konnte nicht geladen werden.</p>;
+  if (!q) return <p className="font-semibold text-bad">{t("Diese Frage konnte nicht geladen werden.", "This question could not be loaded.")}</p>;
 
   const submit = () => {
     if (timeUp) return;
@@ -939,21 +974,21 @@ function TiefgangInput({ qkey, timeUp, onDone, dark = false }: { qkey: string; t
           value={v}
           disabled={timeUp}
           autoFocus={shake > 0}
-          placeholder={timeUp ? "Die Zeit ist um" : "Deine Antwort"}
-          aria-label="Deine Antwort"
+          placeholder={timeUp ? t("Die Zeit ist um", "Time’s up") : t("Deine Antwort", "Your answer")}
+          aria-label={t("Deine Antwort", "Your answer")}
           onChange={(e) => {
             setV(e.target.value);
             setErr("");
           }}
         />
         <button type="submit" className={`btn-primary ${dark ? "bg-[#f3d272] text-ink shadow-[0_4px_0_#b8962f] hover:bg-[#f7dc8a]" : ""}`} disabled={timeUp || !v.trim()}>
-          {dark ? "Tauchen" : "Antworten"}
+          {dark ? t("Tauchen", "Dive") : t("Antworten", "Answer")}
         </button>
       </form>
-      {sug && <Suggestion dark={dark} name={sug.name} onTake={() => { setV(sug.name); setSug(null); }} hint="oder nochmal Enter, wenn du deine Schreibweise meinst" />}
-      {err && <p className={`mt-2 font-semibold ${dark ? "text-[#ffb4ae]" : "text-bad"}`}>{err} Versuch es nochmal.</p>}
+      {sug && <Suggestion dark={dark} name={sug.name} onTake={() => { setV(sug.name); setSug(null); }} hint={t("oder nochmal Enter, wenn du deine Schreibweise meinst", "or press Enter again to keep your spelling")} />}
+      {err && <p className={`mt-2 font-semibold ${dark ? "text-[#ffb4ae]" : "text-bad"}`}>{err} {t("Versuch es nochmal.", "Try again.")}</p>}
       <button type="button" className={`mt-3 text-[15px] font-semibold underline underline-offset-2 ${dark ? "text-white/70 hover:text-white" : "text-muted hover:text-ink"}`} onClick={() => onDone(null)}>
-        Passen – mir fällt nichts ein
+        {t("Passen – mir fällt nichts ein", "Pass – I’ve got nothing")}
       </button>
     </div>
   );
@@ -962,6 +997,8 @@ function TiefgangInput({ qkey, timeUp, onDone, dark = false }: { qkey: string; t
 // ---------------- reveal ----------------
 
 function RevealView({ st, q, me, host, onNext, dive }: { st: RoomState; q: QView; me: string; host: boolean; onNext: () => void; dive: DiveR[] }) {
+  const lang = useLang();
+  const t = useT();
   const rv = st.reveal!;
   const ids = Object.keys(rv.answers);
   const nameOf = (id: string) => st.names[id] ?? "?";
@@ -975,15 +1012,23 @@ function RevealView({ st, q, me, host, onNext, dive }: { st: RoomState; q: QView
       <QHead st={st} />
       <div className="card mt-3 px-5 py-5 sm:px-7">
         <h2 className="font-display text-2xl font-semibold leading-tight sm:text-3xl">
-          {questionText(st, q)}
+          {questionText(st, q, lang)}
         </h2>
         {q.kind === "choice" && q.img && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={q.img} alt="Flagge" className="mt-3 h-20 w-auto rounded-md border-2 border-ink/15" />
+          <img src={q.img} alt={t("Flagge", "Flag")} className="mt-3 h-20 w-auto rounded-md border-2 border-ink/15" />
         )}
         {ids.includes(me) && (
           <p className={`mt-3 inline-block rounded-full px-3 py-1 font-bold text-white ${mineA?.ok ? "bg-ok" : "bg-bad"}`}>
-            {q.kind === "tiefgang" ? (mineA ? `+${mineA.pts} Punkte` : "Keine Antwort") : mineA?.ok ? "Richtig!" : mineA ? "Leider falsch" : "Keine Antwort"}
+            {q.kind === "tiefgang"
+              ? mineA
+                ? t(`+${mineA.pts} Punkte`, `+${mineA.pts} points`)
+                : t("Keine Antwort", "No answer")
+              : mineA?.ok
+                ? t("Richtig!", "Correct!")
+                : mineA
+                  ? t("Leider falsch", "Wrong")
+                  : t("Keine Antwort", "No answer")}
           </p>
         )}
       </div>
@@ -998,8 +1043,8 @@ function RevealView({ st, q, me, host, onNext, dive }: { st: RoomState; q: QView
                 <div className="flex items-center justify-between gap-3">
                   <span className="font-display text-lg font-semibold">
                     {right && <span className="mr-1.5 text-ok" aria-hidden="true">✓</span>}
-                    {o.label}
-                    {right && <span className="sr-only"> (richtig)</span>}
+                    {optLabel(o, lang)}
+                    {right && <span className="sr-only"> ({t("richtig", "correct")})</span>}
                   </span>
                   <span className="font-semibold tabular-nums text-muted">{who.length}</span>
                 </div>
@@ -1018,7 +1063,7 @@ function RevealView({ st, q, me, host, onNext, dive }: { st: RoomState; q: QView
           })}
           {ids.some((id) => !rv.answers[id]) && (
             <li className="px-1 text-[15px] text-muted">
-              Ohne Antwort: {ids.filter((id) => !rv.answers[id]).map(nameOf).join(", ")}
+              {t("Ohne Antwort", "No answer")}: {ids.filter((id) => !rv.answers[id]).map(nameOf).join(", ")}
             </li>
           )}
         </ul>
@@ -1035,7 +1080,7 @@ function RevealView({ st, q, me, host, onNext, dive }: { st: RoomState; q: QView
                     <Avatar id={id} name={nameOf(id)} size={32} />
                     <span className="min-w-0 flex-1">
                       <span className="block text-[15px] text-muted">{nameOf(id)}</span>
-                      <span className="block truncate font-display text-lg font-semibold">{a ? a.label : "Keine Antwort"}</span>
+                      <span className="block truncate font-display text-lg font-semibold">{a ? ansName(a.label, lang) : t("Keine Antwort", "No answer")}</span>
                     </span>
                     <span className="text-2xl" aria-hidden="true">
                       {emojiFor(a?.pts ?? 0)}
@@ -1047,7 +1092,7 @@ function RevealView({ st, q, me, host, onNext, dive }: { st: RoomState; q: QView
           </ul>
           {rv.rare && rv.rare.length > 0 && (
             <p className="mt-3 text-[15px] text-muted">
-              Besonders selten wären gewesen: {rv.rare.map((r) => `${r.name} (${r.pts})`).join(", ")}
+              {t("Besonders selten wären gewesen", "Really rare ones would have been")}: {rv.rare.map((r) => `${ansName(r.name, lang)} (${r.pts})`).join(", ")}
             </p>
           )}
         </div>
@@ -1055,8 +1100,12 @@ function RevealView({ st, q, me, host, onNext, dive }: { st: RoomState; q: QView
 
       {rv.explain && (
         <div className="mt-4 rounded-2xl bg-surface px-5 py-4">
-          <p className="text-[17px] leading-relaxed">{rv.explain}</p>
-          {rv.src && <p className="mt-2 text-[15px] font-semibold text-muted">Quelle: {rv.src}</p>}
+          <p className="text-[17px] leading-relaxed">{lang === "en" ? rv.explainEn ?? rv.explain : rv.explain}</p>
+          {rv.src && (
+            <p className="mt-2 text-[15px] font-semibold text-muted">
+              {t("Quelle", "Source")}: {lang === "en" ? rv.srcEn ?? rv.src : rv.src}
+            </p>
+          )}
         </div>
       )}
 
@@ -1065,10 +1114,10 @@ function RevealView({ st, q, me, host, onNext, dive }: { st: RoomState; q: QView
       <div className="mt-6">
         {host ? (
           <button type="button" className="btn-primary w-full text-lg sm:w-auto" onClick={onNext}>
-            {last ? "Zum Endstand" : "Nächste Frage"}
+            {last ? t("Zum Endstand", "Final standings") : t("Nächste Frage", "Next question")}
           </button>
         ) : (
-          <p className="font-semibold text-muted">Der Admin startet gleich {last ? "den Endstand" : "die nächste Frage"} …</p>
+          <p className="font-semibold text-muted">{last ? t("Der Admin zeigt gleich den Endstand …", "The admin will show the final standings soon …") : t("Der Admin startet gleich die nächste Frage …", "The admin will start the next question soon …")}</p>
         )}
       </div>
     </div>
@@ -1076,15 +1125,17 @@ function RevealView({ st, q, me, host, onNext, dive }: { st: RoomState; q: QView
 }
 
 function Scores({ st, me, compact = false }: { st: RoomState; me: string; compact?: boolean }) {
+  const lang = useLang();
+  const t = useT();
   const rows = Object.entries(st.scores)
     .map(([id, p]) => ({ id, p, name: st.names[id] ?? "?" }))
     .sort((a, b) => b.p - a.p || a.name.localeCompare(b.name));
-  const unit = st.game === "tiefgang" || isDaily(st.game) ? "Punkte" : "richtig";
+  const unit = st.game === "tiefgang" || isDaily(st.game) ? t("Punkte", "points") : t("richtig", "right");
   let rank = 0;
   let prev = -1;
   return (
     <div className={compact ? "mt-6" : "mt-5"}>
-      {compact && <h3 className="mb-2 text-lg font-semibold">Zwischenstand</h3>}
+      {compact && <h3 className="mb-2 text-lg font-semibold">{t("Zwischenstand", "Standings")}</h3>}
       <ol className="grid gap-1.5">
         {rows.map((r, k) => {
           if (r.p !== prev) rank = k + 1;
@@ -1096,7 +1147,7 @@ function Scores({ st, me, compact = false }: { st: RoomState; me: string; compac
               <Avatar id={r.id} name={r.name} size={compact ? 26 : 34} />
               <span className="min-w-0 flex-1 truncate font-semibold">
                 {r.name}
-                {r.id === me && <span className="text-muted"> (du)</span>}
+                {r.id === me && <span className="text-muted"> ({t("du", "you")})</span>}
               </span>
               <span className="font-display text-lg font-semibold tabular-nums">
                 {r.p} <span className="text-[15px] text-muted">{unit}</span>
@@ -1110,6 +1161,8 @@ function Scores({ st, me, compact = false }: { st: RoomState; me: string; compac
 }
 
 function EndView({ st, me, host, onLobby }: { st: RoomState; me: string; host: boolean; onLobby: () => void }) {
+  const lang = useLang();
+  const t = useT();
   const best = Math.max(0, ...Object.values(st.scores));
   const winners = Object.entries(st.scores)
     .filter(([, p]) => p === best)
@@ -1117,19 +1170,19 @@ function EndView({ st, me, host, onLobby }: { st: RoomState; me: string; host: b
   return (
     <div className="mt-6">
       <div className="chunk px-5 py-7 text-center" style={{ background: "#f3d272", ["--edge" as string]: "#c9a43c" }}>
-        <p className="font-display text-lg font-semibold text-ink/70">{gameOf(st.game).title} · Endstand</p>
+        <p className="font-display text-lg font-semibold text-ink/70">{gameTitle(st.game, lang)} · {t("Endstand", "Final standings")}</p>
         <p className="mt-1 font-display text-3xl font-semibold sm:text-4xl">
-          {winners.length === 1 ? `${winners[0]} gewinnt!` : `Unentschieden: ${winners.join(" & ")}`}
+          {winners.length === 1 ? t(`${winners[0]} gewinnt!`, `${winners[0]} wins!`) : t(`Unentschieden: ${winners.join(" & ")}`, `Tie: ${winners.join(" & ")}`)}
         </p>
       </div>
       <Scores st={st} me={me} />
       <div className="mt-6">
         {host ? (
           <button type="button" className="btn-primary w-full text-lg sm:w-auto" onClick={onLobby}>
-            Neues Spiel wählen
+            {t("Neues Spiel wählen", "Pick a new game")}
           </button>
         ) : (
-          <p className="font-semibold text-muted">Der Admin wählt gleich das nächste Spiel …</p>
+          <p className="font-semibold text-muted">{t("Der Admin wählt gleich das nächste Spiel …", "The admin is about to pick the next game …")}</p>
         )}
       </div>
     </div>
@@ -1138,10 +1191,21 @@ function EndView({ st, me, host, onLobby }: { st: RoomState; me: string; host: b
 
 // ---------------- daily games ----------------
 
-function questionText(st: RoomState, q: QView) {
+function questionText(st: RoomState, q: QView, lang: Lang = "de") {
   if (q.kind === "daily") return "";
-  return q.kind === "choice" && (st.game === "koscher" || st.game === "halal") ? `${q.text}?` : q.text;
+  if (q.kind === "tiefgang") {
+    const tq = tiefgangQ(q.key);
+    return tq ? qText(tq, lang) : q.text;
+  }
+  const text = lang === "en" ? q.textEn ?? q.text : q.text;
+  return st.game === "koscher" || st.game === "halal" ? `${text}?` : text;
 }
+const optLabel = (o: { label: string; labelEn?: string }, lang: Lang) => (lang === "en" ? o.labelEn ?? o.label : o.label);
+/** Rooms are named after the admin; older rooms still carry "Server von …". */
+const serverName = (title: string, lang: Lang) => {
+  const name = title.replace(/^Server von /, "");
+  return lang === "en" ? `${name}’s server` : `Server von ${name}`;
+};
 
 /** Switching games keeps the settings that still fit, otherwise sensible defaults. */
 function switchTo(st: RoomState, game: GameId): Partial<RoomState> {
@@ -1176,6 +1240,8 @@ function DailyRound({
   onAnswer: (part: Pick<AnswerMsg, "choice" | "tg" | "daily">, label: string) => void;
   onForce: () => void;
 }) {
+  const lang = useLang();
+  const t = useT();
   const send = useRef(onAnswer);
   send.current = onAnswer;
   const storeKey = `${st.code}:${st.round}:${st.i}`;
@@ -1200,7 +1266,7 @@ function DailyRound({
         {left != null && (
           <span
             className={`grid h-12 min-w-12 place-items-center rounded-full border-[3px] border-ink px-2 font-display text-lg font-semibold tabular-nums ${left <= 10 ? "bg-bad text-white" : "bg-white"}`}
-            aria-label={`${left} Sekunden übrig`}
+            aria-label={t(`${left} Sekunden übrig`, `${left} seconds left`)}
           >
             {clock(left)}
           </span>
@@ -1212,16 +1278,16 @@ function DailyRound({
           <span className="font-semibold">
             {myAns ? (
               <>
-                Fertig: <strong>{myAns.label}</strong> – warte auf die anderen
+                {t("Fertig", "Done")}: <strong>{myAns.label}</strong> – {t("warte auf die anderen", "waiting for the others")}
               </>
             ) : timeUp ? (
-              "Die Zeit ist um."
+              t("Die Zeit ist um.", "Time’s up.")
             ) : (
-              "Spiel das Rätsel – wenn alle fertig sind, vergleicht ihr."
+              t("Spiel das Rätsel – wenn alle fertig sind, vergleicht ihr.", "Play the puzzle – once everyone is done, you compare.")
             )}
           </span>
           <span className="font-semibold text-muted">
-            {doneN} von {present.length} fertig
+            {t(`${doneN} von ${present.length} fertig`, `${doneN} of ${present.length} done`)}
           </span>
         </div>
       </div>
@@ -1238,7 +1304,7 @@ function DailyRound({
         <Players members={members} me={me} done={st.done} />
         {host && doneN < present.length && (
           <button type="button" className="btn-ghost mt-4" onClick={onForce}>
-            Nicht mehr warten – Ergebnisse zeigen
+            {t("Nicht mehr warten – Ergebnisse zeigen", "Stop waiting – show results")}
           </button>
         )}
       </div>
@@ -1247,6 +1313,8 @@ function DailyRound({
 }
 
 function DailyReveal({ st, q, me, host, onNext }: { st: RoomState; q: Extract<QView, { kind: "daily" }>; me: string; host: boolean; onNext: () => void }) {
+  const lang = useLang();
+  const t = useT();
   const rv = st.reveal!;
   const ids = Object.keys(rv.answers).sort((a, b) => (rv.answers[b]?.pts ?? -1) - (rv.answers[a]?.pts ?? -1));
   const nameOf = (id: string) => st.names[id] ?? "?";
@@ -1261,12 +1329,12 @@ function DailyReveal({ st, q, me, host, onNext }: { st: RoomState; q: Extract<QV
         <GameArt game={q.game} className="h-11 w-14 shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="font-display text-xl font-semibold leading-tight">
-            {g.title} <span className="text-ink/55">#{dayNumber(q.day)}</span>
+            {lang === "en" ? g.titleEn : g.title} <span className="text-ink/55">#{dayNumber(q.day)}</span>
           </p>
-          <p className="text-sm font-semibold text-ink/70">Rätsel vom {formatDay(q.day)}</p>
+          <p className="text-sm font-semibold text-ink/70">{t("Rätsel vom", "Puzzle from")} {formatDay(q.day, lang)}</p>
         </div>
         {rv.answers[me] !== undefined && (
-          <span className={`shrink-0 rounded-full px-3 py-1 font-bold text-white ${mineA ? "bg-ok" : "bg-bad"}`}>{mineA ? `+${mineA.pts} Punkte` : "Nicht fertig"}</span>
+          <span className={`shrink-0 rounded-full px-3 py-1 font-bold text-white ${mineA ? "bg-ok" : "bg-bad"}`}>{mineA ? t(`+${mineA.pts} Punkte`, `+${mineA.pts} points`) : t("Nicht fertig", "Not finished")}</span>
         )}
       </div>
 
@@ -1281,9 +1349,9 @@ function DailyReveal({ st, q, me, host, onNext }: { st: RoomState; q: Extract<QV
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">
                     {nameOf(id)}
-                    {id === me && <span className="text-muted"> (du)</span>}
+                    {id === me && <span className="text-muted"> ({t("du", "you")})</span>}
                   </span>
-                  <span className="block text-[15px] text-muted">{a ? a.label : "Nicht fertig geworden"}</span>
+                  <span className="block text-[15px] text-muted">{a ? a.label : t("Nicht fertig geworden", "Didn’t finish")}</span>
                 </span>
                 <span className="font-display text-2xl font-semibold tabular-nums">{a?.pts ?? 0}</span>
               </div>
@@ -1292,17 +1360,17 @@ function DailyReveal({ st, q, me, host, onNext }: { st: RoomState; q: Extract<QV
           );
         })}
       </ul>
-      <p className="mt-2 text-[15px] text-muted">Punkte wie in der Bestenliste: 0 bis 100 pro Rätsel.</p>
+      <p className="mt-2 text-[15px] text-muted">{t("Punkte wie in der Bestenliste: 0 bis 100 pro Rätsel.", "Points as on the leaderboard: 0 to 100 per puzzle.")}</p>
 
       <Scores st={st} me={me} compact />
 
       <div className="mt-6">
         {host ? (
           <button type="button" className="btn-primary w-full text-lg sm:w-auto" onClick={onNext}>
-            {last ? "Zum Endstand" : "Nächste Runde"}
+            {last ? t("Zum Endstand", "Final standings") : t("Nächste Runde", "Next round")}
           </button>
         ) : (
-          <p className="font-semibold text-muted">Der Admin startet gleich {last ? "den Endstand" : "die nächste Runde"} …</p>
+          <p className="font-semibold text-muted">{last ? t("Der Admin zeigt gleich den Endstand …", "The admin will show the final standings soon …") : t("Der Admin startet gleich die nächste Runde …", "The admin will start the next round soon …")}</p>
         )}
       </div>
     </div>
@@ -1321,6 +1389,8 @@ function myDepth(st: RoomState, me: string, dive: DiveR[]) {
 
 /** The ocean from the Tiefgang game: the camera glides down as your answers sink. */
 function TgStage({ total, list, className = "", children }: { total: number; list: DiveR[]; className?: string; children?: React.ReactNode }) {
+  const lang = useLang();
+  const t = useT();
   const [cam, setCam] = useState(total);
   const camRef = useRef(total);
   const [sinking, setSinking] = useState<DiveR | null>(null);
@@ -1371,11 +1441,11 @@ function TgStage({ total, list, className = "", children }: { total: number; lis
       <OceanScene cam={cam} results={list} questions={[]} sinking={sinking} base={sinking ? base : total} impact={impact} />
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between bg-gradient-to-b from-[#051a3a]/70 to-transparent px-4 pb-5 pt-3">
         <div>
-          <p className="text-xs font-bold text-white/70">Deine Tiefe</p>
+          <p className="text-xs font-bold text-white/70">{t("Deine Tiefe", "Your depth")}</p>
           <p className="font-display text-2xl font-semibold tabular-nums">{nfDe.format(Math.round(cam))} m</p>
         </div>
         <div className="text-right">
-          <p className="text-xs font-bold text-white/70">Punkte</p>
+          <p className="text-xs font-bold text-white/70">{t("Punkte", "Points")}</p>
           <p className="font-display text-2xl font-semibold tabular-nums">{Math.round(cam / 10)}</p>
         </div>
       </div>
@@ -1408,6 +1478,8 @@ function TgQuestion({
   onForce: () => void;
   dive: DiveR[];
 }) {
+  const lang = useLang();
+  const t = useT();
   const present = Object.keys(members);
   const doneN = present.filter((id) => st.done.includes(id)).length;
   const mineNow = dive.find((r) => r.i === st.i);
@@ -1416,7 +1488,7 @@ function TgQuestion({
     <div>
       <QHead st={st}>
         {left != null && (
-          <span className={`grid h-12 w-12 place-items-center rounded-full border-[3px] border-ink font-display text-xl font-semibold tabular-nums ${left <= 5 ? "bg-bad text-white" : "bg-white"}`} aria-label={`${left} Sekunden übrig`}>
+          <span className={`grid h-12 w-12 place-items-center rounded-full border-[3px] border-ink font-display text-xl font-semibold tabular-nums ${left <= 5 ? "bg-bad text-white" : "bg-white"}`} aria-label={t(`${left} Sekunden übrig`, `${left} seconds left`)}>
             {left}
           </span>
         )}
@@ -1424,7 +1496,7 @@ function TgQuestion({
       <TgStage total={myDepth(st, me, dive)} list={dive} className="mt-3 h-[min(72dvh,640px)] min-h-[500px]">
         {myAns ? (
           <div className="pop rounded-[24px] bg-white/95 p-5 text-ink shadow-[0_6px_0_rgb(0_0_0_/_0.3)]" role="status">
-            <p className="font-display font-semibold text-ink/60">{q.text}</p>
+            <p className="font-display font-semibold text-ink/60">{questionText(st, q, lang)}</p>
             {mineNow && mineNow.pts > 0 ? (
               <div className="mt-2 flex items-center gap-4">
                 <Creature tier={tierOf(mineNow).key} className={`shrink-0 ${mineNow.perle ? "h-20 w-20" : "h-16 w-16"}`} />
@@ -1434,7 +1506,7 @@ function TgQuestion({
                   </p>
                   <p className="font-display text-3xl font-semibold text-[#0f4c8a]">+{nfDe.format(meters(mineNow.pts))} m</p>
                   <p className="font-semibold">
-                    {mineNow.answer} – {mineNow.pts} von {MAX_PTS} Punkten
+                    {ansName(mineNow.answer ?? "", lang)} – {t(`${mineNow.pts} von ${MAX_PTS} Punkten`, `${mineNow.pts} of ${MAX_PTS} points`)}
                   </p>
                 </div>
               </div>
@@ -1445,14 +1517,20 @@ function TgQuestion({
               </div>
             )}
             <p className="mt-3 font-semibold text-muted">
-              Warte auf die anderen … {doneN} von {present.length} fertig
+              {t(`Warte auf die anderen … ${doneN} von ${present.length} fertig`, `Waiting for the others … ${doneN} of ${present.length} done`)}
             </p>
           </div>
         ) : (
           <div className="pop" key={"q" + st.i}>
             <div className="rounded-[24px] bg-[#082650]/85 p-5 shadow-[0_6px_0_rgb(0_0_0_/_0.3)] backdrop-blur-sm">
-              <h2 className="text-[24px] font-semibold leading-snug sm:text-3xl">{q.text}</h2>
-              <p className="mt-1 text-sm font-semibold text-white/65">{q.hint} Seltenere Antworten sinken tiefer.</p>
+              <h2 className="text-[24px] font-semibold leading-snug sm:text-3xl">{questionText(st, q, lang)}</h2>
+              <p className="mt-1 text-sm font-semibold text-white/65">
+                {(() => {
+                  const tq = tiefgangQ(q.key);
+                  return tq ? qHint(tq, lang) : q.hint;
+                })()}{" "}
+                {t("Seltenere Antworten sinken tiefer.", "Rarer answers sink deeper.")}
+              </p>
             </div>
             <div className="mt-3 rounded-[24px] bg-[#082650]/85 p-3 backdrop-blur-sm">
               <TiefgangInput
@@ -1462,7 +1540,7 @@ function TgQuestion({
                 onDone={(a) =>
                   a
                     ? onAnswer({ tg: { id: a.id } }, a.name, { input: a.name, pts: a.pts, answer: a.name, id: a.id, perle: a.perle })
-                    : onAnswer({ tg: null }, "Keine Antwort", { input: "", pts: 0 })
+                    : onAnswer({ tg: null }, t("Keine Antwort", "No answer"), { input: "", pts: 0 })
                 }
               />
             </div>
@@ -1472,12 +1550,12 @@ function TgQuestion({
 
       <div className="mt-6">
         <p className="mb-2 font-semibold" aria-live="polite">
-          {doneN} von {present.length} haben geantwortet
+          {t(`${doneN} von ${present.length} haben geantwortet`, `${doneN} of ${present.length} have answered`)}
         </p>
         <Players members={members} me={me} done={st.done} />
         {host && doneN < present.length && (
           <button type="button" className="btn-ghost mt-4" onClick={onForce}>
-            Nicht mehr warten – Antworten zeigen
+            {t("Nicht mehr warten – Antworten zeigen", "Stop waiting – show answers")}
           </button>
         )}
       </div>

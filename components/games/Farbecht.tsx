@@ -8,6 +8,8 @@ import { makeRng } from "@/lib/rng";
 import { useDaily } from "@/lib/useDaily";
 import { GameShell, ResultCard } from "../GameShell";
 import { SolutionRow, Solutions } from "../Solutions";
+import { useLang, useT } from "@/lib/i18n";
+import { cName } from "@/lib/data/countries";
 
 const ROUNDS = 5;
 const POOL = COUNTRIES.filter((c) => c.flag.simple && c.flag.colors.some((h) => !isNeutral(h)) && (c.pop ?? 0) >= 500000);
@@ -26,6 +28,9 @@ type S = { guesses: string[] };
 
 export function Farbecht() {
   const { day, isToday, loaded, saved, persist } = useDaily<S>("farbecht");
+  const lang = useLang();
+  const t = useT();
+  const LOC = lang === "en" ? "en-GB" : "de-DE";
   const plan = useMemo(() => rounds(day), [day]);
   const [local, setLocal] = useState<string[] | null>(null);
   const guesses = local ?? saved?.state?.guesses ?? [];
@@ -65,16 +70,16 @@ export function Farbecht() {
       done: next.length >= ROUNDS,
       score: sum,
       max: ROUNDS * 10,
-      label: `${sum.toLocaleString("de-DE")}/${ROUNDS * 10}`,
-      share: `Farbecht #${dayNumber(day)} · ${sum.toLocaleString("de-DE")}/${ROUNDS * 10}\n${p.map(emoji).join("")}`,
+      label: `${sum.toLocaleString(LOC)}/${ROUNDS * 10}`,
+      share: `${t("Farbecht", "True Colours")} #${dayNumber(day)} · ${sum.toLocaleString(LOC)}/${ROUNDS * 10}\n${p.map(emoji).join("")}`,
       state: { guesses: next },
     });
   };
 
   const sliders: { label: string; max: number; i: 0 | 1 | 2; bg: string; unit: string }[] = [
-    { label: "Farbton", max: 360, i: 0, unit: "°", bg: "linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)" },
-    { label: "Sättigung", max: 100, i: 1, unit: " %", bg: `linear-gradient(90deg,${hslToHex(hsl[0], 0, hsl[2])},${hslToHex(hsl[0], 100, hsl[2])})` },
-    { label: "Helligkeit", max: 100, i: 2, unit: " %", bg: `linear-gradient(90deg,#000,${hslToHex(hsl[0], hsl[1], 50)},#fff)` },
+    { label: t("Farbton", "Hue"), max: 360, i: 0, unit: "°", bg: "linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)" },
+    { label: t("Sättigung", "Saturation"), max: 100, i: 1, unit: " %", bg: `linear-gradient(90deg,${hslToHex(hsl[0], 0, hsl[2])},${hslToHex(hsl[0], 100, hsl[2])})` },
+    { label: t("Helligkeit", "Lightness"), max: 100, i: 2, unit: " %", bg: `linear-gradient(90deg,#000,${hslToHex(hsl[0], hsl[1], 50)},#fff)` },
   ];
 
   return (
@@ -84,9 +89,19 @@ export function Farbecht() {
       isToday={isToday}
       rules={
         <>
-          <p>In jeder Flagge ist eine Farbe falsch. Die betroffene Fläche zeigt immer deine aktuelle Mischung.</p>
-          <p>Stell mit den drei Reglern <strong>Farbton, Sättigung und Helligkeit</strong> die Originalfarbe ein – aus dem Gedächtnis.</p>
-          <p>Je kleiner der Farbabstand, desto mehr Punkte (max. 10 pro Flagge, {ROUNDS} Flaggen).</p>
+          {lang === "en" ? (
+            <>
+              <p>In every flag one colour is wrong. That area always shows your current mix.</p>
+              <p>Use the three sliders for <strong>hue, saturation and lightness</strong> to set the original colour – from memory.</p>
+              <p>The smaller the colour difference, the more points (max. 10 per flag, {ROUNDS} flags).</p>
+            </>
+          ) : (
+            <>
+              <p>In jeder Flagge ist eine Farbe falsch. Die betroffene Fläche zeigt immer deine aktuelle Mischung.</p>
+              <p>Stell mit den drei Reglern <strong>Farbton, Sättigung und Helligkeit</strong> die Originalfarbe ein – aus dem Gedächtnis.</p>
+              <p>Je kleiner der Farbabstand, desto mehr Punkte (max. 10 pro Flagge, {ROUNDS} Flaggen).</p>
+            </>
+          )}
         </>
       }
     >
@@ -96,24 +111,24 @@ export function Farbecht() {
         <>
           <div className="mb-3 flex items-center justify-between text-sm">
             <span className="font-semibold">
-              Flagge {idx + 1} von {ROUNDS}: {c.n}
+              {t("Flagge", "Flag")} {idx + 1} {t("von", "of")} {ROUNDS}: {cName(c, lang)}
             </span>
-            <span className="text-muted">Punkte: {total.toLocaleString("de-DE")}</span>
+            <span className="text-muted">{t("Punkte", "Points")}: {total.toLocaleString(LOC)}</span>
           </div>
           <div className={`grid gap-3 ${revealed ? "grid-cols-2" : "grid-cols-1"}`}>
             <figure className="card overflow-hidden p-3">
               {svg ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={svgDataUrl(recolorSvg(svg, r.color, shownGuess))} alt={`Flagge von ${c.n} mit deiner Farbe`} className="mx-auto aspect-[4/3] w-full max-w-md rounded-md border border-line object-cover" />
+                <img src={svgDataUrl(recolorSvg(svg, r.color, shownGuess))} alt={t(`Flagge von ${c.n} mit deiner Farbe`, `Flag of ${c.nEn} with your colour`)} className="mx-auto aspect-[4/3] w-full max-w-md rounded-md border border-line object-cover" />
               ) : (
                 <div className="mx-auto aspect-[4/3] w-full max-w-md animate-pulse rounded-md bg-line" />
               )}
-              {revealed && <figcaption className="mt-2 text-center text-sm font-semibold">Deine Farbe</figcaption>}
+              {revealed && <figcaption className="mt-2 text-center text-sm font-semibold">{t("Deine Farbe", "Your colour")}</figcaption>}
             </figure>
             {revealed && svg && (
               <figure className="card pop overflow-hidden p-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={svgDataUrl(svg)} alt={`Originalflagge von ${c.n}`} className="mx-auto aspect-[4/3] w-full max-w-md rounded-md border border-line object-cover" />
+                <img src={svgDataUrl(svg)} alt={t(`Originalflagge von ${c.n}`, `Original flag of ${c.nEn}`)} className="mx-auto aspect-[4/3] w-full max-w-md rounded-md border border-line object-cover" />
                 <figcaption className="mt-2 text-center text-sm font-semibold">Original</figcaption>
               </figure>
             )}
@@ -151,7 +166,7 @@ export function Farbecht() {
               <div className="flex items-center gap-3">
                 <span className="h-12 w-12 shrink-0 rounded-xl border border-line" style={{ background: color }} aria-hidden="true" />
                 <button type="button" onClick={submit} className="btn-primary flex-1" disabled={!svg}>
-                  Farbe festlegen
+                  {t("Farbe festlegen", "Lock in colour")}
                 </button>
               </div>
             </div>
@@ -164,7 +179,7 @@ export function Farbecht() {
                   <span className="h-12 w-8" style={{ background: guesses[reveal] }} />
                   <span className="h-12 w-8" style={{ background: plan[reveal].color }} />
                 </span>
-                <p className="text-2xl font-display font-semibold">{pts[reveal].toLocaleString("de-DE")} / 10</p>
+                <p className="text-2xl font-display font-semibold">{pts[reveal].toLocaleString(LOC)} / 10</p>
               </div>
               {round < ROUNDS ? (
                 <button
@@ -175,11 +190,11 @@ export function Farbecht() {
                   }}
                   className="btn-primary"
                 >
-                  Nächste Flagge
+                  {t("Nächste Flagge", "Next flag")}
                 </button>
               ) : (
                 <button type="button" onClick={() => setReveal(null)} className="btn-primary">
-                  Ergebnis
+                  {t("Ergebnis", "Result")}
                 </button>
               )}
             </div>
@@ -196,11 +211,11 @@ export function Farbecht() {
                     </span>
                   );
                   return (
-                    <SolutionRow key={p.id} iso2={BY_ID[p.id].iso2} title={BY_ID[p.id].n} right={sw(p.color)} yours={guesses[i] ? sw(guesses[i]) : "–"} badge={{ text: `${pts[i].toLocaleString("de-DE")} / 10`, pts: pts[i], max: 10 }} />
+                    <SolutionRow key={p.id} iso2={BY_ID[p.id].iso2} title={cName(BY_ID[p.id], lang)} right={sw(p.color)} yours={guesses[i] ? sw(guesses[i]) : "–"} badge={{ text: `${pts[i].toLocaleString(LOC)} / 10`, pts: pts[i], max: 10 }} />
                   );
                 })}
               </Solutions>
-              <ResultCard title="Dein Ergebnis" score={`${total.toLocaleString("de-DE")} / ${ROUNDS * 10}`} share={saved?.share || ""} isToday={isToday} current="farbecht" />
+              <ResultCard title={t("Dein Ergebnis", "Your result")} score={`${total.toLocaleString(LOC)} / ${ROUNDS * 10}`} share={saved?.share || ""} isToday={isToday} current="farbecht" />
             </>
           )}
         </>

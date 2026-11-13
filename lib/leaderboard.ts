@@ -70,11 +70,12 @@ export function getName(): string | null {
 
 export const NAME_RE = /^[\p{L}\p{N} ._-]{2,20}$/u;
 const BLOCK = ["nazi", "hitler", "fick", "hure", "fotze", "nigger", "neger", "schwuchtel", "wichser", "arsch", "porn"];
-export function nameProblem(name: string): string | null {
+export function nameProblem(name: string, lang: "de" | "en" = "de"): string | null {
   const n = name.trim();
-  if (n.length < 2 || n.length > 20) return "2 bis 20 Zeichen, bitte.";
-  if (!NAME_RE.test(n)) return "Nur Buchstaben, Zahlen, Leerzeichen, Punkt, Binde- und Unterstrich.";
-  if (BLOCK.some((b) => n.toLowerCase().replace(/[^a-zäöüß]/g, "").includes(b))) return "Bitte wähle einen anderen Namen.";
+  const en = lang === "en";
+  if (n.length < 2 || n.length > 20) return en ? "2 to 20 characters, please." : "2 bis 20 Zeichen, bitte.";
+  if (!NAME_RE.test(n)) return en ? "Only letters, numbers, spaces, dots, hyphens and underscores." : "Nur Buchstaben, Zahlen, Leerzeichen, Punkt, Binde- und Unterstrich.";
+  if (BLOCK.some((b) => n.toLowerCase().replace(/[^a-zäöüß]/g, "").includes(b))) return en ? "Please choose a different name." : "Bitte wähle einen anderen Namen.";
   return null;
 }
 

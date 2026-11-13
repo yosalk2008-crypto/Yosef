@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { dayNumber, msUntilNextDay, utcDate } from "@/lib/daily";
 import { useDaily } from "@/lib/useDaily";

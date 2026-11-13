@@ -10,6 +10,9 @@ import { makeRng } from "@/lib/rng";
 import { useDaily } from "@/lib/useDaily";
 import { GameShell, ResultCard } from "../GameShell";
 import { SolutionRow, Solutions } from "../Solutions";
+import { useLang, useT } from "@/lib/i18n";
+import { ALL_COUNTRIES } from "@/lib/data/countries";
+import { exo } from "@/lib/data/exonyms";
 
 const ROUNDS = 5;
 const MAX = 100;
@@ -20,7 +23,8 @@ type S = { targets: Target[]; guesses: [number, number][] };
 /** Points fall off with distance: 100 km ≈ 94, 500 km ≈ 72, 1.000 km ≈ 51, 3.000 km ≈ 14. */
 const points = (km: number) => (km < 0.15 ? MAX : Math.round(MAX * Math.exp(-km / 1500)));
 const emoji = (p: number) => (p >= 90 ? "🟩" : p >= 60 ? "🟨" : p >= 25 ? "🟧" : "🟥");
-const fmtKm = (km: number) => (km < 1 ? `${Math.round(km * 1000)} m` : `${new Intl.NumberFormat("de-DE").format(Math.round(km))} km`);
+const fmtKm = (km: number, lang: "de" | "en" = "de") => (km < 1 ? `${Math.round(km * 1000)} m` : `${new Intl.NumberFormat(lang === "en" ? "en-GB" : "de-DE").format(Math.round(km))} km`);
+const COUNTRY_EN = new Map(ALL_COUNTRIES.map((c) => [c.n, c.nEn]));
 
 /** Candidate spots for a day: 5 from different continents-ish order, plus fallbacks if a spot has no panorama. */
 function plan(day: string): { order: number[]; headings: number[] } {
@@ -43,6 +47,8 @@ function findPanorama(sv: google.maps.StreetViewService, spot: Spot): Promise<{ 
 }
 
 export function Spurensuche() {
+  const lang = useLang();
+  const t = useT();
   const { day, isToday, loaded, saved, persist } = useDaily<S>("spurensuche");
   const { order, headings } = useMemo(() => plan(day), [day]);
   const [targets, setTargets] = useState<Target[] | null>(null);
@@ -98,10 +104,10 @@ export function Spurensuche() {
           if (p && !found.some((f) => distanceKm([f.lat, f.lng], [p.lat, p.lng]) < 300)) found.push({ ...p, spot: order[k], heading: headings[k] });
         }
         if (!alive) return;
-        if (found.length < ROUNDS) setError("Heute konnten nicht genug Orte geladen werden. Versuch es später noch einmal.");
+        if (found.length < ROUNDS) setError(t("Heute konnten nicht genug Orte geladen werden. Versuch es später noch einmal.", "Not enough places could be loaded today. Please try again later."));
         else setTargets(found);
       } catch {
-        if (alive) setError("Google Street View konnte nicht geladen werden. Prüfe deine Internetverbindung und lade die Seite neu.");
+        if (alive) setError(t("Google Street View konnte nicht geladen werden. Prüfe deine Internetverbindung und lade die Seite neu.", "Google Street View could not be loaded. Check your connection and reload the page."));
       }
     })();
     return () => {
@@ -167,7 +173,7 @@ export function Spurensuche() {
       guessMarker.current = null;
       return;
     }
-    if (!guessMarker.current) guessMarker.current = new google.maps.Marker({ map: map.current, position: { lat: guess[0], lng: guess[1] }, title: "Dein Tipp" });
+    if (!guessMarker.current) guessMarker.current = new google.maps.Marker({ map: map.current, position: { lat: guess[0], lng: guess[1] }, title: t("Dein Tipp", "Your guess") });
     else guessMarker.current.setPosition({ lat: guess[0], lng: guess[1] });
   }, [guess, ready]);
 
@@ -185,15 +191,15 @@ export function Spurensuche() {
     for (const i of rounds) {
       const g = guesses[i] ?? guess;
       if (!g) continue;
-      const t = targets[i];
+      const tg = targets[i];
       const a = { lat: g[0], lng: g[1] };
-      const b = { lat: t.lat, lng: t.lng };
+      const b = { lat: tg.lat, lng: tg.lng };
       overlays.current.push(
-        new google.maps.Marker({ map: map.current, position: a, title: "Dein Tipp", label: { text: String(i + 1), color: "#fff", fontWeight: "700" } }),
+        new google.maps.Marker({ map: map.current, position: a, title: t("Dein Tipp", "Your guess"), label: { text: String(i + 1), color: "#fff", fontWeight: "700" } }),
         new google.maps.Marker({
           map: map.current,
           position: b,
-          title: "Hier war es",
+          title: t("Hier war es", "It was here"),
           icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: "#16a34a", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 3 },
         }),
         new google.maps.Polyline({ map: map.current, path: [a, b], geodesic: true, strokeColor: "#1f2937", strokeOpacity: 0, icons: [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 0.8, scale: 3 }, offset: "0", repeat: "14px" }] })
@@ -224,7 +230,7 @@ export function Spurensuche() {
       score: sum,
       max: ROUNDS * MAX,
       label: `${sum}/${ROUNDS * MAX}`,
-      share: `Spurensuche #${dayNumber(day)} · ${sum}/${ROUNDS * MAX}\n${ps.map(emoji).join("")}`,
+      share: `${t("Spurensuche", "Where Am I?")} #${dayNumber(day)} · ${sum}/${ROUNDS * MAX}\n${ps.map(emoji).join("")}`,
       state: { targets, guesses: next },
     });
   };
@@ -236,7 +242,7 @@ export function Spurensuche() {
     pano.current.setPov({ heading: t.heading, pitch: 0 });
   };
 
-  const placeOf = (t: Target) => `${SPOTS[t.spot][2]}, ${SPOTS[t.spot][3]}`;
+  const placeOf = (tg: Target) => (lang === "en" ? `${exo(SPOTS[tg.spot][2])}, ${COUNTRY_EN.get(SPOTS[tg.spot][3]) ?? SPOTS[tg.spot][3]}` : `${SPOTS[tg.spot][2]}, ${SPOTS[tg.spot][3]}`);
 
   return (
     <GameShell
@@ -245,61 +251,77 @@ export function Spurensuche() {
       isToday={isToday}
       rules={
         <>
-          <p>Du wirst irgendwo auf der Welt in Google Street View abgesetzt. Schau dich um und lauf über die <strong>Pfeile</strong> die Straße entlang.</p>
-          <p>Wenn du glaubst zu wissen, wo du bist, setz einen <strong>Pin auf die Karte</strong> und gib deinen Tipp ab.</p>
-          <p>Je näher dein Tipp, desto mehr Punkte: bis zu {MAX} pro Runde, {ROUNDS} Runden.</p>
+          {lang === "en" ? (
+            <>
+              <p>You are dropped somewhere in the world in Google Street View. Look around and follow the <strong>arrows</strong> along the road.</p>
+              <p>Once you think you know where you are, drop a <strong>pin on the map</strong> and submit your guess.</p>
+              <p>The closer your guess, the more points: up to {MAX} per round, {ROUNDS} rounds.</p>
+            </>
+          ) : (
+            <>
+              <p>Du wirst irgendwo auf der Welt in Google Street View abgesetzt. Schau dich um und lauf über die <strong>Pfeile</strong> die Straße entlang.</p>
+              <p>Wenn du glaubst zu wissen, wo du bist, setz einen <strong>Pin auf die Karte</strong> und gib deinen Tipp ab.</p>
+              <p>Je näher dein Tipp, desto mehr Punkte: bis zu {MAX} pro Runde, {ROUNDS} Runden.</p>
+            </>
+          )}
         </>
       }
     >
       {blocked ? (
         <div className="card p-6 text-center">
           <p className="text-4xl" aria-hidden="true">{blocked === "archiv" ? "🗓️" : "🛠️"}</p>
-          <p className="mt-2 text-xl font-display font-semibold">{blocked === "archiv" ? "Nur die letzten 7 Tage" : "Spurensuche macht gerade Pause"}</p>
+          <p className="mt-2 text-xl font-display font-semibold">{blocked === "archiv" ? t("Nur die letzten 7 Tage", "Only the last 7 days") : t("Spurensuche macht gerade Pause", "Where Am I? is taking a break")}</p>
           <p className="mx-auto mt-1 max-w-md text-muted">
             {blocked === "archiv"
-              ? `Im Archiv kannst du Spurensuche für die letzten ${SPURENSUCHE_ARCHIVE_DAYS} Tage nachspielen. Ältere Runden gibt es bald mit dem Abo.`
-              : "Wegen Wartungsarbeiten ist Spurensuche gerade nicht spielbar. Alle anderen Spiele laufen ganz normal – schau später wieder vorbei."}
+              ? t(
+                  `Im Archiv kannst du Spurensuche für die letzten ${SPURENSUCHE_ARCHIVE_DAYS} Tage nachspielen. Ältere Runden gibt es bald mit dem Abo.`,
+                  `In the archive you can replay Where Am I? for the last ${SPURENSUCHE_ARCHIVE_DAYS} days. Older rounds are coming soon with the subscription.`
+                )
+              : t(
+                  "Wegen Wartungsarbeiten ist Spurensuche gerade nicht spielbar. Alle anderen Spiele laufen ganz normal – schau später wieder vorbei.",
+                  "Where Am I? is down for maintenance. All other games work as usual – check back later."
+                )}
           </p>
         </div>
       ) : !loaded || (!targets && !error) ? (
         <div className="grid h-[60vh] min-h-80 place-items-center rounded-2xl bg-line text-sm font-semibold text-muted">
-          <span className="animate-pulse">Orte werden gesucht …</span>
+          <span className="animate-pulse">{t("Orte werden gesucht …", "Finding places …")}</span>
         </div>
       ) : error ? (
         <div className="card p-5 font-semibold text-bad">{error}</div>
       ) : (
         <>
           <div className="mb-3 flex items-center justify-between text-sm">
-            <span className="font-semibold">{over && reveal == null ? "Alle Runden" : `Runde ${idx + 1} von ${ROUNDS}`}</span>
-            <span className="text-muted">Punkte: {total}</span>
+            <span className="font-semibold">{over && reveal == null ? t("Alle Runden", "All rounds") : t(`Runde ${idx + 1} von ${ROUNDS}`, `Round ${idx + 1} of ${ROUNDS}`)}</span>
+            <span className="text-muted">{t("Punkte", "Points")}: {total}</span>
           </div>
 
           <div className={over && reveal == null ? "hidden" : ""}>
             <div className="relative overflow-hidden rounded-2xl border-2 border-line">
-              <div ref={svEl} className="h-[52vh] min-h-72 w-full bg-ink/10 sm:h-[60vh]" aria-label="Street-View-Ansicht" />
+              <div ref={svEl} className="h-[52vh] min-h-72 w-full bg-ink/10 sm:h-[60vh]" aria-label={t("Street-View-Ansicht", "Street View")} />
               {reveal == null && (
                 <button type="button" onClick={backToStart} className="absolute left-2 top-2 z-10 rounded-full bg-white/95 px-3 py-1.5 text-sm font-bold shadow">
-                  Zurück zum Start
+                  {t("Zurück zum Start", "Back to start")}
                 </button>
               )}
             </div>
           </div>
 
           <div className="mt-3 overflow-hidden rounded-2xl border-2 border-line">
-            <div ref={mapEl} className={`w-full ${over && reveal == null ? "h-[60vh] min-h-80" : "h-72 sm:h-80"}`} aria-label="Karte für deinen Tipp" />
+            <div ref={mapEl} className={`w-full ${over && reveal == null ? "h-[60vh] min-h-80" : "h-72 sm:h-80"}`} aria-label={t("Karte für deinen Tipp", "Map for your guess")} />
           </div>
 
           {reveal == null && !over && (
             <button type="button" onClick={submit} disabled={!guess} className="btn-primary mt-3 w-full">
-              {guess ? "Tipp abgeben" : "Setz einen Pin auf die Karte"}
+              {guess ? t("Tipp abgeben", "Submit guess") : t("Setz einen Pin auf die Karte", "Drop a pin on the map")}
             </button>
           )}
 
           {reveal != null && (
             <div className="card pop mt-3 p-4">
-              <p className="text-2xl font-display font-semibold">{pts[reveal]} / {MAX} Punkte</p>
+              <p className="text-2xl font-display font-semibold">{pts[reveal]} / {MAX} {t("Punkte", "points")}</p>
               <p className="mt-1 text-sm text-muted">
-                {fmtKm(kms[reveal])} daneben – es war in der Nähe von <strong className="text-ink">{placeOf(targets![reveal])}</strong>.
+                {fmtKm(kms[reveal], lang)} {t("daneben – es war in der Nähe von", "off – it was near")} <strong className="text-ink">{placeOf(targets![reveal])}</strong>.
               </p>
               <button
                 type="button"
@@ -309,32 +331,32 @@ export function Spurensuche() {
                   setGuess(null);
                 }}
               >
-                {round < ROUNDS ? "Nächste Runde" : "Ergebnis"}
+                {round < ROUNDS ? t("Nächste Runde", "Next round") : t("Ergebnis", "Result")}
               </button>
             </div>
           )}
 
           {over && reveal == null && targets && (
             <>
-              <Solutions note="Grüne Punkte: dort warst du. Nummerierte Pins: deine Tipps.">
-                {targets.map((t, i) => (
+              <Solutions note={t("Grüne Punkte: dort warst du. Nummerierte Pins: deine Tipps.", "Green dots: where you were. Numbered pins: your guesses.")}>
+                {targets.map((tg, i) => (
                   <SolutionRow
-                    key={t.pano}
-                    title={`Runde ${i + 1}`}
+                    key={tg.pano}
+                    title={t(`Runde ${i + 1}`, `Round ${i + 1}`)}
                     right={
                       <>
-                        bei {placeOf(t)} –{" "}
-                        <a className="font-semibold underline" href={`https://www.google.com/maps/@?api=1&map_action=pano&pano=${encodeURIComponent(t.pano)}`} target="_blank" rel="noopener">
-                          in Street View ansehen
+                        {t("bei", "near")} {placeOf(tg)} –{" "}
+                        <a className="font-semibold underline" href={`https://www.google.com/maps/@?api=1&map_action=pano&pano=${encodeURIComponent(tg.pano)}`} target="_blank" rel="noopener">
+                          {t("in Street View ansehen", "view in Street View")}
                         </a>
                       </>
                     }
-                    yours={`${fmtKm(kms[i])} entfernt`}
+                    yours={t(`${fmtKm(kms[i])} entfernt`, `${fmtKm(kms[i], "en")} away`)}
                     badge={{ text: `${pts[i]} / ${MAX}`, pts: pts[i], max: MAX }}
                   />
                 ))}
               </Solutions>
-              <ResultCard title="Dein Ergebnis" score={`${total} / ${ROUNDS * MAX}`} share={saved?.share || ""} isToday={isToday} current="spurensuche" />
+              <ResultCard title={t("Dein Ergebnis", "Your result")} score={`${total} / ${ROUNDS * MAX}`} share={saved?.share || ""} isToday={isToday} current="spurensuche" />
             </>
           )}
         </>

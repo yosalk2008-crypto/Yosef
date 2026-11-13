@@ -47,8 +47,8 @@ export function isValidDay(date: string | null | undefined): date is string {
   return date >= LAUNCH && date <= utcDate();
 }
 
-export function formatDay(date: string) {
-  return new Date(date + "T12:00:00Z").toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+export function formatDay(date: string, lang: "de" | "en" = "de") {
+  return new Date(date + "T12:00:00Z").toLocaleDateString(lang === "en" ? "en-GB" : "de-DE", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
 const KEY = "geografik:v1";

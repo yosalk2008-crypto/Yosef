@@ -3,11 +3,13 @@
 import { useMemo, useState } from "react";
 import { BY_ID, COUNTRIES, flagUrl } from "@/lib/data/countries";
 import { dayNumber } from "@/lib/daily";
-import { METRICS, globalRank, val, type MetricKey } from "@/lib/metrics";
+import { globalRank, metricsOf, val, type MetricKey } from "@/lib/metrics";
 import { makeRng } from "@/lib/rng";
 import { useDaily } from "@/lib/useDaily";
 import { GameShell, ResultCard } from "../GameShell";
 import { SolutionRow, Solutions } from "../Solutions";
+import { useLang, useT } from "@/lib/i18n";
+import { cName } from "@/lib/data/countries";
 
 const CATS: MetricKey[] = ["area", "pop", "gdppc", "mil", "life", "tour", "forest", "capPop"];
 const POOL = COUNTRIES.filter((c) => (c.pop ?? 0) >= 2000000 && CATS.every((k) => val(c, k) != null));
@@ -61,6 +63,9 @@ type S = { picks: MetricKey[] };
 
 export function Spitzenplatz() {
   const { day, isToday, loaded, saved, persist } = useDaily<S>("spitzenplatz");
+  const lang = useLang();
+  const t = useT();
+  const METRICS = metricsOf(lang);
   const ids = useMemo(() => pickCountries(day), [day]);
   const opt = useMemo(() => optimum(ids), [ids]);
   const best = opt.total;
@@ -80,8 +85,8 @@ export function Spitzenplatz() {
       done,
       score: sum,
       max: best,
-      label: `${sum} Punkte`,
-      share: `Spitzenplatz #${dayNumber(day)} · ${sum} Punkte (Bestwert ${best})\n${next.map((kk, j) => emoji(globalRank(kk, ids[j]))).join("")}`,
+      label: t(`${sum} Punkte`, `${sum} points`),
+      share: `${t("Spitzenplatz", "Top Spot")} #${dayNumber(day)} · ${t(`${sum} Punkte (Bestwert ${best})`, `${sum} points (best possible ${best})`)}\n${next.map((kk, j) => emoji(globalRank(kk, ids[j]))).join("")}`,
       state: { picks: next },
     });
   };
@@ -95,9 +100,19 @@ export function Spitzenplatz() {
       isToday={isToday}
       rules={
         <>
-          <p>Nacheinander erscheinen <strong>acht Länder</strong>. Ordne jedes einer der acht Kategorien zu – jede Kategorie gibt es nur einmal.</p>
-          <p>Du bekommst den weltweiten Rang des Landes in dieser Kategorie als Punkte (Platz 1 = 1 Punkt). <strong>Weniger Punkte sind besser.</strong></p>
-          <p>Überleg gut: Wer jetzt die beste Kategorie verbraucht, hat sie später nicht mehr.</p>
+          {lang === "en" ? (
+            <>
+              <p><strong>Eight countries</strong> appear one after another. Assign each to one of the eight categories – each category can only be used once.</p>
+              <p>You get the country’s world rank in that category as points (1st place = 1 point). <strong>Fewer points are better.</strong></p>
+              <p>Think ahead: use up the best category now and it’s gone for later.</p>
+            </>
+          ) : (
+            <>
+              <p>Nacheinander erscheinen <strong>acht Länder</strong>. Ordne jedes einer der acht Kategorien zu – jede Kategorie gibt es nur einmal.</p>
+              <p>Du bekommst den weltweiten Rang des Landes in dieser Kategorie als Punkte (Platz 1 = 1 Punkt). <strong>Weniger Punkte sind besser.</strong></p>
+              <p>Überleg gut: Wer jetzt die beste Kategorie verbraucht, hat sie später nicht mehr.</p>
+            </>
+          )}
         </>
       }
     >
@@ -111,12 +126,12 @@ export function Spitzenplatz() {
               <img src={flagUrl(current.iso2)} alt="" className="h-14 w-auto rounded-md border border-line" />
               <div className="flex-1">
                 <p className="text-xs font-semibold text-muted">
-                  Land {i + 1} von {ids.length}
+                  {t("Land", "Country")} {i + 1} {t("von", "of")} {ids.length}
                 </p>
-                <p className="text-2xl font-display font-semibold">{current.n}</p>
+                <p className="text-2xl font-display font-semibold">{cName(current, lang)}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs font-semibold text-muted">Punkte</p>
+                <p className="text-xs font-semibold text-muted">{t("Punkte", "Points")}</p>
                 <p className="text-2xl font-display font-semibold">{total}</p>
               </div>
             </div>
@@ -142,15 +157,15 @@ export function Spitzenplatz() {
                       <span className="flex items-center gap-1.5 text-sm text-muted">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={flagUrl(assigned.iso2)} alt="" className="h-3.5 w-auto rounded-sm" />
-                        {assigned.n} · {METRICS[k].fmt(val(assigned, k)!)}
+                        {cName(assigned, lang)} · {METRICS[k].fmt(val(assigned, k)!)}
                       </span>
                     ) : (
-                      <span className="text-sm text-muted">frei</span>
+                      <span className="text-sm text-muted">{t("frei", "free")}</span>
                     )}
                   </span>
                   {r != null && (
                     <span className={`shrink-0 rounded-lg px-2.5 py-1 text-sm font-display font-semibold ${r <= 10 ? "bg-green-100 text-green-800" : r <= 30 ? "bg-yellow-100 text-yellow-900" : r <= 70 ? "bg-orange-100 text-orange-900" : "bg-red-100 text-red-800"}`}>
-                      Platz {r}
+                      {t("Platz", "Rank")} {r}
                     </span>
                   )}
                 </button>
@@ -159,7 +174,15 @@ export function Spitzenplatz() {
           </div>
           {over && (
             <>
-              <Solutions note={<>Die bestmögliche Verteilung ergibt <strong className="text-ink">{best} Punkte</strong>, du hast {total}. Weniger ist besser.</>}>
+              <Solutions
+                note={
+                  lang === "en" ? (
+                    <>The best possible assignment gives <strong className="text-ink">{best} points</strong>, you have {total}. Fewer is better.</>
+                  ) : (
+                    <>Die bestmögliche Verteilung ergibt <strong className="text-ink">{best} Punkte</strong>, du hast {total}. Weniger ist besser.</>
+                  )
+                }
+              >
                 {ids.map((id, j) => {
                   const c = BY_ID[id];
                   const mine = picks[j];
@@ -169,14 +192,14 @@ export function Spitzenplatz() {
                     <SolutionRow
                       key={id}
                       iso2={c.iso2}
-                      title={c.n}
-                      rightLabel="Optimal"
-                      right={`${METRICS[ideal].label} (Platz ${globalRank(ideal, id)})`}
-                      yours={`${METRICS[mine].label} (Platz ${globalRank(mine, id)})`}
+                      title={cName(c, lang)}
+                      rightLabel={t("Optimal", "Best")}
+                      right={`${METRICS[ideal].label} (${t("Platz", "rank")} ${globalRank(ideal, id)})`}
+                      yours={`${METRICS[mine].label} (${t("Platz", "rank")} ${globalRank(mine, id)})`}
                       extra={
                         top !== ideal ? (
                           <p className="text-sm text-muted">
-                            Stärkste Kategorie: {METRICS[top].label} (Platz {globalRank(top, id)})
+                            {t("Stärkste Kategorie", "Strongest category")}: {METRICS[top].label} ({t("Platz", "rank")} {globalRank(top, id)})
                           </p>
                         ) : null
                       }
@@ -184,7 +207,7 @@ export function Spitzenplatz() {
                   );
                 })}
               </Solutions>
-              <ResultCard title="Deine Punkte" score={`${total}`} share={saved?.share || ""} isToday={isToday} current="spitzenplatz" />
+              <ResultCard title={t("Deine Punkte", "Your points")} score={`${total}`} share={saved?.share || ""} isToday={isToday} current="spitzenplatz" />
             </>
           )}
         </>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { norm } from "@/lib/data/countries";
+import { useT } from "@/lib/i18n";
 
 type Egg = { id: number; kind: "syrien" | "kurdistan" };
 
@@ -55,7 +56,7 @@ function Lions() {
   }));
   return (
     <>
-      <span className="sr-only">Syrien 🦁</span>
+      <span className="sr-only">Syria 🦁</span>
       <div className="egg-lion-flash absolute inset-0" />
       <div className="absolute inset-0 grid place-items-center">
         <span className="egg-lion text-[9rem] leading-none sm:text-[13rem]" aria-hidden="true">
@@ -77,10 +78,11 @@ function Lions() {
 }
 
 function Hint() {
+  const t = useT();
   return (
     <div className="absolute inset-x-0 top-24 grid place-items-center px-4">
       <p className="egg-hint rounded-2xl bg-ink px-5 py-3 font-display text-lg font-semibold text-white shadow-xl" role="status">
-        Kurdistan ist kein eigener Staat.
+        {t("Kurdistan ist kein eigener Staat.", "Kurdistan is not an independent state.")}
       </p>
     </div>
   );

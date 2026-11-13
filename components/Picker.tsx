@@ -3,6 +3,7 @@
 import { bestMatch } from "@/lib/fuzzy";
 import { useMemo, useRef, useState } from "react";
 import { norm } from "@/lib/data/countries";
+import { useT } from "@/lib/i18n";
 
 export type PickOption = { id: string; label: string; alt?: string[]; hint?: string };
 
@@ -11,9 +12,9 @@ export function Picker({
   options,
   onPick,
   disabled = [],
-  placeholder = "Land eingeben …",
+  placeholder,
   autoFocus = true,
-  buttonLabel = "Raten",
+  buttonLabel,
 }: {
   options: PickOption[];
   onPick: (id: string) => void;
@@ -22,6 +23,7 @@ export function Picker({
   autoFocus?: boolean;
   buttonLabel?: string;
 }) {
+  const t = useT();
   const [q, setQ] = useState("");
   const [active, setActive] = useState(0);
   const [open, setOpen] = useState(false);
@@ -90,9 +92,9 @@ export function Picker({
               setActive((a) => Math.max(a - 1, 0));
             } else if (e.key === "Escape") setOpen(false);
           }}
-          placeholder={placeholder}
+          placeholder={placeholder ?? t("Land eingeben …", "Enter a country …")}
           className="input flex-1"
-          aria-label={placeholder}
+          aria-label={placeholder ?? t("Land eingeben …", "Enter a country …")}
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
@@ -101,7 +103,7 @@ export function Picker({
           aria-controls="picker-list"
         />
         <button type="submit" className="btn-primary shrink-0" disabled={!matches.length}>
-          {buttonLabel}
+          {buttonLabel ?? t("Raten", "Guess")}
         </button>
       </form>
       {open && matches.length > 0 && (
@@ -115,7 +117,7 @@ export function Picker({
                 onMouseEnter={() => setActive(i)}
                 className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-[15px] ${i === active ? "bg-brand-soft text-ink" : "text-ink"}`}
               >
-                <span>{typo ? <>Meintest du <strong>{o.label}</strong>?</> : o.label}</span>
+                <span>{typo ? <>{t("Meintest du", "Did you mean")} <strong>{o.label}</strong>?</> : o.label}</span>
                 {o.hint && <span className="text-xs text-muted">{o.hint}</span>}
               </button>
             </li>

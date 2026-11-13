@@ -7,6 +7,9 @@ export type Entity = {
   alt: string[];
   capital: string | null;
   capitalAlt: string[];
+  /** English name / capital (also accepted as answers in German) */
+  nameEn: string;
+  capitalEn: string | null;
   iso2?: string; // only countries have flags
   area?: number;
 };
@@ -33,6 +36,7 @@ export type RegionKey =
 export type Region = {
   key: RegionKey;
   label: string;
+  labelEn: string;
   shapes: "world" | "us" | "de" | "ch" | "at" | "sy" | "ma" | "tr" | "trr";
   kind: "countries" | "states";
   /** Minutes for "Alle nennen" */
@@ -43,26 +47,27 @@ export type Region = {
   parent?: RegionKey;
   /** Label of this split in that choice */
   split?: string;
+  splitEn?: string;
 };
 
 export const REGIONS: Region[] = [
-  { key: "welt", label: "Welt", shapes: "world", kind: "countries", minutes: 15 },
-  { key: "europa", label: "Europa", shapes: "world", kind: "countries", minutes: 6 },
-  { key: "asien", label: "Asien", shapes: "world", kind: "countries", minutes: 6 },
-  { key: "afrika", label: "Afrika", shapes: "world", kind: "countries", minutes: 7 },
-  { key: "nordamerika", label: "Nord- & Mittelamerika", shapes: "world", kind: "countries", minutes: 4 },
-  { key: "suedamerika", label: "Südamerika", shapes: "world", kind: "countries", minutes: 2 },
-  { key: "ozeanien", label: "Ozeanien", shapes: "world", kind: "countries", minutes: 2 },
-  { key: "nahost", label: "Naher Osten", shapes: "world", kind: "countries", minutes: 3 },
-  { key: "balkan", label: "Balkan", shapes: "world", kind: "countries", minutes: 3 },
-  { key: "usa", label: "US-Bundesstaaten", shapes: "us", kind: "states", minutes: 6 },
-  { key: "deutschland", label: "Deutsche Bundesländer", shapes: "de", kind: "states", minutes: 2 },
-  { key: "schweiz", label: "Schweizer Kantone", shapes: "ch", kind: "states", minutes: 3 },
-  { key: "oesterreich", label: "Österreichische Bundesländer", shapes: "at", kind: "states", minutes: 2 },
-  { key: "syrien", label: "Syrische Gouvernements", shapes: "sy", kind: "states", minutes: 3, noCapitals: true },
-  { key: "marokko", label: "Marokkanische Regionen", shapes: "ma", kind: "states", minutes: 3 },
-  { key: "tuerkei", label: "Türkei", shapes: "tr", kind: "states", minutes: 12, noCapitals: true, split: "81 Provinzen" },
-  { key: "tuerkei-regionen", label: "Türkei – 7 Regionen", shapes: "trr", kind: "states", minutes: 2, noCapitals: true, parent: "tuerkei", split: "7 Regionen" },
+  { key: "welt", label: "Welt", labelEn: "World", shapes: "world", kind: "countries", minutes: 15 },
+  { key: "europa", label: "Europa", labelEn: "Europe", shapes: "world", kind: "countries", minutes: 6 },
+  { key: "asien", label: "Asien", labelEn: "Asia", shapes: "world", kind: "countries", minutes: 6 },
+  { key: "afrika", label: "Afrika", labelEn: "Africa", shapes: "world", kind: "countries", minutes: 7 },
+  { key: "nordamerika", label: "Nord- & Mittelamerika", labelEn: "North & Central America", shapes: "world", kind: "countries", minutes: 4 },
+  { key: "suedamerika", label: "Südamerika", labelEn: "South America", shapes: "world", kind: "countries", minutes: 2 },
+  { key: "ozeanien", label: "Ozeanien", labelEn: "Oceania", shapes: "world", kind: "countries", minutes: 2 },
+  { key: "nahost", label: "Naher Osten", labelEn: "Middle East", shapes: "world", kind: "countries", minutes: 3 },
+  { key: "balkan", label: "Balkan", labelEn: "Balkans", shapes: "world", kind: "countries", minutes: 3 },
+  { key: "usa", label: "US-Bundesstaaten", labelEn: "US states", shapes: "us", kind: "states", minutes: 6 },
+  { key: "deutschland", label: "Deutsche Bundesländer", labelEn: "German states", shapes: "de", kind: "states", minutes: 2 },
+  { key: "schweiz", label: "Schweizer Kantone", labelEn: "Swiss cantons", shapes: "ch", kind: "states", minutes: 3 },
+  { key: "oesterreich", label: "Österreichische Bundesländer", labelEn: "Austrian states", shapes: "at", kind: "states", minutes: 2 },
+  { key: "syrien", label: "Syrische Gouvernements", labelEn: "Syrian governorates", shapes: "sy", kind: "states", minutes: 3, noCapitals: true },
+  { key: "marokko", label: "Marokkanische Regionen", labelEn: "Moroccan regions", shapes: "ma", kind: "states", minutes: 3 },
+  { key: "tuerkei", label: "Türkei", labelEn: "Turkey", shapes: "tr", kind: "states", minutes: 12, noCapitals: true, split: "81 Provinzen", splitEn: "81 provinces" },
+  { key: "tuerkei-regionen", label: "Türkei – 7 Regionen", labelEn: "Turkey – 7 regions", shapes: "trr", kind: "states", minutes: 2, noCapitals: true, parent: "tuerkei", split: "7 Regionen", splitEn: "7 regions" },
 ];
 
 /** Regions that get their own tile / chip (variants like "Türkei – 7 Regionen" are picked under their parent) */
@@ -338,8 +343,69 @@ const TRR: Row[] = [
   ["TR-GDA", "Südostanatolien", "Gaziantep", ["Güneydoğu Anadolu", "Güneydoğu Anadolu Bölgesi", "Südostanatolische Region"]],
 ];
 
+/** English names where they differ from the German ones: id → [name, capital] */
+const EN: Record<string, [string?, string?]> = {
+  "DE-BY": ["Bavaria", "Munich"],
+  "DE-HE": ["Hesse"],
+  "DE-MV": ["Mecklenburg-Western Pomerania"],
+  "DE-NI": ["Lower Saxony", "Hanover"],
+  "DE-NW": ["North Rhine-Westphalia"],
+  "DE-RP": ["Rhineland-Palatinate"],
+  "DE-ST": ["Saxony-Anhalt"],
+  "DE-SN": ["Saxony"],
+  "DE-TH": ["Thuringia"],
+  "AT-2": ["Carinthia"],
+  "AT-3": ["Lower Austria"],
+  "AT-4": ["Upper Austria"],
+  "AT-6": ["Styria"],
+  "AT-7": ["Tyrol"],
+  "AT-9": ["Vienna", "Vienna"],
+  "CH-1": ["Zurich", "Zurich"],
+  "CH-3": ["Lucerne", "Lucerne"],
+  "CH-10": ["Fribourg", "Fribourg"],
+  "CH-18": ["Grisons"],
+  "CH-21": ["Ticino"],
+  "CH-22": ["Vaud"],
+  "CH-23": ["Valais", "Sion"],
+  "CH-24": ["Neuchâtel", "Neuchâtel"],
+  "CH-25": ["Geneva", "Geneva"],
+  "CH-26": [undefined, "Delémont"],
+  "SY-DI": ["Damascus", "Damascus"],
+  "SY-RD": ["Rif Dimashq", "Damascus"],
+  "US-06": ["California"],
+  "MA-01": ["Tanger-Tetouan-Al Hoceima", "Tangier"],
+  "MA-03": ["Fez-Meknes", "Fez"],
+  "MA-07": ["Marrakesh-Safi", "Marrakesh"],
+  "TR-MAR": ["Marmara Region"],
+  "TR-EGE": ["Aegean Region", "Izmir"],
+  "TR-AKD": ["Mediterranean Region"],
+  "TR-ICA": ["Central Anatolia"],
+  "TR-KAR": ["Black Sea Region"],
+  "TR-DAN": ["Eastern Anatolia"],
+  "TR-GDA": ["Southeastern Anatolia"],
+};
+const TRR_EN_ALT: Record<string, string[]> = { "TR-EGE": ["Aegean"], "TR-AKD": ["Mediterranean"], "TR-KAR": ["Black Sea"] };
+
 const fromRows = (rows: Row[]): Entity[] =>
-  rows.map(([id, name, capital, alt = [], capitalAlt = []]) => ({ id, name, capital, alt, capitalAlt }));
+  rows.map(([id, name, capital, alt = [], capitalAlt = []]) => {
+    const [n, c] = EN[id] ?? [];
+    const nameEn = n ?? name;
+    const capitalEn = c ?? capital;
+    return {
+      id,
+      name,
+      capital,
+      nameEn,
+      capitalEn,
+      alt: [...new Set([...alt, ...(nameEn !== name ? [nameEn] : []), ...(TRR_EN_ALT[id] ?? [])])],
+      capitalAlt: [...new Set([...capitalAlt, ...(capitalEn && capitalEn !== capital ? [capitalEn] : [])])],
+    };
+  });
+
+export const eName = (e: { name: string; nameEn: string }, lang: "de" | "en") => (lang === "en" ? e.nameEn : e.name);
+export const eCap = (e: { capital: string | null; capitalEn: string | null }, lang: "de" | "en") => (lang === "en" ? e.capitalEn : e.capital);
+export const regionLabel = (r: { label: string; labelEn: string }, lang: "de" | "en") => (lang === "en" ? r.labelEn : r.label);
+export const splitLabel = (r: { split?: string; splitEn?: string }, lang: "de" | "en") => (lang === "en" ? r.splitEn : r.split);
 
 export function entitiesFor(key: RegionKey): Entity[] {
   if (key === "usa") return fromRows(US);
@@ -354,8 +420,10 @@ export function entitiesFor(key: RegionKey): Entity[] {
   return ALL_COUNTRIES.filter((c) => (key === "nahost" ? NAHOST.includes(c.id) : key === "balkan" ? BALKAN.includes(c.id) : !cont || c.cont === cont)).map((c) => ({
     id: c.id,
     name: c.n,
+    nameEn: c.nEn,
     alt: c.alt,
     capital: c.cap,
+    capitalEn: c.capEn,
     capitalAlt: c.capAlt,
     iso2: c.iso2,
     area: c.area,

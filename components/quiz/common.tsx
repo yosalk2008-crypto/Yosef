@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useEffect, useState } from "react";
-import { REGION_BY_KEY, REGIONS, entitiesFor, type Entity, type Region, type RegionKey } from "@/lib/data/regions";
+import { REGION_BY_KEY, REGIONS, entitiesFor, regionLabel, splitLabel, type Entity, type Region, type RegionKey } from "@/lib/data/regions";
 import type { MapProjection } from "../MapView";
+import { useLang, useT } from "@/lib/i18n";
 
 export type QuizParams = {
   region: Region;
@@ -68,23 +69,25 @@ export function saveBest(key: string, pct: number): { best: number; isNew: boole
 }
 
 export function QuizHeader({ title, region, done, total, score }: { title: string; region: Region; done: number; total: number; score: number }) {
+  const lang = useLang();
+  const t = useT();
   return (
     <div className="mb-5">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-muted">
             <Link href="/quiz" className="hover:text-ink">
-              Quizze
+              {t("Quizze", "Quizzes")}
             </Link>{" "}
-            / {region.split && !region.parent ? `${region.label} – ${region.split}` : region.label}
+            / {region.split && !region.parent ? `${regionLabel(region, lang)} – ${splitLabel(region, lang)}` : regionLabel(region, lang)}
           </p>
           <h1 className="text-2xl font-display font-semibold tracking-tight sm:text-3xl">{title}</h1>
         </div>
         <p className="text-sm font-semibold">
-          {Math.min(done + 1, total)} / {total} · <span className="text-ok">{score} richtig</span>
+          {Math.min(done + 1, total)} / {total} · <span className="text-ok">{score} {t("richtig", "right")}</span>
         </p>
       </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label="Fortschritt">
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label={t("Fortschritt", "Progress")}>
         <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${(done / total) * 100}%` }} />
       </div>
     </div>
@@ -106,22 +109,24 @@ export function QuizEnd({
   onRestart: () => void;
   extra?: React.ReactNode;
 }) {
+  const t = useT();
   const pct = total ? Math.round((score / total) * 100) : 0;
   const [best, setBest] = useState<{ best: number; isNew: boolean } | null>(null);
   useEffect(() => setBest(saveBest(bestKey, pct)), [bestKey, pct]);
   return (
     <section className="card pop p-6" aria-live="polite">
-      <p className="text-sm font-semibold text-muted">Geschafft</p>
+      <p className="text-sm font-semibold text-muted">{t("Geschafft", "Done")}</p>
       <p className="mt-1 text-5xl font-display font-semibold tracking-tight">
         {score} / {total}
       </p>
       <p className="mt-1 text-muted">
-        {pct} % richtig{best && (best.isNew ? " · neuer Rekord!" : ` · dein Rekord: ${best.best} %`)}
+        {pct} % {t("richtig", "right")}
+        {best && (best.isNew ? t(" · neuer Rekord!", " · new record!") : t(` · dein Rekord: ${best.best} %`, ` · your record: ${best.best} %`))}
       </p>
       {extra}
       {missed.length > 0 && (
         <div className="mt-5">
-          <p className="mb-2 text-sm font-bold">Zum Wiederholen</p>
+          <p className="mb-2 text-sm font-bold">{t("Zum Wiederholen", "To review")}</p>
           <ul className="grid gap-1 text-sm sm:grid-cols-2">
             {missed.map((m, i) => (
               <li key={i} className="rounded-lg bg-surface px-3 py-2">
@@ -134,18 +139,31 @@ export function QuizEnd({
       )}
       <div className="mt-6 flex flex-wrap gap-2">
         <button type="button" onClick={onRestart} className="btn-primary">
-          Nochmal spielen
+          {t("Nochmal spielen", "Play again")}
         </button>
         <Link href="/quiz" className="btn-ghost">
-          Andere Einstellungen
+          {t("Andere Einstellungen", "Other settings")}
         </Link>
       </div>
     </section>
   );
 }
 
+/** The quiz entities, shown in the current language (the other language's names still count as answers). */
 export function useEntities(region: Region) {
+  const lang = useLang();
   const [list, setList] = useState<Entity[]>([]);
-  useEffect(() => setList(entitiesFor(region.key)), [region.key]);
+  useEffect(() => setList(localize(entitiesFor(region.key), lang)), [region.key, lang]);
   return list;
+}
+
+export function localize(list: Entity[], lang: "de" | "en"): Entity[] {
+  if (lang !== "en") return list;
+  return list.map((e) => ({
+    ...e,
+    name: e.nameEn,
+    capital: e.capitalEn,
+    alt: [...new Set([...e.alt.filter((a) => a !== e.nameEn), e.name])],
+    capitalAlt: [...new Set([...e.capitalAlt.filter((a) => a !== e.capitalEn), ...(e.capital ? [e.capital] : [])])],
+  }));
 }
