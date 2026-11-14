@@ -674,5 +674,55 @@ window.HALAL_EN = {
 "Tayammum instead of wudu when there’s no water",
 "The Quran allows purifying yourself with clean earth when there is no water. The Prophet ﷺ said to a man without water: do tayammum with earth, that is enough for you.",
 "Quran 4:43 with Tafsir Ibn Kathir · Quran 5:6 with Tafsir Ibn Kathir · Sahih al-Bukhari 344"
+],
+"Einen peinlichen Fehler eines Mitschülers in der Klassengruppe verbreiten": [
+"Spreading a classmate’s embarrassing mistake in the class group chat",
+"The Prophet ﷺ said: whoever covers the faults of a Muslim, Allah will cover his faults on the Day of Resurrection. Sending around embarrassing things about others is the exact opposite.",
+"Sahih al-Bukhari 2442 · Sahih Muslim 2580"
+],
+"Zu zweit tuscheln, während ein dritter Freund danebensteht": [
+"Whispering as a pair while a third friend stands right there",
+"The Prophet ﷺ said: when you are three, two should not whisper to each other and leave out the third – because it makes him sad.",
+"Sahih al-Bukhari 6290 · Sahih Muslim 2184"
+],
+"Auf Social Media damit prahlen, was man Verbotenes gemacht hat": [
+"Bragging on social media about something forbidden you did",
+"The Prophet ﷺ said: everyone in my community will be forgiven except those who make their sins public – someone who does something at night that Allah has kept hidden and tells everyone about it in the morning.",
+"Sahih al-Bukhari 6069 · Sahih Muslim 2990"
+],
+"Essen, ohne vorher „Bismillah“ zu sagen": [
+"Eating without saying “Bismillah” first",
+"The Prophet ﷺ said to a boy: mention the name of Allah, eat with your right hand and eat from what is in front of you. Most scholars consider the Bismillah a Sunnah – leaving it out is therefore makruh.",
+"Sahih al-Bukhari 5376 · Sahih Muslim 2022"
+],
+"Fleisch vom muslimischen Metzger essen, ohne zu wissen, ob beim Schlachten Bismillah gesagt wurde": [
+"Eating meat from a Muslim butcher without knowing whether Bismillah was said at slaughter",
+"People asked the Prophet ﷺ about meat where they didn’t know whether Allah’s name had been mentioned. He said: mention Allah’s name over it yourselves and eat.",
+"Sahih al-Bukhari 5507"
+],
+"Eine Wüstenechse (Dabb) essen": [
+"Eating a desert lizard (dabb)",
+"Roasted lizard was served to the Prophet ﷺ. He didn’t eat it himself because he wasn’t used to it – but Khalid ibn al-Walid ate it in front of him, and he said: it is not forbidden.",
+"Sahih al-Bukhari 5537 · Sahih Muslim 1945"
+],
+"Beim Gähnen den Mund weit offen lassen": [
+"Leaving your mouth wide open when you yawn",
+"The Prophet ﷺ said: yawning comes from Satan – whoever needs to yawn should hold it back as best he can and put his hand over his mouth.",
+"Sahih al-Bukhari 6223 · Sahih Muslim 2995"
+],
+"Eine Glasscherbe vom Gehweg räumen": [
+"Clearing a shard of glass off the pavement",
+"The Prophet ﷺ told of a man who moved a thorny branch off the path – Allah was pleased with him and forgave him. Clearing obstacles away is a good deed.",
+"Sahih al-Bukhari 652 · Sahih Muslim 1914"
+],
+"Zum Gemeinschaftsgebet rennen, weil es schon angefangen hat": [
+"Running to the congregational prayer because it has already started",
+"The Prophet ﷺ said: when you hear the iqama, walk to the prayer calmly and with composure and don’t rush. Pray what you catch and make up the rest.",
+"Sahih al-Bukhari 636 · Sahih Muslim 602"
+],
+"Im Ramadan vor der Morgendämmerung Suhur essen": [
+"Eating suhur before dawn in Ramadan",
+"The Prophet ﷺ said: take suhur, for there is blessing in it. It is Sunnah to eat something before the fast begins.",
+"Sahih al-Bukhari 1923 · Sahih Muslim 1095"
 ]
 };

@@ -674,5 +674,55 @@ window.QUESTIONS_EN = {
 "Hearing the shofar on Rosh Hashanah",
 "Hearing the ram’s horn is the central commandment of Rosh Hashanah – the Torah calls the day “Yom Teruah”, the day of blowing. If the festival falls on Shabbat, however, it isn’t blown.",
 "Numbers 29:1"
+],
+"Die eigenen Eltern beim Vornamen ansprechen": [
+"Calling your own parents by their first names",
+"Honouring your father and mother includes not simply calling them by their first names. You say “Dad”, “Mum” or another respectful form of address.",
+"Shulchan Aruch, Yoreh De’ah 240:2"
+],
+"Ein Geheimnis weitererzählen, das dir ein Freund anvertraut hat": [
+"Passing on a secret a friend told you",
+"The Talmud teaches: what someone tells you may not be passed on until they explicitly allow it. That applies all the more to secrets.",
+"Talmud, Yoma 4b"
+],
+"Einen Mitschüler mit einem gemeinen Spitznamen rufen": [
+"Calling a classmate by a mean nickname",
+"The Talmud counts giving someone a hurtful nickname among the serious wrongs – even if everyone has already got used to it.",
+"Talmud, Bava Metzia 58b"
+],
+"Rinderleber essen, die nur gesalzen und dann gekocht wurde": [
+"Eating beef liver that was only salted and then cooked",
+"Liver contains so much blood that salting isn’t enough. It has to be broiled over an open flame so the blood drains out – only then may it be cooked.",
+"Shulchan Aruch, Yoreh De’ah 73:1"
+],
+"Fleisch von einem Rind essen, das von selbst gestorben ist": [
+"Eating meat from a cow that died on its own",
+"The Torah forbids eating an animal that died on its own (nevelah) – even if it is a kosher species. Only meat from properly slaughtered animals is allowed.",
+"Deuteronomy 14:21"
+],
+"Brot essen, ohne sich vorher rituell die Hände zu waschen": [
+"Eating bread without first ritually washing your hands",
+"Before eating bread you pour water over your hands (netilat yadayim) and say a blessing. For fruit or yoghurt this isn’t necessary.",
+"Shulchan Aruch, Orach Chayim 158:1"
+],
+"Selbst essen, bevor man dem hungrigen Haustier sein Futter gibt": [
+"Eating yourself before giving your hungry pet its food",
+"The Talmud derives from the Torah: first the animal gets its food, then you eat yourself. Whoever keeps an animal is responsible for it.",
+"Talmud, Berachot 40a"
+],
+"Für einen alten Menschen aufstehen, wenn er hereinkommt": [
+"Standing up for an elderly person when they come in",
+"The Torah says: you shall rise before the grey-haired and honour the old. Standing up, offering your seat or holding the door are respect put into practice.",
+"Leviticus 19:32"
+],
+"Am Schabbat Hausaufgaben schreiben": [
+"Writing your homework on Shabbat",
+"Writing is one of the 39 kinds of work forbidden on Shabbat – even two letters count. Reading and studying, on the other hand, are allowed.",
+"Mishnah, Shabbat 7:2"
+],
+"Den Chanukka-Leuchter ins Fenster stellen": [
+"Putting the Chanukah menorah in the window",
+"The lights are meant to publicise the miracle. That’s why the Talmud recommends placing them at the front door or in a window facing the street.",
+"Talmud, Shabbat 21b"
 ]
 };
