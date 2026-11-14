@@ -1022,7 +1022,7 @@ function TiefgangInput({ qkey, timeUp, onDone, dark = false }: { qkey: string; t
         <input
           key={`in${shake}`}
           ref={ref}
-          className={`input min-w-0 flex-1 ${shake ? "mp-shake" : ""}`}
+          className={`input min-w-0 flex-1 text-ink ${shake ? "mp-shake" : ""}`}
           value={v}
           disabled={timeUp}
           autoFocus={shake > 0}
