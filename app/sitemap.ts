@@ -5,6 +5,7 @@ import { GAMES, QUIZ_TYPES } from "@/lib/games";
 export default function sitemap(): MetadataRoute.Sitemap {
   const paths = [
     "",
+    "/startseite",
     "/quiz",
     "/archiv",
     "/tiefgang",
