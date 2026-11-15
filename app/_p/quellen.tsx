@@ -57,6 +57,16 @@ function QuellenDe() {
         </p>
       </div>
       <div>
+        <h2>Spitzenplatz und Maßstab</h2>
+        <p>
+          Höchster Berg, Küstenlänge, Geburtenrate, Durchschnittsalter, Alkoholkonsum, Raucheranteil, Ärzte, Internetnutzung, Flughäfen,
+          Schienennetz und Arbeitslosenquote in Spitzenplatz stammen aus dem{" "}
+          <a href="https://www.cia.gov/the-world-factbook/" rel="noopener">CIA World Factbook</a> (gemeinfrei, Schätzungen 2016–2025). Umrisse
+          von Ozeanen, Meeren, Seen, Grönland und der Antarktis in Maßstab: <a href="https://www.naturalearthdata.com/" rel="noopener">Natural Earth</a>{" "}
+          (gemeinfrei); die Flächen sind offizielle Angaben, die Umrisse werden darauf skaliert.
+        </p>
+      </div>
+      <div>
         <h2>Hinweis</h2>
         <p>
           Grenzverläufe und Statusfragen einzelner Gebiete sind teilweise umstritten. Die Darstellung
@@ -105,6 +115,15 @@ function SourcesEn() {
         <p>
           For “Name a city in …”, every place with at least 500 inhabitants from{" "}
           <a href="https://www.geonames.org/" rel="noopener">GeoNames</a> (CC BY 4.0) counts. Their points follow the population.
+        </p>
+      </div>
+      <div>
+        <h2>Top Spot and To Scale</h2>
+        <p>
+          Highest point, coastline, birth rate, median age, alcohol consumption, smoking rate, doctors, internet use, airports, rail network and
+          unemployment in Top Spot come from the <a href="https://www.cia.gov/the-world-factbook/" rel="noopener">CIA World Factbook</a> (public
+          domain, estimates 2016–2025). Outlines of oceans, seas, lakes, Greenland and Antarctica in To Scale:{" "}
+          <a href="https://www.naturalearthdata.com/" rel="noopener">Natural Earth</a> (public domain); areas are official figures and the outlines are scaled to them.
         </p>
       </div>
       <div>

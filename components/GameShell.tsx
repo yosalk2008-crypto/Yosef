@@ -16,12 +16,18 @@ export function GameShell({
   isToday,
   rules,
   children,
+  variant = "default",
+  left,
 }: {
   game: GameKey;
   day: string;
   isToday: boolean;
   rules: React.ReactNode;
   children: React.ReactNode;
+  /** compact: small centred title bar (Spitzenplatz); none: no title bar at all (start screens). */
+  variant?: "default" | "compact" | "none";
+  /** Extra control at the left of the compact title bar (e.g. back to the start screen). */
+  left?: React.ReactNode;
 }) {
   const info = GAME_BY_KEY[game];
   const mp = useMpDaily();
@@ -37,10 +43,34 @@ export function GameShell({
       }
     } catch {}
   }, [game]);
+  useEffect(() => {
+    const open = () => setHelp(true);
+    window.addEventListener("kt-help", open);
+    return () => window.removeEventListener("kt-help", open);
+  }, []);
 
   return (
     <div className={mp ? "w-full" : "mx-auto w-full max-w-3xl px-4 pb-16 pt-6 sm:pt-10"}>
-      <div className="chunk mb-6 flex items-center justify-between gap-3 p-3 sm:p-4" style={{ background: info.bg, ["--edge" as string]: info.edge }}>
+      {variant === "compact" && (
+        <div className="mb-5 grid grid-cols-[3rem_1fr_3rem] items-center gap-2">
+          <div>{left}</div>
+          <div className="flex items-center justify-center gap-2.5">
+            <span className="grid h-11 w-[3.25rem] shrink-0 place-items-center rounded-xl" style={{ background: info.bg }}>
+              <GameArt game={game} className="h-8 w-11" />
+            </span>
+            <div className="leading-tight">
+              <p className="font-display text-xl font-semibold">{gTitle(info, lang)}</p>
+              <p className="text-[13px] font-semibold text-muted">
+                {formatDay(day, lang)} · {t("Nr.", "No.")} {dayNumber(day)}
+              </p>
+            </div>
+          </div>
+          <button type="button" onClick={() => setHelp(true)} className="grid h-11 w-11 place-items-center justify-self-end rounded-full hover:bg-line" aria-haspopup="dialog" aria-label={t("Regeln", "Rules")}>
+            <Icon d="M9.1 9a3 3 0 015.8 1c0 2-3 2.5-3 4.5M12 18h.01M12 21a9 9 0 100-18 9 9 0 000 18z" className="h-6 w-6" />
+          </button>
+        </div>
+      )}
+      {variant === "default" && <div className="chunk mb-6 flex items-center justify-between gap-3 p-3 sm:p-4" style={{ background: info.bg, ["--edge" as string]: info.edge }}>
         <div className="flex min-w-0 items-center gap-3">
           <span className="grid h-14 w-16 shrink-0 place-items-center rounded-2xl bg-white/45 sm:h-16 sm:w-20">
             <GameArt game={game} className="h-11 w-14 sm:h-12 sm:w-16" />
@@ -65,7 +95,7 @@ export function GameShell({
         <button type="button" onClick={() => setHelp(true)} className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/60 hover:bg-white" aria-haspopup="dialog" aria-label={t("Regeln", "Rules")}>
           <Icon d="M9.1 9a3 3 0 015.8 1c0 2-3 2.5-3 4.5M12 18h.01M12 21a9 9 0 100-18 9 9 0 000 18z" className="h-6 w-6" />
         </button>
-      </div>
+      </div>}
       {children}
       {help && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-ink/60 p-4" role="dialog" aria-modal="true" aria-labelledby="rules-title" onClick={() => setHelp(false)}>

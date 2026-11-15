@@ -26,9 +26,9 @@ export const GAMES: GameInfo[] = [
   {
     key: "massstab",
     title: "Maßstab",
-    tagline: "Zieh das Land auf seine echte Größe – ohne Mercator-Verzerrung.",
+    tagline: "Länder, Kontinente, Meere und Seen im Vergleich: Zieh sie auf ihre echte Größe.",
     titleEn: "To Scale",
-    taglineEn: "Drag the country to its true size – without the Mercator distortion.",
+    taglineEn: "Countries, continents, seas and lakes side by side: drag them to their true size.",
     bg: "#8ec5f0",
     edge: "#67a3d3",
     icon: "M4 20L20 4M14 4h6v6M4 14v6h6",
@@ -56,9 +56,9 @@ export const GAMES: GameInfo[] = [
   {
     key: "spitzenplatz",
     title: "Spitzenplatz",
-    tagline: "Ordne acht Länder den Kategorien zu, in denen sie weltweit am besten dastehen.",
+    tagline: "Ordne Länder den Kategorien zu, in denen sie am besten dastehen – Welt, Europa oder endlos in 10 Regionen.",
     titleEn: "Top Spot",
-    taglineEn: "Match eight countries to the categories where they rank best in the world.",
+    taglineEn: "Match countries to the categories where they rank best – world, Europe or endless in 10 regions.",
     bg: "#f3b86d",
     edge: "#d6984a",
     icon: "M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM7 6H4a3 3 0 003 4M17 6h3a3 3 0 01-3 4",

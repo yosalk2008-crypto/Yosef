@@ -2,16 +2,16 @@
 
 import Link from "@/components/Link";
 import { BY_ID, BY_ID_ALL, cCap, cName, contName, flagUrl } from "@/lib/data/countries";
-import { globalRank, metricsOf } from "@/lib/metrics";
+import { metricsOf } from "@/lib/metrics";
 import { useLang, useT } from "@/lib/i18n";
 import { LAND } from "@/lib/laender";
 import type { DailyId } from "@/lib/mp";
 import { pickTarget } from "@/components/games/Laenderjagd";
 import { shortestRoute } from "@/components/games/Grenzgang";
-import { optimum, pickCountries } from "@/components/games/Spitzenplatz";
+import { dailyRound, optimum, rank } from "@/lib/spitzenplatz";
 import { factText, makePuzzle } from "@/components/games/Viererbande";
 import { rounds } from "@/components/games/Farbecht";
-import { targets } from "@/components/games/Massstab";
+import { ITEM_BY_ID, KIND_LABEL, dailyPairs, itemName } from "@/lib/massstab";
 
 const SLUG = Object.fromEntries(LAND.map((c) => [c.id, c.slug])) as Record<string, string>;
 const C = (id: string) => BY_ID[id] ?? BY_ID_ALL[id];
@@ -90,8 +90,9 @@ export function DailySolution({ game, day }: { game: DailyId; day: string }) {
         </>
       );
     } else if (game === "spitzenplatz") {
-      const ids = pickCountries(day);
-      const opt = optimum(ids);
+      const round = dailyRound(day, "welt");
+      const ids = round.ids;
+      const opt = optimum(round);
       const M = metricsOf(lang);
       body = (
         <>
@@ -99,7 +100,7 @@ export function DailySolution({ game, day }: { game: DailyId; day: string }) {
           <ul className="mt-2 grid gap-2 sm:grid-cols-2">
             {ids.map((id, j) => (
               <Row key={id} id={id}>
-                {M[opt.plan[j]].label} · {t("Platz", "rank")} {globalRank(opt.plan[j], id)}
+                {M[opt.plan[j]].label} · {t("Platz", "rank")} {rank(opt.plan[j], id, "welt")}
               </Row>
             ))}
           </ul>
@@ -136,11 +137,23 @@ export function DailySolution({ game, day }: { game: DailyId; day: string }) {
     } else if (game === "massstab") {
       body = (
         <ul className="grid gap-2 sm:grid-cols-2">
-          {targets(day).map((id) => (
-            <Row key={id} id={id}>
-              {nf(C(id).area)} km²
-            </Row>
-          ))}
+          {dailyPairs(day).map(({ target, ref }) => {
+            const a = ITEM_BY_ID[target];
+            const b = ITEM_BY_ID[ref];
+            const text = `${nf(a.area)} km² · ${t("Vergleich", "compared with")} ${itemName(b, lang)}: ${nf(b.area)} km²`;
+            return a.kind === "land" ? (
+              <Row key={target} id={target}>
+                {text}
+              </Row>
+            ) : (
+              <li key={target} className="rounded-2xl bg-paper px-3 py-2.5">
+                <p className="font-semibold leading-tight">
+                  {itemName(a, lang)} <span className="text-sm text-muted">· {KIND_LABEL[a.kind][lang === "en" ? 1 : 0]}</span>
+                </p>
+                <p className="text-[15px] text-muted">{text}</p>
+              </li>
+            );
+          })}
         </ul>
       );
     }

@@ -1,6 +1,9 @@
 import { ALL_COUNTRIES } from "./data/countries";
 import { exo } from "./data/exonyms";
-import { Q_EN } from "./data/tiefgang-en";
+import { Q_EN as Q_EN_BASE } from "./data/tiefgang-en";
+import { TAEGLICH } from "./data/tiefgang-taeglich";
+
+const Q_EN: Record<string, [string, string]> = { ...Q_EN_BASE, ...Object.fromEntries(TAEGLICH.map((p) => ["k:" + p.key, p.en])) };
 
 type Lang = "de" | "en";
 const COUNTRY_EN = new Map<string, string>();

@@ -8,8 +8,8 @@ export const meta = (lang: Lang): Metadata => {
   return {
     title: t("Tiefgang – das Quiz der seltenen Antworten", "Deep Dive – the quiz of rare answers"),
     description: t(
-      "Sieben Fragen, 25 Sekunden pro Frage: Je seltener deine richtige Antwort, desto tiefer tauchst du.",
-      "Seven questions, 25 seconds each: the rarer your correct answer, the deeper you dive."
+      "Jeden Tag zehn neue Fragen, 25 Sekunden pro Frage: Je seltener deine richtige Antwort, desto tiefer tauchst du.",
+      "Ten new questions every day, 25 seconds each: the rarer your correct answer, the deeper you dive."
     ),
   };
 };

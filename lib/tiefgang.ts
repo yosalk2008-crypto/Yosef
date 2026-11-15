@@ -3,7 +3,8 @@ import { ALL_COUNTRIES, BY_ID_ALL, COUNTRIES, CONTINENTS, NEVER_ASKED, SUBREGION
 import { BEKANNTHEIT } from "./data/bekanntheit";
 import { findOrt } from "./tiefgangOrte";
 import { KATALOG, cleanAnswers, type KatalogPrompt } from "./data/tiefgang-katalog";
-import { EXTEND, KATALOG3 } from "./data/tiefgang-katalog3";
+import { EXTEND, KATALOG3, ranked } from "./data/tiefgang-katalog3";
+import { TAEGLICH, type TagesFrage } from "./data/tiefgang-taeglich";
 import { makeRng, type Rng } from "./rng";
 import { ansAltsEn, ansName } from "./tiefgang-i18n";
 
@@ -335,14 +336,45 @@ export const ALL_CURATED = CURATED;
 /** Everything that can come up from 14 Nov 2026 (for checks and stats). */
 export const BIG_POOL = [...CURATED3, ...BIG_TEMPLATES];
 
+// ---------- from 16 Nov 2026: ten new questions every day (lib/data/tiefgang-taeglich.ts) ----------
+export const DAILY10_FROM = "2026-11-16";
+export const DAILY_ROUNDS = 10;
+
+export function tagesQ(p: TagesFrage): Question {
+  if (p.countries) {
+    const ids = new Set(p.countries);
+    const q = countryAnswers(COUNTRIES.filter((c) => ids.has(c.id)));
+    return { key: "k:" + p.key, text: p.text, hint: p.hint, answers: q };
+  }
+  return curatedQ({ key: p.key, text: p.text, hint: p.hint, answers: ranked(p.answers ?? []) });
+}
+/** Only questions with at least 50 valid answers make it into a day. */
+const valid = (q: Question) => q.answers.filter((a) => !NEVER_ASKED.has(a.id)).length >= MIN_ANSWERS;
+const TAGES: Question[] = TAEGLICH.map(tagesQ);
+const TAGES_DAY: Record<string, string> = Object.fromEntries(TAEGLICH.map((p) => ["k:" + p.key, p.d]));
+/** The day a question of the daily list belongs to (for checks). */
+export const tagesDay = (key: string) => TAGES_DAY[key];
+
 export function dailyQuestions(day: string): Question[] {
   const rng = makeRng(`${day}:tiefgang`);
   if (day < BIG_FROM) return pickQuestions(rng, ROUNDS, day < EXPANDED_FROM);
-  return pickBig(rng, ROUNDS);
+  if (day < DAILY10_FROM) return pickBig(rng, ROUNDS);
+  const own = TAGES.filter((q) => TAGES_DAY[q.key] === day && valid(q)).slice(0, DAILY_ROUNDS);
+  // if a day has fewer than ten new questions, the rest come from the big pool (same for everybody)
+  const fill = pickBig(rng, DAILY_ROUNDS + own.length)
+    .filter((q) => !own.some((o) => o.key === q.key))
+    .slice(0, DAILY_ROUNDS - own.length);
+  return [...own, ...fill];
 }
 
+/** Free play: the big pool plus every daily question whose day is over. */
 export function randomQuestions(n = ROUNDS): Question[] {
-  return pickBig(makeRng(Math.floor(Math.random() * 2 ** 32)), n);
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
+  const past = TAGES.filter((q) => TAGES_DAY[q.key] < today && valid(q));
+  const rng = makeRng(Math.floor(Math.random() * 2 ** 32));
+  if (!past.length) return pickBig(rng, n);
+  const fromPast = rng.sample(past, Math.min(past.length, Math.round(n * Math.min(0.5, past.length / (past.length + BIG_POOL.length)) + 1)));
+  return rng.shuffle([...fromPast, ...pickBig(rng, n - fromPast.length)]);
 }
 
 // ---------- answer checking ----------

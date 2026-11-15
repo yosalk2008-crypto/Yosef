@@ -18,7 +18,6 @@ import type { Impact } from "./OceanFx";
 type Result = { input: string; pts: number; answer?: string; id?: string; perle?: boolean; reason?: string };
 type S = { results: Result[]; pending?: number };
 
-const MAX_M = ROUNDS * MAX_PTS * 10;
 const nfDe = new Intl.NumberFormat("de-DE");
 const nfEn = new Intl.NumberFormat("en-GB");
 
@@ -52,6 +51,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [mode, daily.day, seed]
   );
+  const N = questions.length;
   // full place lists for city questions load in the background
   useEffect(() => {
     questions.forEach((q) => void prefetchOrte(q.key));
@@ -79,12 +79,12 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
     if (s.pending != null && s.pending === r.length) r.push({ input: "", pts: 0, reason: t_("Seite während der Frage verlassen.", "You left the page during the question.") });
     jump.current = true;
     setResults(r);
-    if (r.length >= ROUNDS) setPhase("done");
+    if (r.length >= N) setPhase("done");
     else if (r.length > 0) setPhase("intro");
   }, [mode, daily.loaded, daily.saved]);
 
   const i = results.length;
-  const q = questions[Math.min(phase === "reveal" ? i - 1 : i, ROUNDS - 1)];
+  const q = questions[Math.min(phase === "reveal" ? i - 1 : i, N - 1)];
   const totalPts = results.reduce((s, r) => s + r.pts, 0);
   const totalM = meters(totalPts);
 
@@ -132,11 +132,11 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
     (r: Result[], pending?: number) => {
       if (mode !== "daily") return;
       const pts = r.reduce((s, x) => s + x.pts, 0);
-      const done = r.length >= ROUNDS;
+      const done = r.length >= N;
       daily.persist({
         done,
         score: pts,
-        max: ROUNDS * MAX_PTS,
+        max: N * MAX_PTS,
         label: `${nf.format(meters(pts))} m`,
         share: `${t_("Tiefgang", "Deep Dive")} #${dayNumber(daily.day)} · ${nf.format(meters(pts))} m\n${r.map((x) => emojiFor(x.pts, x.perle)).join("")}${r.some((x) => x.perle) ? t_(" – Tiefseeperle gefunden!", " – found a deep-sea pearl!") : ""}`,
         state: { results: r, pending },
@@ -249,8 +249,8 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
               {t_("Tiefgang", "Deep Dive")}
               {mode === "daily" ? ` #${dayNumber(daily.day)}` : t_(" – Endlos", " – endless")}
             </p>
-            <div className="mt-1 flex justify-center gap-1" aria-label={t_(`Frage ${Math.min(i + 1, ROUNDS)} von ${ROUNDS}`, `Question ${Math.min(i + 1, ROUNDS)} of ${ROUNDS}`)}>
-              {Array.from({ length: ROUNDS }).map((_, k) => {
+            <div className="mt-1 flex justify-center gap-1" aria-label={t_(`Frage ${Math.min(i + 1, N)} von ${N}`, `Question ${Math.min(i + 1, N)} of ${N}`)}>
+              {Array.from({ length: N }).map((_, k) => {
                 const r = results[k];
                 const c = r ? (r.pts > 0 ? tierOf(r).color : "#d6453d") : k === i ? "#ffffff" : "rgb(255 255 255 / 0.25)";
                 return <span key={k} className="h-2.5 w-4 rounded-sm" style={{ background: c }} />;
@@ -280,14 +280,14 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
                   <p className="mt-1 text-lg font-semibold text-white/85">{t_("Je seltener deine richtige Antwort, desto tiefer sinkt sie.", "The rarer your correct answer, the deeper it sinks.")}</p>
                   {lang === "en" ? (
                     <ul className="mt-4 space-y-1.5 text-[15px] leading-relaxed text-white/85">
-                      <li>{ROUNDS} questions, {SECONDS} seconds each. You can try as often as you like until an answer is right or time is up.</li>
+                      <li>{N} questions, {SECONDS} seconds each. You can try as often as you like until an answer is right or time is up.</li>
                       <li>Well-known answers give 10 points, rare ones up to 100. 1 point = 10 metres.</li>
                       <li>Tiers: plankton, shoal, rare, deep sea – and exactly one <strong>deep-sea pearl</strong> per question, the rarest answer.</li>
                       <li>Wrong answers only cost time. If time runs out, you get 0 metres. Small typos are forgiven.</li>
                     </ul>
                   ) : (
                   <ul className="mt-4 space-y-1.5 text-[15px] leading-relaxed text-white/85">
-                      <li>{ROUNDS} Fragen, je {SECONDS} Sekunden. Du hast beliebig viele Versuche, bis eine Antwort stimmt oder die Zeit um ist.</li>
+                      <li>{N} Fragen, je {SECONDS} Sekunden. Du hast beliebig viele Versuche, bis eine Antwort stimmt oder die Zeit um ist.</li>
                       <li>Bekannte Antworten bringen 10 Punkte, seltene bis zu 100. 1 Punkt = 10 Meter.</li>
                       <li>Stufen: Plankton, Schwarm, Selten, Tiefsee – und pro Frage genau eine <strong>Tiefseeperle</strong>, die seltenste Antwort.</li>
                       <li>Falsche Antworten kosten nur Zeit. Ist die Zeit um, gibt es 0 Meter. Kleine Tippfehler verzeihen wir.</li>
@@ -296,7 +296,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
                 </>
               ) : (
                 <>
-                  <h2 className="text-2xl font-semibold">{t_(`Frage ${i + 1} von ${ROUNDS}`, `Question ${i + 1} of ${ROUNDS}`)}</h2>
+                  <h2 className="text-2xl font-semibold">{t_(`Frage ${i + 1} von ${N}`, `Question ${i + 1} of ${N}`)}</h2>
                   <p className="mt-1 text-white/80">{t_(`Du bist bei ${nf.format(totalM)} m. Bereit für den nächsten Tauchgang?`, `You’re at ${nf.format(totalM)} m. Ready for the next dive?`)}</p>
                 </>
               )}
@@ -310,7 +310,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
             <div className="pop mb-2" key={"q" + i}>
               <div className="rounded-[28px] bg-[#082650]/85 p-5 shadow-[0_6px_0_rgb(0_0_0_/_0.3)] backdrop-blur-sm sm:p-6">
                 <p className="text-sm font-bold text-[#7fe3d2]">
-                  {t_(`Frage ${i + 1} von ${ROUNDS}`, `Question ${i + 1} of ${ROUNDS}`)}
+                  {t_(`Frage ${i + 1} von ${N}`, `Question ${i + 1} of ${N}`)}
                 </p>
                 <h2 className="mt-1 text-[26px] font-semibold leading-snug sm:text-3xl">{qText(shownQ, lang)}</h2>
                 <p className="mt-1 text-sm font-semibold text-white/65">
@@ -402,8 +402,8 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
                     <AnswerExplorer q={shownQ} mine={last.id} />
                   </div>
                 </details>
-                <button type="button" onClick={() => (results.length >= ROUNDS ? setPhase("done") : start())} className="btn-primary mt-5 w-full bg-[#0f4c8a] shadow-[0_4px_0_#08294b] hover:bg-[#13599f] sm:w-auto sm:px-8" autoFocus>
-                  {results.length >= ROUNDS ? t_("Ergebnis ansehen", "See result") : t_("Nächste Frage", "Next question")}
+                <button type="button" onClick={() => (results.length >= N ? setPhase("done") : start())} className="btn-primary mt-5 w-full bg-[#0f4c8a] shadow-[0_4px_0_#08294b] hover:bg-[#13599f] sm:w-auto sm:px-8" autoFocus>
+                  {results.length >= N ? t_("Ergebnis ansehen", "See result") : t_("Nächste Frage", "Next question")}
                 </button>
               </div>
             )}
@@ -465,7 +465,7 @@ function Done({ results, questions, mode, isToday, share, onRestart, totalM }: {
           <Creature tier="perle" className="h-7 w-7" /> {t_("Du hast eine Tiefseeperle gefunden!", "You found a deep-sea pearl!")}
         </p>
       )}
-      <DiveLog results={results} />
+      <DiveLog results={results} n={questions.length} />
       <ul className="mt-5 space-y-2">
         {results.map((r, k) => {
           const t = r.pts > 0 ? tierOf(r) : null;
@@ -519,22 +519,22 @@ function Done({ results, questions, mode, isToday, share, onRestart, totalM }: {
 }
 
 /** Seven dives as vertical lines, each sinking to the depth reached. */
-function DiveLog({ results }: { results: Result[] }) {
+function DiveLog({ results, n }: { results: Result[]; n: number }) {
   const t_ = useT();
   const H = 150;
   return (
     <div className="mt-5 rounded-2xl bg-[#0b2a55] p-4 text-white">
       <p className="font-display font-semibold">{t_("Tauch-Logbuch", "Dive log")}</p>
-      <svg viewBox={`0 0 ${ROUNDS * 40 + 44} ${H + 30}`} className="mt-2 w-full" role="img" aria-label={t_("Tiefe je Frage", "Depth per question")}>
+      <svg viewBox={`0 0 ${n * 40 + 44} ${H + 30}`} className="mt-2 w-full" role="img" aria-label={t_("Tiefe je Frage", "Depth per question")}>
         {[0, 0.5, 1].map((f) => (
           <g key={f}>
-            <line x1="0" x2={ROUNDS * 40} y1={10 + f * H} y2={10 + f * H} stroke="rgb(255 255 255 / 0.15)" strokeDasharray="3 4" />
-            <text x={ROUNDS * 40 + 42} y={13 + f * H} textAnchor="end" fontSize="9" fill="rgb(255 255 255 / 0.6)">
+            <line x1="0" x2={n * 40} y1={10 + f * H} y2={10 + f * H} stroke="rgb(255 255 255 / 0.15)" strokeDasharray="3 4" />
+            <text x={n * 40 + 42} y={13 + f * H} textAnchor="end" fontSize="9" fill="rgb(255 255 255 / 0.6)">
               {f * 1000} m
             </text>
           </g>
         ))}
-        {Array.from({ length: ROUNDS }).map((_, k) => {
+        {Array.from({ length: n }).map((_, k) => {
           const r = results[k];
           const y = 10 + ((r?.pts ?? 0) / MAX_PTS) * H;
           const x = 20 + k * 40;

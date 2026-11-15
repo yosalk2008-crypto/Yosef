@@ -391,3 +391,55 @@ h3,
   .mpr-coin, .mpr-plus, .mpr-sack.bump .ksack, .mpr-sackbox.miss .mpr-sack .ksack, .mpr-car.moving .spin, .mpr-car.moving > span, .mpr-dust, .mpr-car.stall > span, .mpr-puff { animation: none; }
   .mpr-car, .mpr-sack .ksack { transition: none; }
 }
+
+/* ---------- Spitzenplatz: Startseite, Kategorien-Spalte (nach dem Vorbild GeoRankle) ---------- */
+.sp-hero {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  min-height: min(78vh, 720px); justify-content: center;
+  border-radius: 2rem; padding: 2.5rem 1.25rem; margin-top: -0.5rem;
+}
+.sp-float { animation: sp-float 3.6s ease-in-out infinite; }
+@keyframes sp-float { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-8px) rotate(1deg); } }
+.sp-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; width: 15rem; border-radius: 1rem; background: rgb(0 0 0 / 0.1); }
+.sp-seg button { min-height: 44px; border-radius: 0.8rem; font-weight: 700; color: rgb(44 42 53 / 0.7); transition: background 0.15s, box-shadow 0.15s; }
+.sp-seg button.on { background: #fff; color: var(--color-ink); box-shadow: 0 3px 0 rgb(0 0 0 / 0.16); }
+.sp-seg button:focus-visible, .sp-btn:focus-visible, .sp-cat:focus-visible { outline: 3px solid var(--color-ink); outline-offset: 2px; }
+.sp-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.75rem;
+  width: 15rem; min-height: 56px; padding: 0.5rem 1rem; border-radius: 1rem;
+  background: #fff; font-family: var(--font-display, inherit); font-weight: 700; font-size: 1.15rem;
+  box-shadow: 0 4px 0 rgb(0 0 0 / 0.18); transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.sp-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 0 rgb(0 0 0 / 0.18); }
+.sp-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgb(0 0 0 / 0.18); }
+.sp-btn-alt { justify-content: flex-start; font-size: 1rem; background: #fff7e8; box-shadow: 0 4px 0 #c98a3e; }
+.sp-region { width: 100%; justify-content: flex-start; font-size: 1rem; min-height: 62px; }
+.sp-dot { width: 10px; height: 10px; border-radius: 999px; background: var(--color-line); transition: background 0.2s, transform 0.2s; }
+.sp-dot.done { background: var(--color-ink); }
+.sp-dot.now { background: #f3b86d; transform: scale(1.35); box-shadow: 0 0 0 2px #fff, 0 0 0 4px #d6984a; }
+.sp-country { animation: sp-in 0.35s cubic-bezier(.2,.9,.3,1.2); }
+@keyframes sp-in { from { opacity: 0; transform: translateX(28px) scale(0.96); } to { opacity: 1; transform: none; } }
+.sp-cat {
+  display: flex; align-items: center; gap: 0.75rem; width: 100%; min-height: 52px; padding: 0.5rem 0.75rem;
+  border-radius: 0.9rem; background: #fff; border: 1px solid var(--color-line); box-shadow: 0 3px 0 var(--color-edge);
+  transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s;
+}
+.sp-cat:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 4px 0 #c9bfb0; border-color: #cfc5b6; }
+.sp-cat:not(:disabled):active { transform: translateY(2px); box-shadow: 0 1px 0 var(--color-edge); }
+.sp-cat.used { background: var(--color-paper); box-shadow: 0 2px 0 var(--color-line); }
+.sp-cat:disabled:not(.used) { opacity: 0.6; }
+.sp-cat.hit { animation: sp-hit 0.6s ease; }
+@keyframes sp-hit { 0% { transform: scale(1); } 30% { transform: scale(1.03); background: #fff4dc; } 100% { transform: scale(1); } }
+.sp-ico { display: grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0; border-radius: 0.6rem; background: var(--color-paper); font-size: 1.15rem; }
+.sp-cat.used .sp-ico { background: #fff; }
+.sp-rank { flex-shrink: 0; border-radius: 0.6rem; padding: 0.2rem 0.6rem; font-family: var(--font-display, inherit); font-weight: 700; font-size: 0.95rem; animation: sp-badge 0.45s cubic-bezier(.2,.9,.3,1.4); }
+@keyframes sp-badge { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: none; } }
+.sp-b0 { background: #dcf3d2; color: #276b22; }
+.sp-b1 { background: #fbf0c4; color: #7a5b06; }
+.sp-b2 { background: #fde0c2; color: #8a4510; }
+.sp-b3 { background: #fbd5d2; color: #9a2a24; }
+.sp-end { border-radius: 1.5rem; background: #fff7e8; padding: 1.25rem; box-shadow: 0 5px 0 #d6984a; animation: sp-in 0.35s ease; }
+.sp-end .sp-btn { width: 100%; background: var(--color-ink); color: #fff; box-shadow: 0 4px 0 #15131b; }
+@media (prefers-reduced-motion: reduce) {
+  .sp-float, .sp-country, .sp-cat.hit, .sp-rank, .sp-end { animation: none; }
+}
