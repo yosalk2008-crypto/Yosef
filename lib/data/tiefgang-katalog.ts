@@ -440,7 +440,7 @@ export const KATALOG: KatalogPrompt[] = [
   {
     key: "stadt-italien",
     text: "Nenne eine Stadt in Italien.",
-    hint: "Bekannte Städte – auch auf Sizilien und Sardinien.",
+    hint: "Jede Stadt und jedes Dorf zählt – je kleiner, desto tiefer.",
     answers: [
       "Rom|10|Roma", "Mailand|12|Milano", "Venedig|14|Venezia", "Florenz|18|Firenze", "Neapel|20|Napoli", "Turin|25|Torino", "Pisa|30", "Verona|35",
       "Bologna|35", "Genua|38|Genova", "Palermo|40", "Siena|48", "Bari|52", "Catania|55", "Triest|55|Trieste", "Bergamo|55", "Bozen|52|Bolzano", "Padua|55|Padova",
@@ -454,7 +454,7 @@ export const KATALOG: KatalogPrompt[] = [
   {
     key: "stadt-usa",
     text: "Nenne eine Stadt in den USA.",
-    hint: "Großstädte und bekannte Orte.",
+    hint: "Jede Stadt und jedes Dorf zählt – je kleiner, desto tiefer.",
     answers: [
       "New York|10|New York City|NYC", "Los Angeles|10|LA", "Chicago|18", "San Francisco|20", "Miami|20", "Las Vegas|22", "Washington|25|Washington, D.C.",
       "Boston|28", "Seattle|32", "Houston|30", "Dallas|35", "Philadelphia|38", "Atlanta|40", "Detroit|42", "New Orleans|42", "San Diego|45", "Denver|45",
@@ -468,7 +468,7 @@ export const KATALOG: KatalogPrompt[] = [
   {
     key: "stadt-frankreich",
     text: "Nenne eine Stadt in Frankreich.",
-    hint: "Bekannte Städte im europäischen Frankreich.",
+    hint: "Jede Stadt und jedes Dorf zählt – je kleiner, desto tiefer.",
     answers: [
       "Paris|10", "Marseille|18", "Lyon|20", "Nizza|28|Nice", "Bordeaux|30", "Straßburg|32|Strasbourg|Strassburg", "Toulouse|35", "Cannes|38", "Lille|45",
       "Nantes|48", "Montpellier|52", "Monaco|0", "Reims|55", "Avignon|55", "Le Havre|58", "Rennes|58", "Grenoble|58", "Dijon|60", "Metz|60", "Calais|58",
@@ -482,7 +482,7 @@ export const KATALOG: KatalogPrompt[] = [
   {
     key: "stadt-spanien",
     text: "Nenne eine Stadt in Spanien.",
-    hint: "Auch Städte auf den Balearen und Kanaren.",
+    hint: "Jede Stadt und jedes Dorf zählt – je kleiner, desto tiefer.",
     answers: [
       "Madrid|10", "Barcelona|10", "Sevilla|22|Seville", "Valencia|22", "Málaga|30|Malaga", "Palma|32|Palma de Mallorca", "Bilbao|40", "Granada|40",
       "Zaragoza|50|Saragossa", "Córdoba|50|Cordoba", "Alicante|48", "Ibiza|45|Eivissa", "Marbella|50", "San Sebastián|55|Donostia|San Sebastian",
@@ -496,7 +496,7 @@ export const KATALOG: KatalogPrompt[] = [
   {
     key: "stadt-tuerkei",
     text: "Nenne eine Stadt in der Türkei.",
-    hint: "Großstädte und bekannte Urlaubsorte.",
+    hint: "Jede Stadt und jedes Dorf zählt – je kleiner, desto tiefer.",
     answers: [
       "Istanbul|10", "Ankara|15", "Antalya|20", "Izmir|28|İzmir", "Alanya|35", "Bodrum|40", "Bursa|45", "Adana|50", "Konya|52", "Gaziantep|55", "Trabzon|58",
       "Kayseri|62", "Mersin|60", "Side|52", "Marmaris|52", "Kemer|58", "Fethiye|62", "Kuşadası|62|Kusadasi", "Diyarbakır|62|Diyarbakir", "Erzurum|66",

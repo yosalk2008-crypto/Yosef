@@ -1,6 +1,7 @@
 import { canon, distance } from "./fuzzy";
 import { ALL_COUNTRIES, BY_ID_ALL, COUNTRIES, CONTINENTS, NEVER_ASKED, SUBREGION_DE, norm, type Country } from "./data/countries";
 import { BEKANNTHEIT } from "./data/bekanntheit";
+import { findOrt } from "./tiefgangOrte";
 import { KATALOG, cleanAnswers, type KatalogPrompt } from "./data/tiefgang-katalog";
 import { EXTEND, KATALOG3 } from "./data/tiefgang-katalog3";
 import { makeRng, type Rng } from "./rng";
@@ -373,6 +374,9 @@ export function check(q: Question, input: string, suggested = false, lang: "de" 
   const names = (a: Answer) => [a.name, ...a.alt, ...ansAltsEn(a.name, q.key)];
   const exact = q.answers.find((a) => names(a).some((n) => norm(n) === nx));
   if (exact) return { ok: true, answer: exact };
+  // full place lists (every town with 500+ inhabitants) for the city questions – exact names only, never a country name
+  const ort = findOrt(q.key, input);
+  if (ort && !ALL_COUNTRIES.some((c) => norm(c.n) === nx || norm(c.nEn) === nx)) return { ok: true, answer: ort };
   const shown = (a: Answer) => ansName(a.name, lang, q.key);
   const typo = (a: Answer): Verdict =>
     suggested

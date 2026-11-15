@@ -72,7 +72,7 @@ export const EXTEND: Record<string, string[]> = {
 };
 
 const P = (key: string, text: string, hint: string, list: string[]): KatalogPrompt => ({ key, text, hint, answers: ranked(list) });
-const city = (key: string, where: string, list: string[], hint = "Großstädte und kleinere Städte zählen.") => P(key, `Nenne eine Stadt in ${where}.`, hint, list);
+const city = (key: string, where: string, list: string[], hint = "Jede Stadt und jedes Dorf zählt – je kleiner, desto tiefer.") => P(key, `Nenne eine Stadt in ${where}.`, hint, list);
 
 export const KATALOG3: KatalogPrompt[] = [
   // ---------- Städte nach Ländern ----------

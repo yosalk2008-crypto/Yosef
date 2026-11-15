@@ -41,6 +41,7 @@ import { Creature } from "../tiefgang/Creatures";
 import type { Impact } from "../tiefgang/OceanFx";
 import { Suggestion } from "../Suggestion";
 import { DailySolution } from "./DailySolution";
+import { prefetchOrte } from "@/lib/tiefgangOrte";
 import { GameArt } from "../GameArt";
 import { DailyGame } from "@/app/(de)/taeglich/[spiel]/DailyGame";
 import { MpDailyContext, mpLoad, type MpDaily } from "@/lib/mpDaily";
@@ -1192,6 +1193,9 @@ function TiefgangInput({ qkey, timeUp, onDone, dark = false }: { qkey: string; t
   const lang = useLang();
   const t = useT();
   const q = useMemo<Question | undefined>(() => tiefgangQ(qkey), [qkey]);
+  useEffect(() => {
+    void prefetchOrte(qkey);
+  }, [qkey]);
   const [v, setV] = useState("");
   const [sug, setSug] = useState<{ name: string; for: string } | null>(null);
   const [err, setErr] = useState("");

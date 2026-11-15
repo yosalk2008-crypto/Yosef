@@ -6,6 +6,7 @@ import { dayNumber, msUntilNextDay, utcDate } from "@/lib/daily";
 import { useDaily } from "@/lib/useDaily";
 import { LeaderboardJoin } from "../LeaderboardJoin";
 import { Suggestion } from "../Suggestion";
+import { prefetchOrte } from "@/lib/tiefgangOrte";
 import { MAX_PTS, ROUNDS, SECONDS, check, dailyQuestions, emojiFor, meters, randomQuestions, tierDesc, tierName, tierOf, type Question } from "@/lib/tiefgang";
 import { useLang, useT } from "@/lib/i18n";
 import { ansName, qHint, qText } from "@/lib/tiefgang-i18n";
@@ -51,6 +52,10 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [mode, daily.day, seed]
   );
+  // full place lists for city questions load in the background
+  useEffect(() => {
+    questions.forEach((q) => void prefetchOrte(q.key));
+  }, [questions]);
 
   const [results, setResults] = useState<Result[]>([]);
   const [phase, setPhase] = useState<"intro" | "countdown" | "question" | "sinking" | "reveal" | "done">("intro");

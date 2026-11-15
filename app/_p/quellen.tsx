@@ -50,6 +50,13 @@ function QuellenDe() {
         </p>
       </div>
       <div>
+        <h2>Orte in Tiefgang</h2>
+        <p>
+          Bei „Nenne eine Stadt in …“ zählt jeder Ort ab 500 Einwohnern aus{" "}
+          <a href="https://www.geonames.org/" rel="noopener">GeoNames</a> (CC BY 4.0). Die Punkte dieser Orte richten sich nach der Einwohnerzahl.
+        </p>
+      </div>
+      <div>
         <h2>Hinweis</h2>
         <p>
           Grenzverläufe und Statusfragen einzelner Gebiete sind teilweise umstritten. Die Darstellung
@@ -91,6 +98,13 @@ function SourcesEn() {
           <a href="https://github.com/codeforgermany/click_that_hood" rel="noopener">click_that_hood</a>, Syrian governorates, Moroccan regions and
           Turkish provinces (the 7 Turkish regions are combined from them): <a href="https://www.geoboundaries.org/" rel="noopener">geoBoundaries</a>{" "}
           (CC BY 4.0). Flags: <a href="https://github.com/lipis/flag-icons" rel="noopener">flag-icons</a> (MIT).
+        </p>
+      </div>
+      <div>
+        <h2>Places in Deep Dive</h2>
+        <p>
+          For “Name a city in …”, every place with at least 500 inhabitants from{" "}
+          <a href="https://www.geonames.org/" rel="noopener">GeoNames</a> (CC BY 4.0) counts. Their points follow the population.
         </p>
       </div>
       <div>

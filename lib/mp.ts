@@ -6,6 +6,7 @@ import { entitiesFor } from "./data/regions";
 import { NEVER_ASKED, flagUrl } from "./data/countries";
 import { randomRng } from "./rng";
 import { BIG_POOL, randomQuestions, type Question } from "./tiefgang";
+import { ortById, prefetchOrte } from "./tiefgangOrte";
 import { LAUNCH, addDays, utcDate, type DailyResult, type GameKey } from "./daily";
 import { GAMES } from "./games";
 import { pointsFor } from "./leaderboard";
@@ -230,7 +231,9 @@ export async function buildQuestions(game: GameId, n: number): Promise<HostQ[]> 
         : { view: { kind: "choice", text: `Was ist die Hauptstadt von ${e.name}?`, textEn: `What is the capital of ${e.nameEn}?`, options }, correct: e.id };
     });
   }
-  return randomQuestions(n).map((q) => ({ view: { kind: "tiefgang", key: q.key, text: q.text, hint: q.hint } }));
+  const qs = randomQuestions(n);
+  await Promise.all(qs.map((q) => prefetchOrte(q.key)));
+  return qs.map((q) => ({ view: { kind: "tiefgang", key: q.key, text: q.text, hint: q.hint } }));
 }
 
 export const tiefgangQ = (key: string): Question | undefined => BIG_POOL.find((q) => q.key === key);
@@ -251,7 +254,7 @@ export function judge(hq: HostQ, msg: AnswerMsg): PAns | null {
   }
   if (!msg.tg) return null;
   const q = tiefgangQ(hq.view.key);
-  const a = q?.answers.find((x) => x.id === msg.tg!.id);
+  const a = q?.answers.find((x) => x.id === msg.tg!.id) ?? ortById(hq.view.key, msg.tg!.id);
   if (!a) return null;
   return { label: a.name, choice: a.id, ok: true, pts: a.pts };
 }
