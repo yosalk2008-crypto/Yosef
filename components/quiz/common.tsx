@@ -19,7 +19,9 @@ export function useQuizParams(): QuizParams {
   const [p, setP] = useState<QuizParams>({ region: REGIONS[0], n: 10, borders: true, oneLife: false, typing: false, ready: false });
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
-    const rk = sp.get("region") as RegionKey | null;
+    // /quiz/<typ>/<region> (or the old ?region= query)
+    const fromPath = window.location.pathname.match(/\/quiz\/[^/]+\/([^/?#]+)/)?.[1];
+    const rk = (fromPath || sp.get("region")) as RegionKey | null;
     const region = (rk && REGION_BY_KEY[rk]) || REGIONS[0];
     const nRaw = sp.get("n");
     const n = nRaw === "alle" ? "alle" : nRaw && +nRaw > 0 ? +nRaw : 10;

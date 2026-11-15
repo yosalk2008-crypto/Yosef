@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "@/components/Link";
 import { flagUrl } from "@/lib/data/countries";
+import { LAND } from "@/lib/laender";
 import { useT } from "@/lib/i18n";
 
 /** The answers to a finished daily game, shown above the result card. */
@@ -16,6 +18,8 @@ export function Solutions({ children, note }: { children: React.ReactNode; note?
     </section>
   );
 }
+
+const SLUG_BY_ISO2 = Object.fromEntries(LAND.map((c) => [c.iso2, c.slug])) as Record<string, string>;
 
 const tone = (p: number, max: number) => {
   const f = p / max;
@@ -60,6 +64,11 @@ export function SolutionRow({
           </p>
         )}
         {extra}
+        {iso2 && SLUG_BY_ISO2[iso2] && (
+          <Link href={`/laender/${SLUG_BY_ISO2[iso2]}`} className="mt-1 inline-block text-sm font-semibold text-brand hover:underline">
+            {t("Steckbrief ansehen", "View fact sheet")} →
+          </Link>
+        )}
       </div>
       {badge && <span className={`shrink-0 rounded-lg px-2.5 py-1 font-display text-sm font-semibold tabular-nums ${tone(badge.pts, badge.max)}`}>{badge.text}</span>}
       {!badge && ok != null && (

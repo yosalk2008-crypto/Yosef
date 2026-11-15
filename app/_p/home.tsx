@@ -134,7 +134,7 @@ export default function Home({ lang }: { lang: Lang }) {
         </div>
 
         <div className="mt-6 grid gap-5 lg:grid-cols-2">
-          <Link href="/quiz/karte?region=welt&n=10" className="chunk relative flex flex-col items-center px-5 pb-6 pt-6 text-center" style={REGION_BLUE}>
+          <Link href="/quiz/karte/welt?n=10" className="chunk relative flex flex-col items-center px-5 pb-6 pt-6 text-center" style={REGION_BLUE}>
             <div className="relative w-full max-w-md">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/thumbs/welt.svg" alt="" className="w-full" />
@@ -147,7 +147,7 @@ export default function Home({ lang }: { lang: Lang }) {
             <span className="mt-3 font-display text-lg font-semibold text-ink/80">{t("Welt", "World")}</span>
             <span className="font-display text-[26px] font-semibold leading-tight sm:text-3xl">{t("Länder auf der Karte", "Countries on the map")}</span>
           </Link>
-          <Link href="/quiz/flaggen?region=welt&n=10" className="chunk relative flex flex-col items-center px-5 pb-6 pt-6 text-center" style={REGION_BLUE}>
+          <Link href="/quiz/flaggen/welt?n=10" className="chunk relative flex flex-col items-center px-5 pb-6 pt-6 text-center" style={REGION_BLUE}>
             <div className="relative w-full max-w-md">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/thumbs/welt.svg" alt="" className="w-full" />

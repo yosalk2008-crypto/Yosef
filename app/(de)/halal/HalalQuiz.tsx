@@ -45,9 +45,9 @@ export function HalalQuiz() {
         if (!window.HALAL) await load("/halal/data.js?v=6");
         if (lang === "en" && !(window as unknown as { HALAL_EN?: unknown }).HALAL_EN) await load("/halal/data.en.js?v=6");
         const w = window as unknown as { KTFX?: unknown; KT_ART?: unknown };
-        if (!w.KTFX) await load("/koscher/fx.js?v=1");
+        if (!w.KTFX) await load("/koscher/fx.js?v=2");
         if (!w.KT_ART) await load("/koscher/art.js?v=1");
-        if (!window.mountHalal) await load("/halal/app.js?v=4");
+        if (!window.mountHalal) await load("/halal/app.js?v=5");
         if (alive && ref.current && window.mountHalal) cleanup = window.mountHalal(ref.current);
       } catch {
         if (alive) setFailed(true);

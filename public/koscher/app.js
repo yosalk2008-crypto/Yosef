@@ -56,6 +56,7 @@ window.mountKosher = function (app) {
     ["Essen", "Honig", "ja"],
   ];
   function home() {
+    window.KTFX.setPath("/koscher");
     const [cat, item, a] = PROBES[Math.floor(Math.random() * PROBES.length)];
     app.innerHTML =
       band(
@@ -66,6 +67,7 @@ window.mountKosher = function (app) {
             <p class="lead">${T("Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – und erfahre, warum.", "Shrimp, giraffe, light switches on Shabbat: guess what Judaism allows – and find out why.")}</p>
             <div class="actions">
               <a class="btn light" href="#/quiz">${T("Tagesquiz starten", "Start daily quiz")}</a>
+              <a class="btn outline" href="${BASE}/koscher/fragen">${T("Alle Fragen ansehen", "Browse all questions")}</a>
             </div>
           </div>
           <div class="stage">
@@ -141,6 +143,7 @@ window.mountKosher = function (app) {
     }
     if (quiz.i >= quiz.qs.length) return resultView();
     const q = quiz.qs[quiz.i];
+    FX.setPath(`/koscher/frage/${FX.slug(q.q)}`);
     const picked = quiz.picks[quiz.i];
     const isFood = food(q);
     const L = lvOf(q);
@@ -385,6 +388,7 @@ window.mountKosher = function (app) {
   }
 
   function resultView() {
+    FX.setPath("/koscher");
     const n = quiz.qs.length;
     const right = quiz.picks.filter((p, k) => p === quiz.qs[k].a).length;
     const max = maxGold();
@@ -420,6 +424,7 @@ window.mountKosher = function (app) {
   }
 
   function doneView(d) {
+    FX.setPath("/koscher");
     summary(
       T("Tagesquiz geschafft", "Daily quiz done"),
       d.right,

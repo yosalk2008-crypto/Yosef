@@ -332,3 +332,37 @@
   .kosher .vstars i, .kosher .vbeam, .kosher .vcoin, .kosher .vmeter i, .kosher .vdots i.cur, .kosher .worth.w3, .kosher .swipe.deal, .kosher .swtip .hand, .kosher .pop, .kosher .tglow, .kosher .kchest, .kosher .kchest *, .kosher .tstage .vsack, .kosher .marks i, .kosher .vsack.bump .ksack, .kosher .vault.nope, .kosher .vault.nope .ksack { animation: none; }
   .kosher .swipe, .kosher .ksack, .kosher .ksack * { transition: none; }
 }
+
+/* Frage-Unterseiten (/koscher/frage/…, /halal/frage/…) und Fragenliste */
+.kosher .review a { color: var(--ink); text-decoration: none; font-weight: 600; }
+.kosher .review a:hover { color: var(--brand); text-decoration: underline; }
+.kosher .review b { color: var(--brand); }
+.kosher .qnav { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 22px; }
+.kosher .qnav a { display: block; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: #fff; color: var(--ink); text-decoration: none; font-weight: 600; font-size: 15px; line-height: 1.35; }
+.kosher .qnav a:last-child { text-align: right; }
+.kosher .qnav a:hover { border-color: var(--brand); background: var(--brand-soft); }
+.kosher .qjump { margin: 0 0 8px; }
+.kosher .qjump .chip { color: var(--ink); border-color: var(--line); background: var(--surface); text-decoration: none; }
+.kosher .qjump .chip:hover { background: var(--brand-soft); }
+.kosher .qgroup { padding-top: 18px; scroll-margin-top: 90px; }
+.kosher .qgroup h2 { font-size: 22px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.kosher .qgroup h2 small { color: var(--muted); font-size: 15px; font-weight: 600; }
+.kosher .qgroup ul { list-style: none; margin: 0; padding: 0; columns: 2 260px; column-gap: 24px; }
+.kosher .qgroup li { break-inside: avoid; padding: 7px 0; border-bottom: 1px dashed var(--line); }
+.kosher .qgroup a { color: var(--ink); text-decoration: none; font-weight: 500; }
+.kosher .qgroup a:hover { color: var(--brand); text-decoration: underline; }
+.kosher .hero .actions .btn.outline { text-decoration: none; }
+@media (max-width: 520px) { .kosher .qnav { grid-template-columns: 1fr; } .kosher .qnav a:last-child { text-align: left; } }
+/* Raten auf der Frage-Seite: Lösung steht im HTML, klappt nach dem Tipp auf */
+.kosher .qcard .answers { margin-top: 18px; }
+.kosher .fshow { margin-top: 14px; background: none; border: 0; padding: 4px 0; color: var(--brand); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.kosher .fsol { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .35s ease, opacity .35s; }
+.kosher .fsol > * { overflow: hidden; }
+.kosher .fsol.open { grid-template-rows: 1fr; opacity: 1; }
+.kosher .fsol .verdict { position: relative; }
+.kosher .fsol .verdict .stamp { position: relative; display: inline-block; margin: 6px 0 4px 4px; font-size: clamp(17px, 4.5vw, 22px); padding: 9px 14px; }
+.kosher .fsol.open .verdict .stamp { animation: kslam .42s cubic-bezier(.2,1.6,.4,1) both; }
+.kosher .fhit { margin: 18px 0 0; font-size: 21px; font-weight: 800; }
+.kosher .fhit.ok { color: var(--ok); }
+.kosher .fhit.no { color: var(--no); }
+@media (prefers-reduced-motion: reduce) { .kosher .fsol { transition: none; } .kosher .fsol.open .verdict .stamp { animation: none; } }

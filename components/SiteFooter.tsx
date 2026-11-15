@@ -17,6 +17,15 @@ export function SiteFooter() {
           © {new Date().getFullYear()} {site.name} · {t("ein Projekt von", "a project by")} {site.company}
         </p>
         <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label={t("Rechtliches", "Legal")}>
+          <Link href="/laender" className="hover:text-ink">
+            {t("Länder", "Countries")}
+          </Link>
+          <Link href="/koscher/fragen" className="hover:text-ink">
+            {t("Koscher-Fragen", "Kosher questions")}
+          </Link>
+          <Link href="/halal/fragen" className="hover:text-ink">
+            {t("Halal-Fragen", "Halal questions")}
+          </Link>
           <Link href="/quellen" className="hover:text-ink">
             {t("Datenquellen", "Data sources")}
           </Link>

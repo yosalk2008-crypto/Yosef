@@ -1,4 +1,5 @@
 import type { GameKey } from "./daily";
+import { REGIONS } from "./data/regions";
 
 export type GameInfo = {
   key: GameKey;
@@ -109,3 +110,14 @@ export type QuizType = (typeof QUIZ_TYPES)[number]["key"];
 /** Title / tagline in the current language. */
 export const gTitle = (g: { title: string; titleEn: string }, lang: "de" | "en") => (lang === "en" ? g.titleEn : g.title);
 export const gTagline = (g: { tagline: string; taglineEn: string }, lang: "de" | "en") => (lang === "en" ? g.taglineEn : g.tagline);
+
+/** Whether a quiz type works for a region (flags only for countries, no capitals quiz where capitals share the region name). */
+export function quizFits(typ: QuizType, region: { kind: "countries" | "states"; noCapitals?: boolean }) {
+  const inf = QUIZ_TYPES.find((q) => q.key === typ)!;
+  return (!inf.countriesOnly || region.kind === "countries") && !(typ === "hauptstaedte" && region.noCapitals);
+}
+
+/** Every quiz type × region that works, e.g. /quiz/flaggen/europa. */
+export function quizRegionParams() {
+  return QUIZ_TYPES.flatMap((q) => REGIONS.filter((r) => quizFits(q.key, r)).map((r) => ({ typ: q.key as string, region: r.key as string })));
+}

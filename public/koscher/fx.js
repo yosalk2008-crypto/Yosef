@@ -167,5 +167,15 @@ window.KTFX = (function () {
     root.addEventListener("click", h);
     return () => root.removeEventListener("click", h);
   }
-  return { reduced, sound, vibrate, count, burst, rain, floatText, soundBtn, bindSound };
+  /** Same slug as lib/slug.ts – links each quiz question to its own page. */
+  const slug = (s) =>
+    String(s).toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+      .normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80).replace(/-+$/, "");
+  /** Shows the page of the current question in the address bar without reloading (counts as a page view). */
+  function setPath(p) {
+    const want = (window.KT_LANG === "en" ? "/en" : "") + p;
+    if (location.pathname === want) return;
+    try { history.replaceState(null, "", want + location.hash); } catch (e) {}
+  }
+  return { reduced, sound, vibrate, count, burst, rain, floatText, soundBtn, bindSound, slug, setPath };
 })();

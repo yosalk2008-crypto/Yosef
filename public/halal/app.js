@@ -54,6 +54,7 @@ window.mountHalal = function (app) {
     ["Essen", "Energy-Drink", "halal"],
   ];
   function home() {
+    window.KTFX.setPath("/halal");
     const [cat, item, a] = PROBES[Math.floor(Math.random() * PROBES.length)];
     app.innerHTML =
       band(
@@ -64,6 +65,7 @@ window.mountHalal = function (app) {
             <p class="lead">${T("Vape, Sportwetten, Zinsen, Kredite: Rate, was im Islam erlaubt ist – mit Quellen aus Quran, Tafsir, Bukhari und Muslim.", "Vaping, sports betting, interest, loans: guess what Islam allows – with sources from the Quran, Tafsir, Bukhari and Muslim.")}</p>
             <div class="actions">
               <a class="btn light" href="#/quiz">${T("Tagesquiz starten", "Start daily quiz")}</a>
+              <a class="btn outline" href="${BASE}/halal/fragen">${T("Alle Fragen ansehen", "Browse all questions")}</a>
             </div>
           </div>
           <div class="stage">
@@ -234,6 +236,7 @@ window.mountHalal = function (app) {
     }
     if (quiz.i >= quiz.qs.length) return resultView();
     const q = quiz.qs[quiz.i];
+    FX.setPath(`/halal/frage/${FX.slug(q.q)}`);
     const picked = quiz.picks[quiz.i];
     const L = lvOf(q);
     const tot = total();
@@ -383,6 +386,7 @@ window.mountHalal = function (app) {
   }
 
   function resultView() {
+    FX.setPath("/halal");
     const n = quiz.qs.length;
     const right = quiz.picks.filter((p, k) => p === quiz.qs[k].a).length;
     const max = total();
@@ -418,6 +422,7 @@ window.mountHalal = function (app) {
   }
 
   function doneView(d) {
+    FX.setPath("/halal");
     summary(
       T("Tagesquiz geschafft", "Daily quiz done"),
       d.right,

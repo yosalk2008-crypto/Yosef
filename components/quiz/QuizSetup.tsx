@@ -58,14 +58,15 @@ export function QuizSetup() {
   let step = 1;
 
   const start = () => {
-    const q = new URLSearchParams({ region });
+    const q = new URLSearchParams();
     if (typ !== "alle-nennen") q.set("n", n);
     if (typ === "karte") {
       if (!borders) q.set("grenzen", "aus");
       if (oneLife) q.set("leben", "1");
     }
     if (typ === "hauptstaedte" && input === "eingabe") q.set("modus", "eingabe");
-    router.push(href(`/quiz/${typ}?${q}`));
+    const qs = q.toString();
+    router.push(href(`/quiz/${typ}/${region}${qs ? `?${qs}` : ""}`));
   };
 
   const title = fixed ? regionLabel(cur.parent ? REGIONS.find((r) => r.key === cur.parent)! : cur, lang) : t("Unbegrenzte Quizze", "Unlimited quizzes");

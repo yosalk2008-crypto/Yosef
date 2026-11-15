@@ -120,6 +120,9 @@ export function SiteHeader() {
               <Link href="/quiz" className="btn-ghost justify-start">
                 {t("Alle Quizze", "All quizzes")}
               </Link>
+              <Link href="/laender" className="btn-ghost justify-start">
+                {t("Alle Länder – Steckbriefe", "All countries – fact sheets")}
+              </Link>
             </div>
             <nav className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-muted" aria-label={t("Rechtliches", "Legal")}>
               <Link href="/impressum" className="hover:text-ink">
