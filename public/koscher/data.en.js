@@ -724,5 +724,55 @@ window.QUESTIONS_EN = {
 "Putting the Chanukah menorah in the window",
 "The lights are meant to publicise the miracle. That’s why the Talmud recommends placing them at the front door or in a window facing the street.",
 "Talmud, Shabbat 21b"
+],
+"Einen Freund heimlich hassen, statt mit ihm über den Streit zu reden": [
+"Secretly hating a friend instead of talking to them about the argument",
+"The Torah says: you shall not hate your brother in your heart – rather, reprove him. If you feel hurt, address it openly and kindly instead of building up resentment.",
+"Leviticus 19:17"
+],
+"Ein gefundenes Handy behalten, obwohl man weiß, wem es gehört": [
+"Keeping a phone you found even though you know whose it is",
+"The Torah obliges you to return lost items to their owner and says: you must not look away. If you know whom something belongs to, you have to give it back.",
+"Deuteronomy 22:1–3"
+],
+"Einem Mitschüler absichtlich einen schlechten Rat geben, damit er scheitert": [
+"Deliberately giving a classmate bad advice so that they fail",
+"The Torah forbids putting a stumbling block before the blind. Rashi explains that this also means giving someone advice that harms them.",
+"Leviticus 19:14"
+],
+"Das Talgfett (Chelev) vom Rind essen": [
+"Eating the suet (chelev) of a cow",
+"The Torah forbids certain fat parts of cattle, sheep and goats. The butcher removes them during kosher preparation – ordinary fat in the meat may be eaten.",
+"Leviticus 7:23"
+],
+"Fleisch von einem Rind essen, das ein Wolf gerissen hat": [
+"Eating meat from a cow that was mauled by a wolf",
+"The Torah says: you shall not eat flesh torn in the field. An animal with such fatal injuries counts as treifa – even if it is a kosher species.",
+"Exodus 22:30"
+],
+"Brot essen, in dessen Teig Milch eingebacken wurde": [
+"Eating bread with milk baked into the dough",
+"Ordinary bread should not be baked with milk, so that you don’t eat it with meat by mistake. It is allowed if the bread has a distinctive shape or only a small amount is baked.",
+"Shulchan Aruch, Yoreh De’ah 97:1"
+],
+"Junge Vögel aus dem Nest nehmen, während die Mutter darauf sitzt": [
+"Taking young birds from the nest while the mother is sitting on it",
+"The Torah says: if you find a bird’s nest, do not take the mother with the young – let the mother fly away first. The commandment teaches consideration for animals.",
+"Deuteronomy 22:6–7"
+],
+"Ein Haus mit begehbarem Flachdach ohne Geländer bauen": [
+"Building a house with a walkable flat roof and no railing",
+"The Torah requires a railing on the roof so that nobody falls off. From this we learn: you must remove dangers in your own home.",
+"Deuteronomy 22:8"
+],
+"Vor Jom Kippur einen Freund um Verzeihung bitten, den man gekränkt hat": [
+"Asking a friend you hurt for forgiveness before Yom Kippur",
+"The Mishnah teaches: Yom Kippur atones for sins between a person and God – but wrongs against other people only once you have made peace with them. That’s why you ask for forgiveness beforehand.",
+"Mishnah, Yoma 8:9"
+],
+"Am Freitagabend den Kiddusch über einen Becher Wein sprechen": [
+"Saying Kiddush over a cup of wine on Friday evening",
+"According to the Talmud, the commandment to sanctify Shabbat is fulfilled with a blessing over wine at the start of Shabbat. Grape juice can be used instead of wine.",
+"Talmud, Pesachim 106a"
 ]
 };

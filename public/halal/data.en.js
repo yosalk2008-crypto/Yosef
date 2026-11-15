@@ -724,5 +724,55 @@ window.HALAL_EN = {
 "Eating suhur before dawn in Ramadan",
 "The Prophet ﷺ said: take suhur, for there is blessing in it. It is Sunnah to eat something before the fast begins.",
 "Sahih al-Bukhari 1923 · Sahih Muslim 1095"
+],
+"Auch Leute grüßen, die man nicht kennt": [
+"Greeting people you don’t know as well",
+"A man asked the Prophet ﷺ what is good in Islam. He replied: feeding others and saying the salam greeting – to those you know and to those you don’t know.",
+"Sahih al-Bukhari 12 · Sahih Muslim 39"
+],
+"Im Klassenchat lieber nichts schreiben, statt etwas Gemeines zu posten": [
+"Writing nothing in the class chat instead of posting something mean",
+"The Prophet ﷺ said: whoever believes in Allah and the Last Day should speak good or remain silent. That also applies to everything you write online.",
+"Sahih al-Bukhari 6018 · Sahih Muslim 47"
+],
+"Einem Mitschüler beistehen, der gemobbt wird": [
+"Standing up for a classmate who is being bullied",
+"The Prophet ﷺ said: help your brother, whether he is doing wrong or being wronged. You help the victim by standing by them – and the wrongdoer by stopping them.",
+"Sahih al-Bukhari 2444 · Sahih Muslim 2584"
+],
+"Nach dem Essen die Finger ablecken": [
+"Licking your fingers after eating",
+"The Prophet ﷺ said: when you eat, do not wipe your hand until you have licked it. He also said: you do not know in which part of the food the blessing lies.",
+"Sahih al-Bukhari 5456 · Sahih Muslim 2031, 2033"
+],
+"Sein Essen mit einem Gast teilen, obwohl es nur knapp reicht": [
+"Sharing your food with a guest even though there is barely enough",
+"The Prophet ﷺ said: food for two is enough for three, and food for three is enough for four. Sharing brings blessing.",
+"Sahih al-Bukhari 5392 · Sahih Muslim 2058"
+],
+"Fleisch von einem Adler oder Falken essen": [
+"Eating the meat of an eagle or falcon",
+"The Prophet ﷺ forbade eating beasts of prey with fangs and birds with talons. Most scholars (Hanafis, Shafi’is, Hanbalis) therefore consider birds of prey haram, while the Malikis mostly regard them only as makruh.",
+"Sahih Muslim 1934"
+],
+"Nach dem Niesen „Alhamdulillah“ sagen": [
+"Saying “Alhamdulillah” after sneezing",
+"The Prophet ﷺ said: whoever sneezes should say “Alhamdulillah”, and whoever hears it replies “Yarhamuk Allah” – may Allah have mercy on you.",
+"Sahih al-Bukhari 6224 · Sahih Muslim 2991"
+],
+"Beim Anziehen der Schuhe mit dem rechten Fuß anfangen": [
+"Starting with the right foot when putting on your shoes",
+"The Prophet ﷺ said: when putting on shoes, put on the right one first, and when taking them off, take off the left one first. A small Sunnah for every day.",
+"Sahih al-Bukhari 5855 · Sahih Muslim 2097"
+],
+"Am Tag von Arafa freiwillig fasten, wenn man nicht auf Pilgerfahrt ist": [
+"Voluntarily fasting on the Day of Arafah when you are not on pilgrimage",
+"The Prophet ﷺ said he hoped from Allah that fasting on the Day of Arafah atones for the sins of the previous and the coming year. It is a strongly recommended Sunnah.",
+"Sahih Muslim 1162"
+],
+"Auf einer Reise die Vier-Rak'a-Gebete auf zwei Rak'as kürzen": [
+"Shortening the four-rak’ah prayers to two rak’ahs while travelling",
+"The Quran permits shortening the prayer when travelling. Anas reports that on the journey from Medina to Mecca the Prophet ﷺ prayed the prayers with two rak’ahs until he was back in Medina.",
+"Quran 4:101 with Tafsir Ibn Kathir · Sahih al-Bukhari 1081 · Sahih Muslim 693"
 ]
 };
