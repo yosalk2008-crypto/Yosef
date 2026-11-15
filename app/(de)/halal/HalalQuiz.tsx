@@ -42,9 +42,9 @@ export function HalalQuiz() {
     (async () => {
       try {
         (window as unknown as { KT_LANG?: string }).KT_LANG = lang;
-        if (!window.HALAL) await load("/halal/data.js?v=5");
-        if (lang === "en" && !(window as unknown as { HALAL_EN?: unknown }).HALAL_EN) await load("/halal/data.en.js?v=5");
-        if (!window.mountHalal) await load("/halal/app.js?v=2");
+        if (!window.HALAL) await load("/halal/data.js?v=6");
+        if (lang === "en" && !(window as unknown as { HALAL_EN?: unknown }).HALAL_EN) await load("/halal/data.en.js?v=6");
+        if (!window.mountHalal) await load("/halal/app.js?v=3");
         if (alive && ref.current && window.mountHalal) cleanup = window.mountHalal(ref.current);
       } catch {
         if (alive) setFailed(true);

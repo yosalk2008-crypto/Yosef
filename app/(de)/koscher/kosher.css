@@ -218,3 +218,42 @@
 }
 .kosher .stamp { white-space: nowrap; }
 @media (max-width: 520px) { .kosher .stage .probe .stamp { font-size: 16px; padding: 8px 12px; } }
+
+/* Tagesquiz: Swipe-Karten und Goldsack */
+.kosher .dnote { margin: 14px 0 0; color: rgb(255 255 255 / .72); font-weight: 500; font-size: 15px; }
+.kosher .sackrow { display: flex; align-items: center; gap: 12px; width: fit-content; margin: 0 0 12px; padding: 6px 18px 6px 10px; background: #fff; border: 1px solid var(--line); border-radius: 999px; box-shadow: 0 14px 30px -18px rgb(10 22 48 / .45); }
+.kosher .sackrow strong { display: block; font-size: 20px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.kosher .sackrow small { color: var(--muted); font-size: 13px; }
+.kosher .sack { width: 46px; height: 52px; flex: none; transform-origin: 50% 90%; }
+.kosher .sack.bump { animation: ksack .38s cubic-bezier(.3,1.6,.5,1); }
+@keyframes ksack { 0% { transform: scale(1); } 40% { transform: scale(1.22, .88); } 100% { transform: scale(1); } }
+.kosher .sackrow.nope .sack { animation: knope .4s ease; }
+@keyframes knope { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-9deg); } 75% { transform: rotate(9deg); } }
+.kosher .worth { display: flex; align-items: center; gap: 8px; width: fit-content; margin-top: 12px; padding: 3px 12px 3px 8px; border-radius: 999px; background: #fff7e0; color: #7a5214; border: 1px solid #f0d58a; font-weight: 700; font-size: 14px; }
+.kosher .worth .cn { display: inline-flex; }
+.kosher .worth .cn i, .kosher .flycoin { display: block; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3b0 0%, #f6c945 45%, #d99a1a 100%); border: 2px solid #b27a14; }
+.kosher .worth .cn i { width: 14px; height: 14px; margin-right: -4px; }
+.flycoin { position: fixed; z-index: 70; width: 22px; height: 22px; pointer-events: none; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3b0 0%, #f6c945 45%, #d99a1a 100%); border: 2px solid #b27a14; box-shadow: 0 4px 10px rgb(0 0 0 / .25); }
+.kosher .swipe { touch-action: pan-y; user-select: none; -webkit-user-select: none; transition: transform .25s cubic-bezier(.3,1.4,.5,1); will-change: transform; }
+.kosher .swipe:not(.pop):not(.shake) { cursor: grab; }
+.kosher .swipe.dragging { transition: none; cursor: grabbing; }
+.kosher .swipe .ov { position: absolute; top: 18px; z-index: 3; opacity: 0; pointer-events: none; padding: 8px 14px; border: 4px solid currentColor; border-radius: 12px; background: #fff; font-weight: 800; font-size: 20px; line-height: 1; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.kosher .swipe .ov.ja { right: 16px; color: var(--ok); transform: rotate(9deg); }
+.kosher .swipe .ov.nein { left: 16px; color: var(--no); transform: rotate(-9deg); }
+.kosher .swtip { display: flex; justify-content: space-between; gap: 10px; margin: 16px 0 0; color: var(--muted); font-size: 14px; font-weight: 600; }
+.kosher .swipe .answers { grid-template-columns: 1fr 1fr; margin-top: 14px; }
+.kosher .swipe .answer[data-a="kommt"] { grid-column: 1 / -1; }
+.kosher .swipe .answer { font-size: 16px; padding: 12px 14px; }
+@media (max-width: 420px) { .kosher .swipe .answer { font-size: 15px; padding: 11px 10px; gap: 8px; } }
+.kosher .pop { animation: kpop .35s cubic-bezier(.2,1.5,.4,1); }
+@keyframes kpop { 0% { transform: scale(.93) translateY(10px); opacity: .4; } 100% { transform: none; opacity: 1; } }
+.kosher .gain { margin-left: 8px; font-size: 16px; color: #a8700c; background: #fff7e0; border: 1px solid #f0d58a; border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+.kosher .gain.none { color: var(--muted); background: var(--surface); border-color: var(--line); }
+.kosher .sackbig .sack { width: 84px; height: 96px; margin: 0 auto 8px; display: block; }
+.kosher .goldsub { margin-top: 6px; }
+.kosher .comeback { font-size: 15px; margin-top: 18px; }
+.kosher .review small { color: var(--muted); margin-left: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  .kosher .sack.bump, .kosher .sackrow.nope .sack, .kosher .pop { animation: none; }
+  .kosher .swipe { transition: none; }
+}

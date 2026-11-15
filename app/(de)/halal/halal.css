@@ -32,3 +32,42 @@
 .kosher.halal .btn:hover { background: #0b6e4b; }
 .kosher.halal .path:hover { box-shadow: 0 10px 30px -14px rgb(16 185 129 / .35); }
 .kosher.halal .note a { color: #a7f3d0; }
+
+/* Tagesquiz: Auto auf der Straße, fährt je nach Schwierigkeit 10 / 20 / 30 km */
+.kosher.halal .trip { margin-bottom: 12px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 14px 30px -18px rgb(6 42 32 / .45); overflow: hidden; }
+.kosher.halal .trip.flat { border: 0; box-shadow: none; margin: 0 0 6px; border-radius: 16px; }
+.kosher.halal .road { position: relative; height: 150px; overflow: hidden; background: linear-gradient(#b8e8d2 0%, #eefaf4 100%); }
+.kosher.halal .sun { position: absolute; right: 16%; top: 16px; width: 36px; height: 36px; border-radius: 50%; background: #ffe27a; box-shadow: 0 0 0 9px rgb(255 226 122 / .35); }
+.kosher.halal .hills { position: absolute; left: 0; right: 0; background-repeat: repeat-x; background-position-x: 0; transition: background-position-x 1.5s cubic-bezier(.4,0,.2,1); }
+.kosher.halal .hills.far { bottom: 40px; height: 70px; background-size: 320px 70px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='70' viewBox='0 0 320 70'%3E%3Cpath d='M0 70V40Q40 8 90 36T180 32T270 26T320 40V70Z' fill='%23a6dbc1'/%3E%3C/svg%3E"); }
+.kosher.halal .hills.near { bottom: 40px; height: 48px; background-size: 240px 48px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='48' viewBox='0 0 240 48'%3E%3Cpath d='M0 48V28Q30 6 70 24T150 22T240 28V48Z' fill='%2378c6a3'/%3E%3C/svg%3E"); }
+.kosher.halal .asphalt { position: absolute; left: 0; right: 0; bottom: 0; height: 46px; background: #2f3b37; border-top: 4px solid #5d6b66; }
+.kosher.halal .lane { position: absolute; left: 0; right: 0; top: 20px; height: 4px; background-image: repeating-linear-gradient(90deg, #f4f7f6 0 22px, transparent 22px 44px); background-size: 44px 4px; transition: background-position-x 1.5s cubic-bezier(.4,0,.2,1); }
+.kosher.halal .flag { position: absolute; right: 8px; bottom: 30px; width: 28px; z-index: 1; }
+.kosher.halal .flag svg, .kosher.halal .car svg { display: block; width: 100%; height: auto; }
+.kosher.halal .car { position: absolute; bottom: 12px; width: 96px; z-index: 2; transition: left 1.5s cubic-bezier(.4,0,.2,1); }
+.kosher.halal .wh { transform-box: fill-box; transform-origin: center; }
+.kosher.halal .road.driving .wh { animation: kwheel .32s linear infinite; }
+.kosher.halal .road.driving .car svg { animation: kbounce .28s ease-in-out infinite alternate; }
+@keyframes kwheel { to { transform: rotate(360deg); } }
+@keyframes kbounce { from { transform: translateY(0); } to { transform: translateY(-2px); } }
+.kosher.halal .puff { position: absolute; left: 2px; top: 6px; width: 14px; height: 14px; border-radius: 50%; background: #c9d1ce; opacity: 0; }
+.kosher.halal .car.stall svg { animation: kstall .5s ease; }
+.kosher.halal .car.stall .puff { animation: kpuff 1.1s ease-out forwards; }
+.kosher.halal .car.stall .puff.p2 { animation-delay: .15s; left: -6px; }
+.kosher.halal .car.stall .puff.p3 { animation-delay: .3s; left: 6px; }
+@keyframes kstall { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-4px) rotate(-1.5deg); } 40% { transform: translateX(4px) rotate(1.5deg); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+@keyframes kpuff { 0% { opacity: .85; transform: translate(0,0) scale(.6); } 100% { opacity: 0; transform: translate(-22px,-42px) scale(1.9); } }
+.kosher.halal .kmrow { display: flex; align-items: baseline; gap: 10px; padding: 8px 16px 12px; }
+.kosher.halal .kmrow strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+.kosher.halal .kmrow small { color: var(--muted); font-size: 13px; }
+.kosher.halal .worth { background: var(--brand-soft); color: #0b6e4b; border-color: #bfe6d3; }
+.kosher.halal .worth .chev { letter-spacing: -2px; font-size: 13px; }
+.kosher.halal .gain { color: #0b6e4b; background: var(--brand-soft); border-color: #bfe6d3; }
+.kosher.halal .gain.none { color: var(--muted); background: var(--surface); border-color: var(--line); }
+.kosher.halal .result .trip + .big { margin-top: 10px; }
+@media (max-width: 520px) { .kosher.halal .road { height: 128px; } .kosher.halal .car { width: 80px; } }
+@media (prefers-reduced-motion: reduce) {
+  .kosher.halal .hills, .kosher.halal .lane, .kosher.halal .car { transition: none; }
+  .kosher.halal .road.driving .wh, .kosher.halal .road.driving .car svg, .kosher.halal .car.stall svg, .kosher.halal .car.stall .puff { animation: none; }
+}
