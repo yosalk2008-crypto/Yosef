@@ -3,7 +3,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { SUPA_KEY, SUPA_URL } from "./leaderboard";
 import { entitiesFor } from "./data/regions";
-import { flagUrl } from "./data/countries";
+import { NEVER_ASKED, flagUrl } from "./data/countries";
 import { randomRng } from "./rng";
 import { BIG_POOL, randomQuestions, type Question } from "./tiefgang";
 import { LAUNCH, addDays, utcDate, type DailyResult, type GameKey } from "./daily";
@@ -211,8 +211,10 @@ export async function buildQuestions(game: GameId, n: number): Promise<HostQ[]> 
   }
   if (game === "flaggen" || game === "hauptstaedte") {
     const flags = game === "flaggen";
-    const pool = entitiesFor("welt").filter((e) => (flags ? e.iso2 : e.capital));
-    return rng.sample(pool, Math.min(n, pool.length)).map((e) => {
+    // Israel can be an option in the flag quiz but is never the answer (and never in the capitals quiz)
+    const pool = entitiesFor("welt").filter((e) => (flags ? e.iso2 : e.capital && !NEVER_ASKED.has(e.id)));
+    const targets = pool.filter((e) => !NEVER_ASKED.has(e.id));
+    return rng.sample(targets, Math.min(n, targets.length)).map((e) => {
       const others = rng.sample(
         pool.filter((o) => o.id !== e.id && o.capital !== e.capital),
         3

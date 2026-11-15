@@ -2,6 +2,7 @@
 
 import Link from "@/components/Link";
 import { useEffect, useState } from "react";
+import { NEVER_ASKED } from "@/lib/data/countries";
 import { REGION_BY_KEY, REGIONS, entitiesFor, regionLabel, splitLabel, type Entity, type Region, type RegionKey } from "@/lib/data/regions";
 import type { MapProjection } from "../MapView";
 import { useLang, useT } from "@/lib/i18n";
@@ -158,6 +159,9 @@ export function useEntities(region: Region) {
   useEffect(() => setList(localize(entitiesFor(region.key), lang)), [region.key, lang]);
   return list;
 }
+
+/** Countries that may appear as options or on the map but are never what a question asks for. */
+export const askable = (e: { id: string }) => !NEVER_ASKED.has(e.id);
 
 export function localize(list: Entity[], lang: "de" | "en"): Entity[] {
   if (lang !== "en") return list;

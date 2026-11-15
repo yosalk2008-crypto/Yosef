@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { LAND_ONLY, useShapes } from "@/lib/geo";
 import { randomRng } from "@/lib/rng";
 import { MapView } from "../MapView";
-import { QuizEnd, QuizHeader, mapSetup, questionCount, useEntities, useQuizParams } from "./common";
+import { QuizEnd, QuizHeader, mapSetup, questionCount, useEntities, useQuizParams, askable } from "./common";
 import { useLang, useT } from "@/lib/i18n";
 import { regionLabel } from "@/lib/data/regions";
 
@@ -22,7 +22,8 @@ export function MapQuiz() {
   const pool = useMemo(() => (shapes ? all.filter((e) => shapes.byId[e.id]) : []), [all, shapes]);
   const order = useMemo(() => {
     if (!pool.length || !params.ready) return [];
-    return randomRng().sample(pool, questionCount(params, pool.length));
+    const targets = pool.filter(askable);
+    return randomRng().sample(targets, questionCount(params, targets.length));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pool, seed, params.ready]);
 

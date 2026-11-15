@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BY_ID, COUNTRIES, flagUrl, type Country } from "@/lib/data/countries";
+import { ALL_COUNTRIES, BY_ID_ALL as BY_ID, COUNTRIES, flagUrl, type Country } from "@/lib/data/countries";
 import { dayNumber } from "@/lib/daily";
 import { TEMPERATUR } from "@/lib/data/temperatur";
 import { makeRng } from "@/lib/rng";
@@ -27,7 +27,7 @@ function checks(g: Country, t: Country) {
   return {
     cont: hit || g.cont === t.cont,
     land: hit || g.landlocked === t.landlocked,
-    nb: hit || t.borders.includes(g.id),
+    nb: hit || (BY_ID[t.id] ?? t).borders.includes(g.id),
   };
 }
 const sq = (ok: boolean) => (ok ? "🟩" : "🟥");
@@ -43,7 +43,7 @@ export function Laenderjagd() {
   const won = guesses.includes(target.id);
   const over = won || guesses.length >= MAX || !!st.gaveUp;
 
-  const options = useMemo(() => COUNTRIES.map((c) => ({ id: c.id, label: cName(c, lang), alt: [...c.alt, c.n] })), [lang]);
+  const options = useMemo(() => ALL_COUNTRIES.map((c) => ({ id: c.id, label: cName(c, lang), alt: [...c.alt, c.n] })), [lang]);
 
   const save = (next: string[], gaveUp = false) => {
     setLocal({ guesses: next, gaveUp });

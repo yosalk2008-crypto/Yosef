@@ -9,7 +9,7 @@ import { useShapes } from "@/lib/geo";
 import { randomRng } from "@/lib/rng";
 import { ShapeOutline } from "../Shape";
 import { Suggestion } from "../Suggestion";
-import { QuizEnd, QuizHeader, questionCount, useEntities, useQuizParams } from "./common";
+import { QuizEnd, QuizHeader, questionCount, useEntities, useQuizParams, askable } from "./common";
 import { useT } from "@/lib/i18n";
 
 type Q = { e: Entity; options: Entity[] };
@@ -25,15 +25,16 @@ export function ChoiceQuiz({ typ }: { typ: QuizType }) {
 
   const pool = useMemo(() => {
     if (typ === "flaggen") return all.filter((e) => e.iso2);
-    if (typ === "hauptstaedte") return all.filter((e) => e.capital);
+    if (typ === "hauptstaedte") return all.filter((e) => e.capital && askable(e));
     return shapes ? all.filter((e) => shapes.byId[e.id]) : [];
   }, [all, typ, shapes]);
 
   const questions = useMemo<Q[]>(() => {
     if (!pool.length) return [];
     const rng = randomRng();
-    const n = questionCount(params, pool.length);
-    return rng.sample(pool, n).map((e) => {
+    const targets = pool.filter(askable);
+    const n = questionCount(params, targets.length);
+    return rng.sample(targets, n).map((e) => {
       const others = rng.sample(
         pool.filter((o) => o.id !== e.id && (typ !== "hauptstaedte" || o.capital !== e.capital)),
         3

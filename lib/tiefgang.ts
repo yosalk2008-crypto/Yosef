@@ -1,5 +1,5 @@
 import { canon, distance } from "./fuzzy";
-import { BY_ID, COUNTRIES, CONTINENTS, SUBREGION_DE, norm, type Country } from "./data/countries";
+import { ALL_COUNTRIES, BY_ID_ALL, COUNTRIES, CONTINENTS, NEVER_ASKED, SUBREGION_DE, norm, type Country } from "./data/countries";
 import { BEKANNTHEIT } from "./data/bekanntheit";
 import { KATALOG, cleanAnswers, type KatalogPrompt } from "./data/tiefgang-katalog";
 import { EXTEND, KATALOG3 } from "./data/tiefgang-katalog3";
@@ -88,14 +88,14 @@ const TEMPLATES: Template[] = [
     key: "cont",
     make: (rng) => {
       const cont = rng.pick(CONTINENTS.filter((c) => c !== "Ozeanien"));
-      return { key: "cont:" + cont, text: `Nenne ein Land ${CONT_TEXT[cont]}.`, hint: "Je unbekannter das Land, desto tiefer tauchst du.", answers: countryAnswers(COUNTRIES.filter((c) => c.cont === cont)) };
+      return { key: "cont:" + cont, text: `Nenne ein Land ${CONT_TEXT[cont]}.`, hint: "Je unbekannter das Land, desto tiefer tauchst du.", answers: countryAnswers(ALL_COUNTRIES.filter((c) => c.cont === cont)) };
     },
   },
   {
     key: "sub",
     make: (rng) => {
       const sub = rng.pick(subregions);
-      return { key: "sub:" + sub, text: `Nenne ein Land in ${SUBREGION_DE[sub]}.`, hint: "Heutige, anerkannte Staaten zählen.", answers: countryAnswers(COUNTRIES.filter((c) => c.sub === sub)) };
+      return { key: "sub:" + sub, text: `Nenne ein Land in ${SUBREGION_DE[sub]}.`, hint: "Heutige, anerkannte Staaten zählen.", answers: countryAnswers(ALL_COUNTRIES.filter((c) => c.sub === sub)) };
     },
   },
   {
@@ -106,7 +106,7 @@ const TEMPLATES: Template[] = [
         key: "nb:" + x.id,
         text: `Nenne ein Nachbarland von ${x.n}.`,
         hint: "Gemeint sind Länder mit gemeinsamer Landgrenze.",
-        answers: countryAnswers(x.borders.map((b) => BY_ID[b])),
+        answers: countryAnswers(BY_ID_ALL[x.id].borders.map((b) => BY_ID_ALL[b])),
       };
     },
   },
@@ -127,16 +127,16 @@ const TEMPLATES: Template[] = [
     key: "letter",
     make: (rng) => {
       const L = rng.pick(letters);
-      return { key: "letter:" + L, text: `Nenne ein Land, dessen Name mit „${L}“ beginnt.`, hint: "Es zählt der deutsche Name des Landes.", answers: countryAnswers(COUNTRIES.filter((c) => c.n.toUpperCase().startsWith(L))) };
+      return { key: "letter:" + L, text: `Nenne ein Land, dessen Name mit „${L}“ beginnt.`, hint: "Es zählt der deutsche Name des Landes.", answers: countryAnswers(ALL_COUNTRIES.filter((c) => c.n.toUpperCase().startsWith(L))) };
     },
   },
-  { key: "landlocked", make: () => ({ key: "landlocked", text: "Nenne ein Land ohne Zugang zum Meer.", hint: "Binnenstaaten auf allen Kontinenten zählen.", answers: countryAnswers(COUNTRIES.filter((c) => c.landlocked)) }) },
-  { key: "island", make: () => ({ key: "island", text: "Nenne ein Land ohne Landgrenze zu einem anderen Land.", hint: "Zum Beispiel Inselstaaten.", answers: countryAnswers(COUNTRIES.filter((c) => c.borders.length === 0)) }) },
-  { key: "pop50", make: () => ({ key: "pop50", text: "Nenne ein Land mit mehr als 50 Millionen Einwohnern.", hint: "Grundlage sind die aktuellen Zahlen der Weltbank.", answers: countryAnswers(COUNTRIES.filter((c) => (c.pop ?? 0) > 5e7)) }) },
-  { key: "small", make: () => ({ key: "small", text: "Nenne ein Land, das kleiner ist als 10.000 km².", hint: "Das Saarland hat etwa 2.600 km².", answers: countryAnswers(COUNTRIES.filter((c) => c.area < 10000)) }) },
-  { key: "rich", make: () => ({ key: "rich", text: "Nenne ein Land mit einem BIP pro Kopf über 40.000 US-Dollar.", hint: "Grundlage sind die aktuellen Zahlen der Weltbank.", answers: countryAnswers(COUNTRIES.filter((c) => (c.gdppc ?? 0) > 40000)) }) },
-  { key: "life", make: () => ({ key: "life", text: "Nenne ein Land, in dem die Lebenserwartung über 82 Jahren liegt.", hint: "Grundlage sind die aktuellen Zahlen der Weltbank.", answers: countryAnswers(COUNTRIES.filter((c) => (c.life ?? 0) > 82)) }) },
-  { key: "big", make: () => ({ key: "big", text: "Nenne ein Land, das größer ist als 1 Million km².", hint: "Deutschland hat etwa 357.000 km².", answers: countryAnswers(COUNTRIES.filter((c) => c.area > 1e6)) }) },
+  { key: "landlocked", make: () => ({ key: "landlocked", text: "Nenne ein Land ohne Zugang zum Meer.", hint: "Binnenstaaten auf allen Kontinenten zählen.", answers: countryAnswers(ALL_COUNTRIES.filter((c) => c.landlocked)) }) },
+  { key: "island", make: () => ({ key: "island", text: "Nenne ein Land ohne Landgrenze zu einem anderen Land.", hint: "Zum Beispiel Inselstaaten.", answers: countryAnswers(ALL_COUNTRIES.filter((c) => c.borders.length === 0)) }) },
+  { key: "pop50", make: () => ({ key: "pop50", text: "Nenne ein Land mit mehr als 50 Millionen Einwohnern.", hint: "Grundlage sind die aktuellen Zahlen der Weltbank.", answers: countryAnswers(ALL_COUNTRIES.filter((c) => (c.pop ?? 0) > 5e7)) }) },
+  { key: "small", make: () => ({ key: "small", text: "Nenne ein Land, das kleiner ist als 10.000 km².", hint: "Das Saarland hat etwa 2.600 km².", answers: countryAnswers(ALL_COUNTRIES.filter((c) => c.area < 10000)) }) },
+  { key: "rich", make: () => ({ key: "rich", text: "Nenne ein Land mit einem BIP pro Kopf über 40.000 US-Dollar.", hint: "Grundlage sind die aktuellen Zahlen der Weltbank.", answers: countryAnswers(ALL_COUNTRIES.filter((c) => (c.gdppc ?? 0) > 40000)) }) },
+  { key: "life", make: () => ({ key: "life", text: "Nenne ein Land, in dem die Lebenserwartung über 82 Jahren liegt.", hint: "Grundlage sind die aktuellen Zahlen der Weltbank.", answers: countryAnswers(ALL_COUNTRIES.filter((c) => (c.life ?? 0) > 82)) }) },
+  { key: "big", make: () => ({ key: "big", text: "Nenne ein Land, das größer ist als 1 Million km².", hint: "Deutschland hat etwa 357.000 km².", answers: countryAnswers(ALL_COUNTRIES.filter((c) => c.area > 1e6)) }) },
 ];
 
 /** Fixed country sets: rarity comes from the AI fame ratings, names and spellings from the country data. */
@@ -158,11 +158,11 @@ const SETS: { key: string; text: string; hint: string; ids: string[] }[] = [
   { key: "stan", text: "Nenne ein Land, dessen Name auf „-stan“ endet.", hint: "Es zählt der deutsche Name.", ids: ["AFG", "PAK", "KAZ", "UZB", "TKM", "KGZ", "TJK"] },
 ];
 for (const set of SETS)
-  TEMPLATES.push({ key: "set:" + set.key, make: () => ({ key: "set:" + set.key, text: set.text, hint: set.hint, answers: countryAnswers(set.ids.map((id) => BY_ID[id]).filter(Boolean)) }) });
+  TEMPLATES.push({ key: "set:" + set.key, make: () => ({ key: "set:" + set.key, text: set.text, hint: set.hint, answers: countryAnswers(set.ids.map((id) => BY_ID_ALL[id]).filter(Boolean)) }) });
 
 TEMPLATES.push(
-  { key: "pop100", make: () => ({ key: "pop100", text: "Nenne ein Land mit mehr als 100 Millionen Einwohnern.", hint: "Grundlage sind die aktuellen Zahlen der Weltbank.", answers: countryAnswers(COUNTRIES.filter((c) => (c.pop ?? 0) > 1e8)) }) },
-  { key: "ien", make: () => ({ key: "ien", text: "Nenne ein Land, dessen deutscher Name auf „-ien“ endet.", hint: "Wie Spanien oder Indien.", answers: countryAnswers(COUNTRIES.filter((c) => /ien$/.test(c.n))) }) },
+  { key: "pop100", make: () => ({ key: "pop100", text: "Nenne ein Land mit mehr als 100 Millionen Einwohnern.", hint: "Grundlage sind die aktuellen Zahlen der Weltbank.", answers: countryAnswers(ALL_COUNTRIES.filter((c) => (c.pop ?? 0) > 1e8)) }) },
+  { key: "ien", make: () => ({ key: "ien", text: "Nenne ein Land, dessen deutscher Name auf „-ien“ endet.", hint: "Wie Spanien oder Indien.", answers: countryAnswers(ALL_COUNTRIES.filter((c) => /ien$/.test(c.n))) }) },
   {
     key: "capbig",
     make: () => {
@@ -212,7 +212,7 @@ function pickQuestions(rng: Rng, n: number, legacy = false): Question[] {
     const t = rng.pick(TPL);
     if (usedTypes.has(t.key)) continue;
     const q = t.make(rng);
-    if (!q || q.answers.length < 5 || out.some((o) => o.key === q.key)) continue;
+    if (!q || q.answers.filter((a) => !NEVER_ASKED.has(a.id)).length < 5 || out.some((o) => o.key === q.key)) continue;
     usedTypes.add(t.key);
     out.push(q);
   }
@@ -226,10 +226,10 @@ const MIN_ANSWERS = 50;
 const CURATED3: Question[] = [
   ...KATALOG.map((p) => curatedQ(EXTEND[p.key] ? { ...p, answers: [...p.answers, ...EXTEND[p.key]] } : p)),
   ...KATALOG3.map(curatedQ),
-].filter((q) => q.answers.length >= MIN_ANSWERS);
+].filter((q) => q.answers.filter((a) => !NEVER_ASKED.has(a.id)).length >= MIN_ANSWERS);
 
-const capAnswers = (list: Country[]) => scored(list.filter((c) => c.cap).map((c) => ({ id: "cap-" + c.id, name: c.cap!, alt: c.capAlt, fame: fame(c) })));
-const ofCont = (...cs: string[]) => COUNTRIES.filter((c) => cs.includes(c.cont));
+const capAnswers = (list: Country[]) => scored(list.filter((c) => c.cap && !NEVER_ASKED.has(c.id)).map((c) => ({ id: "cap-" + c.id, name: c.cap!, alt: c.capAlt, fame: fame(c) })));
+const ofCont = (...cs: string[]) => ALL_COUNTRIES.filter((c) => cs.includes(c.cont));
 const WB = "Grundlage sind die aktuellen Zahlen der Weltbank.";
 const hue = (h: string) => {
   const r = parseInt(h.slice(1, 3), 16) / 255, g = parseInt(h.slice(3, 5), 16) / 255, b = parseInt(h.slice(5, 7), 16) / 255;
@@ -253,7 +253,7 @@ const hue = (h: string) => {
   if (H < 260) return "blau";
   return "lila";
 };
-const flagHas = (col: string) => COUNTRIES.filter((c) => c.flag.colors.some((h) => hue(h) === col));
+const flagHas = (col: string) => ALL_COUNTRIES.filter((c) => c.flag.colors.some((h) => hue(h) === col));
 const SET_IDS = {
   commonwealth: ["ATG", "AUS", "BHS", "BGD", "BRB", "BLZ", "BWA", "BRN", "CMR", "CAN", "CYP", "DMA", "SWZ", "FJI", "GAB", "GMB", "GHA", "GRD", "GUY", "IND", "JAM", "KEN", "KIR", "LSO", "MWI", "MYS", "MDV", "MLT", "MUS", "MOZ", "NAM", "NRU", "NZL", "NGA", "PAK", "PNG", "RWA", "KNA", "LCA", "VCT", "WSM", "SYC", "SLE", "SGP", "SLB", "ZAF", "LKA", "TZA", "TGO", "TON", "TTO", "TUV", "UGA", "GBR", "VUT", "ZMB"],
   englisch: ["GBR", "IRL", "MLT", "USA", "CAN", "AUS", "NZL", "IND", "PAK", "PHL", "SGP", "ZAF", "NGA", "GHA", "KEN", "UGA", "TZA", "ZMB", "ZWE", "MWI", "BWA", "NAM", "LSO", "SWZ", "SLE", "LBR", "GMB", "CMR", "RWA", "BDI", "SSD", "SDN", "ERI", "SYC", "MUS", "JAM", "BHS", "BRB", "TTO", "GUY", "BLZ", "ATG", "DMA", "GRD", "KNA", "LCA", "VCT", "FJI", "PNG", "SLB", "VUT", "WSM", "TON", "KIR", "TUV", "NRU", "MHL", "FSM", "PLW"],
@@ -261,8 +261,8 @@ const SET_IDS = {
 };
 const AU_IDS = COUNTRIES.filter((c) => c.cont === "Afrika").map((c) => c.id);
 const fixed = (key: string, text: string, hint: string, answers: Answer[]): Question => ({ key: "b:" + key, text, hint, answers });
-const byIds = (ids: string[]) => countryAnswers(ids.map((id) => BY_ID[id]).filter(Boolean));
-const C = COUNTRIES;
+const byIds = (ids: string[]) => countryAnswers(ids.map((id) => BY_ID_ALL[id]).filter(Boolean));
+const C = ALL_COUNTRIES;
 const BIG_TEMPLATES: Question[] = [
   { key: "cont:Afrika", text: `Nenne ein Land ${CONT_TEXT.Afrika}.`, hint: "Je unbekannter das Land, desto tiefer tauchst du.", answers: countryAnswers(ofCont("Afrika")) },
   { key: "cap:Afrika", text: `Nenne eine Hauptstadt ${CONT_TEXT.Afrika}.`, hint: "Nur die Hauptstadt eines Landes zählt, nicht das Land selbst.", answers: capAnswers(ofCont("Afrika")) },
@@ -322,7 +322,7 @@ const BIG_TEMPLATES: Question[] = [
   fixed("englisch", "Nenne ein Land mit Englisch als Amtssprache.", "Staaten, in denen Englisch (Mit-)Amtssprache ist.", byIds(SET_IDS.englisch)),
   fixed("afrikanische-union", "Nenne ein Mitglied der Afrikanischen Union.", "Alle afrikanischen Staaten.", byIds(AU_IDS)),
   fixed("atlantik", "Nenne ein Land mit Küste am Atlantik.", "Inklusive Nordsee, Karibik und Golf von Mexiko.", byIds(SET_IDS.atlantik)),
-].filter((q) => q.answers.length >= MIN_ANSWERS);
+].filter((q) => q.answers.filter((a) => !NEVER_ASKED.has(a.id)).length >= MIN_ANSWERS);
 
 function pickBig(rng: Rng, n: number): Question[] {
   const curated = rng.sample(CURATED3, Math.min(4, CURATED3.length));
@@ -381,7 +381,7 @@ export function check(q: Question, input: string, suggested = false, lang: "de" 
   const near = q.answers.find((a) => names(a).some((n) => canon(n) === x));
   if (near) return typo(near);
   // "Niger" must not be read as a typo of "Nigeria"
-  const exactOther = COUNTRIES.find((c) => [c.n, ...c.alt].some((n) => canon(n) === x) || (c.cap && canon(c.cap) === x));
+  const exactOther = ALL_COUNTRIES.find((c) => [c.n, ...c.alt].some((n) => canon(n) === x) || (c.cap && canon(c.cap) === x));
   const misfit = en ? `“${input.trim()}” doesn’t fit this question.` : `„${input.trim()}“ passt nicht zu dieser Frage.`;
   if (exactOther && !q.key.startsWith("k:")) return { ok: false, reason: misfit };
   let best: { a: Answer; d: number } | null = null;
@@ -397,7 +397,7 @@ export function check(q: Question, input: string, suggested = false, lang: "de" 
   }
   if (best) return typo(best.a);
   // a real country/capital that does not fit this question?
-  const other = COUNTRIES.find((c) => [c.n, ...c.alt].some((n) => canon(n) === x) || (c.cap && canon(c.cap) === x));
+  const other = ALL_COUNTRIES.find((c) => [c.n, ...c.alt].some((n) => canon(n) === x) || (c.cap && canon(c.cap) === x));
   if (other) return { ok: false, reason: misfit };
   return { ok: false, reason: en ? `We don’t know “${input.trim()}” as a valid answer.` : `„${input.trim()}“ kennen wir nicht als gültige Antwort.` };
 }

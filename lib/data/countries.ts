@@ -38,6 +38,8 @@ export type Continent = "Europa" | "Asien" | "Afrika" | "Nordamerika" | "Südame
  * step in Grenzgang and are part of the region quizzes (ALL_COUNTRIES).
  */
 const EXCLUDED = new Set(["ISR"]);
+/** Never the answer of a question anywhere on the site, but can always be picked and typed in. */
+export const NEVER_ASKED: ReadonlySet<string> = EXCLUDED;
 const EN = en as unknown as Record<string, [string, string | null, string[]]>;
 const uniq = (xs: (string | null | undefined)[], not: (string | null)[]) => [...new Set(xs.filter((x): x is string => !!x && !not.includes(x)))];
 const RAW_ALL = (raw as unknown as Country[]).map((c) => {
