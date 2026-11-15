@@ -14,7 +14,7 @@ import { cName } from "@/lib/data/countries";
 const ROUNDS = 5;
 const POOL = COUNTRIES.filter((c) => c.flag.simple && c.flag.colors.some((h) => !isNeutral(h)) && (c.pop ?? 0) >= 500000);
 
-function rounds(day: string) {
+export function rounds(day: string) {
   const rng = makeRng(`${day}:farbecht`);
   return rng.sample(POOL, ROUNDS).map((c) => ({ id: c.id, color: rng.pick(c.flag.colors.filter((h) => !isNeutral(h))) }));
 }

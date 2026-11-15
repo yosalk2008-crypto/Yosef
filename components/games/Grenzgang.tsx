@@ -15,7 +15,7 @@ import { cName } from "@/lib/data/countries";
 
 /** Distances in the border graph. Start and goal come from the game countries (BY_ID, keeps old puzzles the same),
  * but every country – including ones never asked about – can be a step on the way (BY_ID_ALL). */
-function bfs(from: string, allowed?: Set<string>, graph: Record<string, Country> = BY_ID_ALL): Record<string, number> {
+export function bfs(from: string, allowed?: Set<string>, graph: Record<string, Country> = BY_ID_ALL): Record<string, number> {
   const dist: Record<string, number> = { [from]: 0 };
   const q = [from];
   while (q.length) {
@@ -44,6 +44,21 @@ export function makeRoute(day: string) {
     return { a: a.id, b: b.id, d: want };
   }
   return { a: "PRT", b: "POL", d: 4 };
+}
+
+/** One shortest route from a to b (countries in between), for the multiplayer solution. */
+export function shortestRoute(day: string) {
+  const base = makeRoute(day);
+  const fromA = bfs(base.a);
+  const path: string[] = [];
+  let cur = base.b;
+  for (let k = 0; k < 40 && cur !== base.a; k++) {
+    const prev = BY_ID_ALL[cur].borders.find((n) => fromA[n] === fromA[cur] - 1);
+    if (!prev) break;
+    if (prev !== base.a) path.unshift(prev);
+    cur = prev;
+  }
+  return { a: base.a, b: base.b, path };
 }
 
 type S = { guesses: string[] };

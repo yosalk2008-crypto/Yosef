@@ -18,7 +18,7 @@ const MIN_A = 1000;
 const MAX_A = 20000000;
 const POOL = COUNTRIES.filter((c) => c.shape && c.id !== REF && c.area >= 10000);
 
-function targets(day: string) {
+export function targets(day: string) {
   const rng = makeRng(`${day}:massstab`);
   // one from each size band so every round feels different
   const bands = [

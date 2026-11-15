@@ -40,6 +40,7 @@ import { OceanScene } from "../tiefgang/OceanScene";
 import { Creature } from "../tiefgang/Creatures";
 import type { Impact } from "../tiefgang/OceanFx";
 import { Suggestion } from "../Suggestion";
+import { DailySolution } from "./DailySolution";
 import { GameArt } from "../GameArt";
 import { DailyGame } from "@/app/(de)/taeglich/[spiel]/DailyGame";
 import { MpDailyContext, mpLoad, type MpDaily } from "@/lib/mpDaily";
@@ -329,6 +330,7 @@ function Room({ code, me, name, host, duel, onLeave }: { code: string; me: strin
   const stRef = useRef<RoomState | null>(null);
   stRef.current = st;
   const [joinedAt] = useState(() => Date.now());
+  const [switchAsk, setSwitchAsk] = useState(false);
 
   // ---------------- admin ----------------
 
@@ -645,6 +647,21 @@ function Room({ code, me, name, host, duel, onLeave }: { code: string; me: strin
       ) : null}
 
       <div className="mt-10 flex flex-wrap justify-center gap-3 border-t-2 border-line pt-6">
+        {host && st.phase !== "lobby" && (
+          <button
+            type="button"
+            className={switchAsk ? "btn-primary" : "btn-ghost"}
+            onClick={() => {
+              if (!switchAsk) return setSwitchAsk(true);
+              setSwitchAsk(false);
+              clearTimeout(go.current);
+              toLobby();
+            }}
+            onBlur={() => setSwitchAsk(false)}
+          >
+            {switchAsk ? t("Runde abbrechen und zur Lobby?", "End this round and go to the lobby?") : t("Spiel wechseln", "Change game")}
+          </button>
+        )}
         {host ? (
           <button type="button" className="btn-ghost" onClick={close}>
             {st.duel ? t("1v1 beenden", "End 1v1") : t("Server schließen", "Close server")}
@@ -1586,7 +1603,10 @@ function DailyReveal({ st, q, me, host, onNext }: { st: RoomState; q: Extract<QV
         )}
       </div>
 
-      <ul className="mt-4 grid gap-2.5">
+      <DailySolution game={q.game} day={q.day} />
+
+      <h3 className="mt-6 font-display text-xl font-semibold">{t("So habt ihr abgeschnitten", "How everyone did")}</h3>
+      <ul className="mt-3 grid gap-2.5">
         {ids.map((id, k) => {
           const a = rv.answers[id];
           return (

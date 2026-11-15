@@ -22,7 +22,7 @@ const KINDS: Kind[] = ["flag", "shape", "cap", "fact"];
 type FactKey = "pop" | "gdppc" | "tour" | "area" | "life";
 
 const nf = (d = 0, lang: Lang = "de") => new Intl.NumberFormat(lang === "en" ? "en-GB" : "de-DE", { maximumFractionDigits: d });
-function factText(c: Country, k: FactKey, lang: Lang = "de"): { label: string; value: string } {
+export function factText(c: Country, k: FactKey, lang: Lang = "de"): { label: string; value: string } {
   const en = lang === "en";
   switch (k) {
     case "pop":

@@ -14,7 +14,7 @@ import { cName } from "@/lib/data/countries";
 const CATS: MetricKey[] = ["area", "pop", "gdppc", "mil", "life", "tour", "forest", "capPop"];
 const POOL = COUNTRIES.filter((c) => (c.pop ?? 0) >= 2000000 && CATS.every((k) => val(c, k) != null));
 
-function pickCountries(day: string) {
+export function pickCountries(day: string) {
   // half well-known heavyweights, half from the rest, in random order
   const rng = makeRng(`${day}:spitzenplatz`);
   const big = rng.sample(POOL.filter((c) => (c.pop ?? 0) >= 30000000), 4);
@@ -23,7 +23,7 @@ function pickCountries(day: string) {
 }
 
 /** Best possible total (minimum sum of ranks) and the assignment that reaches it, via DP over category subsets. */
-function optimum(ids: string[]): { total: number; plan: MetricKey[] } {
+export function optimum(ids: string[]): { total: number; plan: MetricKey[] } {
   const n = ids.length;
   const dp = new Array(1 << n).fill(Infinity);
   const from = new Array<number>(1 << n).fill(-1);
