@@ -61,7 +61,7 @@ export type Reveal = {
   answers: Record<string, PAns | null>;
   rare?: { name: string; pts: number; id?: string }[];
 };
-export type Phase = "lobby" | "frage" | "aufloesung" | "ende";
+export type Phase = "lobby" | "countdown" | "frage" | "aufloesung" | "ende";
 
 export type RoomState = {
   seq: number;
@@ -78,6 +78,7 @@ export type RoomState = {
   total: number;
   q: QView | null;
   endsAt: number; // admin clock, 0 = no limit
+  startsAt?: number; // admin clock: when the countdown before the first question reaches zero
   sentAt: number; // admin clock when this state was sent
   done: string[]; // players who answered the current question
   reveal: Reveal | null;

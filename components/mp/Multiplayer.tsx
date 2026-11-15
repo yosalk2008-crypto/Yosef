@@ -413,7 +413,13 @@ function Room({ code, me, name, host, duel, onLeave }: { code: string; me: strin
       if (h.st.duel && !(h.st.rival && membersRef.current[h.st.rival])) return;
       const names: Record<string, string> = {};
       for (const [id, m] of Object.entries(membersRef.current)) if (plays(h.st, id)) names[id] = m.name;
-      ask({ ...h.st, round: h.st.round + 1, total: h.qs.length, scores: {}, names }, 0);
+      const base = { ...h.st, round: h.st.round + 1, total: h.qs.length, scores: {}, names };
+      commit({ ...base, phase: "countdown", q: null, reveal: null, done: [], i: 0, endsAt: 0, startsAt: Date.now() + COUNT_MS });
+      clearTimeout(go.current);
+      go.current = setTimeout(() => {
+        const cur = H.current?.st;
+        if (cur && cur.phase === "countdown" && cur.round === base.round) ask(cur, 0);
+      }, COUNT_MS + GO_MS);
     } finally {
       setBusy(false);
     }
@@ -424,6 +430,18 @@ function Room({ code, me, name, host, duel, onLeave }: { code: string; me: strin
     if (s.i + 1 < s.total) ask(s, s.i + 1);
     else commit({ ...s, phase: "ende", q: null });
   };
+  const go = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(go.current), []);
+  // an admin who reloads during the countdown still starts the game
+  useEffect(() => {
+    if (!host || st?.phase !== "countdown" || !st.startsAt) return;
+    const r = st.round;
+    const tm = setTimeout(() => {
+      const cur = H.current?.st;
+      if (cur && cur.phase === "countdown" && cur.round === r && H.current?.qs?.length) ask(cur, 0);
+    }, Math.max(0, st.startsAt - Date.now()) + GO_MS + 400);
+    return () => clearTimeout(tm);
+  }, [host, st?.phase, st?.startsAt, st?.round, ask]);
   const toLobby = () => H.current && commit({ ...H.current.st, phase: "lobby", q: null, reveal: null, done: [], i: 0, total: 0, endsAt: 0 });
   const setting = (p: Partial<RoomState>) => H.current && H.current.st.phase === "lobby" && commit({ ...H.current.st, ...p });
   // duel (admin): give the free seat to whoever joined first; free it again if they leave before the game
@@ -616,6 +634,8 @@ function Room({ code, me, name, host, duel, onLeave }: { code: string; me: strin
         </p>
       ) : st.phase === "lobby" ? (
         <LobbyView st={st} host={host} members={shown} me={me} busy={busy} onSetting={setting} onStart={start} />
+      ) : st.phase === "countdown" ? (
+        <CountdownView st={st} members={shown} me={me} offset={host ? 0 : offset.current} />
       ) : st.phase === "frage" && st.q ? (
         <QuestionView st={st} q={st.q} members={shown} me={me} host={host} myAns={myAns} offset={host ? 0 : offset.current} onAnswer={answer} onForce={reveal} dive={dive.round === st.round ? dive.list : []} />
       ) : st.phase === "aufloesung" && st.q && st.reveal ? (
@@ -740,21 +760,15 @@ function LobbyView({
   const lang = useLang();
   const t = useT();
   const g = gameOf(st.game);
+  const ready = !st.duel || Object.keys(members).length >= 2;
   return (
     <div className="mt-6">
-      <h2 className="mb-2 text-xl font-semibold">{st.duel ? t("1v1", "1v1") : t("Im Server", "On the server")}</h2>
-      <Players members={members} me={me} />
-      {st.duel && Object.keys(members).length < 2 && (
-        <p className="mt-3 rounded-xl bg-brand-soft px-4 py-3 font-semibold">
-          {host
-            ? t(`Warte auf deinen Gegner … Schick ihm den Code ${st.code} oder tipp oben auf „Einladen“.`, `Waiting for your opponent … Send them the code ${st.code} or tap “Invite” above.`)
-            : t("Verbinde mit dem Duell …", "Joining the duel …")}
-        </p>
-      )}
-
+      <LobbyStage st={st} host={host} members={members} me={me} busy={busy} ready={ready} onStart={onStart} />
       {host ? (
-        <div className="mt-8">
-          <h2 className="text-2xl font-semibold">{t("Welches Spiel?", "Which game?")}</h2>
+        <div className="mt-10">
+          <h2 className="text-2xl font-semibold">{t("Spiel einstellen", "Game settings")}</h2>
+          <p className="text-[15px] text-muted">{t("Alle in der Lobby sehen deine Auswahl sofort.", "Everyone in the lobby sees your choice right away.")}</p>
+          <h3 className="mt-5 text-xl font-semibold">{t("Welches Spiel?", "Which game?")}</h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {MP_GAMES.map((x) => {
               const on = x.id === st.game;
@@ -833,27 +847,203 @@ function LobbyView({
           </label>
           )}
 
-          <button type="button" className="btn-primary mt-7 w-full text-lg sm:w-auto" disabled={busy || (st.duel && Object.keys(members).length < 2)} onClick={onStart}>
-            {busy ? t("Lade …", "Loading …") : t(`${g.title} starten`, `Start ${g.titleEn}`)}
+          <button type="button" className="btn-primary mt-7 w-full text-lg sm:w-auto" disabled={busy || !ready} onClick={onStart}>
+            {busy ? t("Lade …", "Loading …") : t("Spiel starten", "Start the game")}
           </button>
           <p className="mt-2 text-[15px] text-muted">{st.duel ? t("Starten geht, sobald dein Gegner da ist.", "You can start as soon as your opponent is here.") : isDaily(st.game) ? t("Wer später dazukommt, steigt bei der nächsten Runde ein.", "Anyone joining later starts with the next round.") : t("Wer später dazukommt, steigt bei der nächsten Frage ein.", "Anyone joining later starts with the next question.")}</p>
         </div>
-      ) : (
-        <div className="card mt-8 p-6 text-center">
-          <p className="text-muted">{t("Der Admin hat ausgewählt", "The admin picked")}</p>
-          <p className="mt-1 font-display text-3xl font-semibold">{lang === "en" ? g.titleEn : g.title}</p>
-          <p className="mt-1 font-semibold text-muted">
-            {lang === "en"
-              ? isDaily(st.game)
-                ? `${st.n} ${st.n === 1 ? "round" : "rounds"} · ${st.secs ? `${st.secs / 60} minutes per round` : "no time limit"}`
-                : `${st.n} questions · ${st.secs ? `${st.secs} seconds per question` : "no time limit"}`
-              : isDaily(st.game)
-                ? `${st.n} ${st.n === 1 ? "Runde" : "Runden"} · ${st.secs ? `${st.secs / 60} Minuten pro Runde` : "ohne Zeitlimit"}`
-                : `${st.n} Fragen · ${st.secs ? `${st.secs} Sekunden pro Frage` : "ohne Zeitlimit"}`}
-          </p>
-          <p className="mt-5 font-semibold">{t("Warte, bis der Admin das Spiel startet …", "Waiting for the admin to start the game …")}</p>
+      ) : null}
+    </div>
+  );
+}
+
+const COUNT_MS = 3000; // 3 · 2 · 1
+const GO_MS = 900; // "Los!" stays this long before the first question
+
+/** Settings line under the game title ("10 questions · 30 seconds per question"). */
+function settingsLine(st: RoomState, lang: Lang) {
+  if (lang === "en")
+    return isDaily(st.game)
+      ? `${st.n} ${st.n === 1 ? "round" : "rounds"} · ${st.secs ? `${st.secs / 60} min per round` : "no time limit"}`
+      : `${st.n} questions · ${st.secs ? `${st.secs} s per question` : "no time limit"}`;
+  return isDaily(st.game)
+    ? `${st.n} ${st.n === 1 ? "Runde" : "Runden"} · ${st.secs ? `${st.secs / 60} Min. pro Runde` : "ohne Zeitlimit"}`
+    : `${st.n} Fragen · ${st.secs ? `${st.secs} s pro Frage` : "ohne Zeitlimit"}`;
+}
+
+/** The lobby: a dark stage with the code, the chosen game and every player popping in. */
+function LobbyStage({ st, host, members, me, busy, ready, onStart }: { st: RoomState; host: boolean; members: Record<string, Member>; me: string; busy: boolean; ready: boolean; onStart: () => void }) {
+  const lang = useLang();
+  const t = useT();
+  const g = gameOf(st.game);
+  const list = Object.entries(members).sort((a, b) => Number(b[1].host) - Number(a[1].host) || (a[1].at || 0) - (b[1].at || 0));
+  const n = list.length;
+  return (
+    <section className="mp-stage" style={{ ["--g" as string]: g.bg }} aria-label="Lobby">
+      <div className="mp-glow" aria-hidden="true" />
+      <div className="mp-dots" aria-hidden="true">
+        {Array.from({ length: 18 }, (_, k) => (
+          <i key={k} style={{ left: `${(k * 41 + 7) % 100}%`, animationDelay: `${(k * 0.73) % 6}s`, animationDuration: `${6 + (k % 5)}s` }} />
+        ))}
+      </div>
+      <div className="relative">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-white/60">{st.duel ? t("1v1-Lobby", "1v1 lobby") : "Lobby"}</p>
+            <div className="mt-1 flex gap-1.5" aria-label={`Code ${st.code}`}>
+              {st.code.split("").map((ch, k) => (
+                <span key={k} className="mp-tile" style={{ animationDelay: `${k * 70}ms` }}>
+                  {ch}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="mp-game" key={st.game}>
+            <span className="mp-swatch" style={{ background: g.bg }} aria-hidden="true" />
+            <span>
+              <span className="block font-display text-xl font-semibold leading-tight">{lang === "en" ? g.titleEn : g.title}</span>
+              <span className="block text-sm font-semibold text-white/65">{settingsLine(st, lang)}</span>
+            </span>
+          </div>
         </div>
-      )}
+
+        <ul className="mp-players" aria-live="polite">
+          {list.map(([id, m], k) => (
+            <li key={id} className="mp-p" style={{ animationDelay: `${(k % 6) * 0.35}s` }}>
+              <span className="mp-pop">
+                {m.host && (
+                  <span className="mp-crown" aria-hidden="true">
+                    ♛
+                  </span>
+                )}
+                <Avatar id={id} name={m.name} size={60} />
+              </span>
+              <span className="mt-1.5 max-w-[92px] truncate text-[15px] font-semibold">
+                {m.name}
+                {id === me && <span className="text-white/55"> ({t("du", "you")})</span>}
+              </span>
+            </li>
+          ))}
+          {st.duel && n < 2 && (
+            <li className="mp-p">
+              <span className="mp-empty" aria-hidden="true">
+                ?
+              </span>
+              <span className="mt-1.5 text-[15px] font-semibold text-white/55">{t("Gegner", "Opponent")}</span>
+            </li>
+          )}
+        </ul>
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-5">
+          <p className="font-semibold text-white/80">
+            {st.duel
+              ? n < 2
+                ? host
+                  ? t(`Warte auf deinen Gegner – schick ihm den Code ${st.code}.`, `Waiting for your opponent – send them the code ${st.code}.`)
+                  : t("Verbinde mit dem Duell", "Joining the duel")
+                : t("Beide sind da.", "You’re both here.")
+              : `${n} ${n === 1 ? t("Spieler", "player") : t("Spieler", "players")} ${t("in der Lobby", "in the lobby")}`}
+            {!host && (
+              <span className="mp-wait">
+                {" · "}
+                {t("Warte auf den Admin", "Waiting for the admin")}
+                <span aria-hidden="true">
+                  <i>.</i>
+                  <i>.</i>
+                  <i>.</i>
+                </span>
+              </span>
+            )}
+          </p>
+          {host && (
+            <button type="button" className="mp-start" disabled={busy || !ready} onClick={onStart}>
+              {busy ? t("Lade …", "Loading …") : t("Spiel starten", "Start the game")}
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Short WebAudio beep for the countdown (no files needed). */
+function beep(freq: number, dur = 0.16, vol = 0.12) {
+  try {
+    const w = window as unknown as { __ktac?: AudioContext; webkitAudioContext?: typeof AudioContext };
+    const C = window.AudioContext || w.webkitAudioContext;
+    if (!C) return;
+    const c = (w.__ktac ||= new C());
+    if (c.state === "suspended") void c.resume();
+    const o = c.createOscillator();
+    const gn = c.createGain();
+    o.type = "triangle";
+    o.frequency.value = freq;
+    const t0 = c.currentTime;
+    gn.gain.setValueAtTime(0.0001, t0);
+    gn.gain.exponentialRampToValueAtTime(vol, t0 + 0.01);
+    gn.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(gn).connect(c.destination);
+    o.start(t0);
+    o.stop(t0 + dur + 0.02);
+  } catch {}
+}
+const soundOn = () => {
+  try {
+    return localStorage.getItem("kt-sound") !== "0";
+  } catch {
+    return true;
+  }
+};
+
+/** 3 · 2 · 1 · Los! – full screen, for everyone in the room at the same moment. */
+function CountdownView({ st, members, me, offset }: { st: RoomState; members: Record<string, Member>; me: string; offset: number }) {
+  const lang = useLang();
+  const t = useT();
+  const g = gameOf(st.game);
+  const end = (st.startsAt ?? 0) + offset;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    let raf = 0;
+    const tick = () => {
+      setNow(Date.now());
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  const left = end - now;
+  const n = left > 0 ? Math.min(3, Math.ceil(left / 1000)) : 0; // 3, 2, 1, then 0 = "Los!"
+  const last = useRef<number | null>(null);
+  useEffect(() => {
+    if (last.current === n) return;
+    last.current = n;
+    if (soundOn()) beep(n ? 523 : 1047, n ? 0.16 : 0.45, n ? 0.12 : 0.16);
+    try {
+      navigator.vibrate?.(n ? 30 : [60, 40, 120]);
+    } catch {}
+  }, [n]);
+  const ids = Object.keys(members);
+  const tone = ["#5eead4", "#86efac", "#fde047", "#fb7185"][n];
+  return (
+    <div className="mp-count" role="timer" aria-live="assertive" style={{ ["--g" as string]: g.bg, ["--tone" as string]: tone }}>
+      <div className="mp-glow" aria-hidden="true" />
+      <p className="mp-ctitle">{lang === "en" ? g.titleEn : g.title}</p>
+      <div className="mp-num-wrap">
+        <span key={`r${n}`} className="mp-ring" aria-hidden="true" />
+        <span key={`r2${n}`} className="mp-ring two" aria-hidden="true" />
+        <span key={n} className={`mp-num${n ? "" : " go"}`}>
+          {n || t("Los!", "Go!")}
+        </span>
+      </div>
+      <div className="mp-cplayers" aria-hidden="true">
+        {ids.slice(0, 12).map((id, k) => (
+          <span key={id} style={{ animationDelay: `${k * 60}ms` }}>
+            <Avatar id={id} name={members[id].name} size={34} />
+          </span>
+        ))}
+      </div>
+      <p className="sr-only">{n ? t(`Start in ${n}`, `Starting in ${n}`) : t("Los geht’s", "Here we go")}</p>
+      <p className="mp-cme">{members[me] ? t("Mach dich bereit!", "Get ready!") : ""}</p>
     </div>
   );
 }
