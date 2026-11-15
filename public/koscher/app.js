@@ -146,8 +146,8 @@ window.mountKosher = function (app) {
     const L = lvOf(q);
     const max = maxGold();
     const opts = [
-      ["nein", "✕", stampText("nein", isFood)],
       ["ja", "✓", stampText("ja", isFood)],
+      ["nein", "✕", stampText("nein", isFood)],
       ["kommt", "≈", stampText("kommt", isFood)],
     ];
     const right = quiz.picks.filter((p, k) => p === quiz.qs[k].a).length;
@@ -180,12 +180,10 @@ window.mountKosher = function (app) {
           </div>
         </div>
         <div class="deck">
-        <article class="qcard swipe${picked ? (hit ? " pop" : " shake") : " deal"}" id="card" aria-live="polite">
-          <span class="ov" id="ov" aria-hidden="true"></span>
+        <article class="qcard tap${picked ? (hit ? " pop" : " shake") : " deal"}" id="card" aria-live="polite">
           <span class="kicker">${esc(catName(q.cat))} · ${EN ? `Is it ${isFood ? "kosher" : "allowed"}?` : `Ist das ${isFood ? "koscher" : "erlaubt"}?`}</span>
           <span class="worth w${lvN(q)}"><span class="cn" aria-hidden="true">${"<i></i>".repeat(lvN(q))}</span>${T(L.de, L.en)} · ${L.n} ${T("Gold", "gold")}</span>
           <h2>${esc(qq(q))}</h2>
-          ${picked ? "" : `<p class="swtip"><span>← ${stampText("nein", isFood)}</span><span class="hand" aria-hidden="true"></span><span>${stampText("ja", isFood)} →</span></p>`}
           <div class="answers">
             ${opts
               .map(
@@ -232,61 +230,25 @@ window.mountKosher = function (app) {
       document.getElementById("next")?.focus({ preventScroll: true });
       return;
     }
-    // swipe: right = ja, left = nein (buttons also work, "kommt drauf an" only by button)
     const card = document.getElementById("card");
-    const ov = document.getElementById("ov");
-    let sx = 0, sy = 0, dx = 0, drag = false, busy = false;
+    let busy = false;
     const answer = (a) => {
       if (busy) return;
       busy = true;
       FX.sound.swipe();
-      const out = a === "ja" ? 1 : a === "nein" ? -1 : 0;
-      card.classList.remove("dragging", "deal");
-      card.style.transition = "transform .28s ease-in, opacity .28s";
-      card.style.transform = out ? `translate(${out * 620}px, -40px) rotate(${out * 26}deg)` : "translate(0, -460px) scale(.85) rotate(-4deg)";
-      card.style.opacity = "0";
+      card.classList.remove("deal");
+      card.style.transition = "transform .2s ease-in, opacity .2s";
+      card.style.transform = "scale(.96)";
+      card.style.opacity = ".4";
       setTimeout(
         () => {
           quiz.picks[quiz.i] = a;
           if (a === q.a) quiz.gold += worth(q);
           quizView();
         },
-        FX.reduced() ? 0 : 250
+        FX.reduced() ? 0 : 180
       );
     };
-    card.addEventListener("pointerdown", (e) => {
-      if (busy || e.target.closest("button")) return;
-      drag = true;
-      sx = e.clientX;
-      sy = e.clientY;
-      dx = 0;
-      card.classList.remove("deal");
-      card.classList.add("dragging");
-    });
-    card.addEventListener("pointermove", (e) => {
-      if (!drag) return;
-      dx = e.clientX - sx;
-      const dy = (e.clientY - sy) * 0.15;
-      const k = Math.min(1, Math.abs(dx) / 110);
-      card.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx / 18}deg)`;
-      const side = dx > 0 ? "ja" : "nein";
-      card.style.boxShadow = `0 24px 50px -28px rgb(10 22 48 / .35), 0 0 0 ${3 * k}px ${side === "ja" ? "rgb(29 122 82 / .85)" : "rgb(200 55 45 / .85)"}, 0 0 ${46 * k}px ${side === "ja" ? "rgb(29 122 82 / .5)" : "rgb(200 55 45 / .5)"}`;
-      ov.className = `ov show ${side}`;
-      ov.textContent = stampText(side, isFood);
-      ov.style.opacity = String(k);
-      ov.style.transform = `rotate(${side === "ja" ? 9 : -9}deg) scale(${0.8 + 0.3 * k})`;
-    });
-    const release = () => {
-      if (!drag) return;
-      drag = false;
-      if (Math.abs(dx) > 100) return answer(dx > 0 ? "ja" : "nein");
-      card.classList.remove("dragging");
-      card.style.transform = "";
-      card.style.boxShadow = "";
-      ov.style.opacity = "0";
-    };
-    card.addEventListener("pointerup", release);
-    card.addEventListener("pointercancel", release);
     app.querySelectorAll(".answer").forEach((b) => b.addEventListener("click", () => answer(b.dataset.a)));
   }
 
