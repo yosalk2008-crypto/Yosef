@@ -111,13 +111,13 @@ export function CarRace({ rows, me, finish, animate }: { rows: RaceRow[]; me: st
           <div key={r.id} className={`mpr-lane${r.id === me ? " me" : ""}`}>
             <span className="mpr-lname">{r.id === me ? t("Du", "You") : r.name}</span>
             <div className="mpr-road">
-              <div
-                className={`mpr-car${moving ? " moving" : ""}${animate && r.missed ? " stall" : ""}`}
-                style={{ left: `calc(${Math.min(1, km / finish).toFixed(4)} * (100% - 74px))`, transitionDelay: `${k * 0.07}s` }}
-              >
-                <span dangerouslySetInnerHTML={{ __html: art?.car ?? "" }} />
-                {moving && <i className="mpr-dust" aria-hidden="true" />}
-                {animate && r.missed && <i className="mpr-puff" aria-hidden="true" />}
+              {/* the runner spans the drivable width; moving it with translateX(%) keeps the drive on the GPU */}
+              <div className="mpr-run" style={{ transform: `translate3d(${(Math.min(1, km / finish) * 100).toFixed(3)}%,0,0)`, transitionDelay: `${k * 0.07}s` }}>
+                <div className={`mpr-car${moving ? " moving" : ""}${animate && r.missed ? " stall" : ""}`}>
+                  <span dangerouslySetInnerHTML={{ __html: art?.car ?? "" }} />
+                  {moving && <i className="mpr-dust" aria-hidden="true" />}
+                  {animate && r.missed && <i className="mpr-puff" aria-hidden="true" />}
+                </div>
               </div>
             </div>
             <span className="mpr-km">

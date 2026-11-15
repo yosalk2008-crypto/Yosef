@@ -16,7 +16,8 @@ import { OceanScene } from "./OceanScene";
 import type { Impact } from "./OceanFx";
 
 type Result = { input: string; pts: number; answer?: string; id?: string; perle?: boolean; reason?: string };
-type S = { results: Result[]; pending?: number };
+/** `keys` = the questions the progress belongs to (the daily set can change at 7:50 when the new questions arrive). */
+type S = { results: Result[]; pending?: number; keys?: string };
 
 const nfDe = new Intl.NumberFormat("de-DE");
 const nfEn = new Intl.NumberFormat("en-GB");
@@ -75,6 +76,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
     restored.current = true;
     const s = daily.saved?.state;
     if (!s) return;
+    if (s.keys && s.keys !== questions.map((q) => q.key).join()) return; // other questions than now – start fresh
     const r = [...s.results];
     if (s.pending != null && s.pending === r.length) r.push({ input: "", pts: 0, reason: t_("Seite während der Frage verlassen.", "You left the page during the question.") });
     jump.current = true;
@@ -139,11 +141,11 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
         max: N * MAX_PTS,
         label: `${nf.format(meters(pts))} m`,
         share: `${t_("Tiefgang", "Deep Dive")} #${dayNumber(daily.day)} · ${nf.format(meters(pts))} m\n${r.map((x) => emojiFor(x.pts, x.perle)).join("")}${r.some((x) => x.perle) ? t_(" – Tiefseeperle gefunden!", " – found a deep-sea pearl!") : ""}`,
-        state: { results: r, pending },
+        state: { results: r, pending, keys: questions.map((q) => q.key).join() },
       });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, daily.day, daily.persist]
+    [mode, daily.day, daily.persist, questions]
   );
 
   // "Die Uhr startet in 3 … 2 … 1", then the 25-second timer runs

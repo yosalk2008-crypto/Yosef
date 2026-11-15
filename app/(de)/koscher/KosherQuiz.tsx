@@ -45,9 +45,9 @@ export function KosherQuiz() {
         if (!window.QUESTIONS) await load("/koscher/data.js?v=10");
         if (lang === "en" && !(window as unknown as { QUESTIONS_EN?: unknown }).QUESTIONS_EN) await load("/koscher/data.en.js?v=10");
         const w = window as unknown as { KTFX?: unknown; KT_ART?: unknown };
-        if (!w.KTFX) await load("/koscher/fx.js?v=2");
+        if (!w.KTFX) await load("/koscher/fx.js?v=3");
         if (!w.KT_ART) await load("/koscher/art.js?v=1");
-        if (!window.mountKosher) await load("/koscher/app.js?v=11");
+        if (!window.mountKosher) await load("/koscher/app.js?v=13");
         if (alive && ref.current && window.mountKosher) cleanup = window.mountKosher(ref.current);
       } catch {
         if (alive) setFailed(true);

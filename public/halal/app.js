@@ -129,8 +129,8 @@ window.mountHalal = function (app) {
     const signs = [];
     for (let s = 50; s < tot; s += 50) signs.push(`<span class="sign" style="--k:${s}"><b>${s}</b><i></i></span>`);
     return `<div class="scene ${cls}" id="scene" data-total="${tot}" role="img" aria-label="${T("Ein Auto fährt durch eine Landschaft zum Ziel", "A car drives through a landscape to the finish")}">
-      <div class="ly sky"></div><div class="ly dunes"></div><div class="ly clouds"></div><div class="ly mid"></div><div class="ly front"></div>
-      <div class="road"><div class="lane"></div></div>
+      <div class="ly sky"></div><div class="ly dunes"><i></i></div><div class="ly clouds"><i></i></div><div class="ly mid"><i></i></div><div class="ly front"><i></i></div>
+      <div class="road"><div class="lane"><i></i></div></div>
       <div class="world">${signs.join("")}<span class="gate" style="--k:${tot}">${GATE}</span></div>
       <div class="lines" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
       <div class="carbox" id="carbox"><i class="flame"></i><i class="puff p1"></i><i class="puff p2"></i><i class="puff p3"></i><div class="carbody">${ART.car || ""}<i class="haz h1"></i><i class="haz h2"></i></div><i class="shadow"></i></div>
@@ -138,40 +138,72 @@ window.mountHalal = function (app) {
       <div class="hud r">${T("Ziel", "Finish")} ${tot} km</div>
     </div>`;
   };
+  /**
+   * Everything the scene needs per frame, looked up and measured once – the frame loop then only writes
+   * transforms (GPU), never reads layout, so the drive stays smooth at the display's full frame rate.
+   */
+  let SC = null;
+  function sceneRefs() {
+    const sc = document.getElementById("scene");
+    if (!sc) return (SC = null);
+    if (SC && SC.sc === sc) {
+      if (!SC.mfill || !SC.mfill.isConnected) {
+        SC.mfill = document.getElementById("mfill");
+        SC.mrun = document.getElementById("mrun");
+      }
+      return SC;
+    }
+    const tile = Math.round((sc.querySelector(".ly.dunes")?.offsetHeight || 178) * 8); // landscape art is 3200 × 400
+    sc.style.setProperty("--tw", tile + "px");
+    const layer = (sel, f) => ({ el: sc.querySelector(sel), f });
+    const car = sc.querySelector(".kcar");
+    SC = {
+      sc,
+      tile,
+      layers: [layer(".dunes > i", 0.06), layer(".mid > i", 0.3), layer(".front > i", 0.62)],
+      lane: sc.querySelector(".lane > i"),
+      world: sc.querySelector(".world"),
+      spin: car ? [...car.querySelectorAll(".spin")] : [],
+      wheel: (car?.getBoundingClientRect().width || 138) * 0.094 || 12,
+      tot: +sc.dataset.total || 1,
+      mfill: document.getElementById("mfill"),
+      mrun: document.getElementById("mrun"),
+      num: document.getElementById("kmnum"),
+      shown: null,
+      fast: false,
+    };
+    return SC;
+  }
   /** Puts every layer of the scene at the given distance. */
   function place(km) {
-    const sc = document.getElementById("scene");
-    if (!sc) return;
+    const r = sceneRefs();
+    if (!r) return;
     const X = km * PXK;
-    const set = (sel, f) => { const el = sc.querySelector(sel); if (el) el.style.backgroundPositionX = -X * f + "px"; };
-    set(".dunes", 0.06);
-    set(".mid", 0.3);
-    set(".front", 0.62);
-    set(".lane", 1);
-    const w = sc.querySelector(".world");
-    if (w) w.style.transform = `translate3d(${-X}px,0,0)`;
-    const car = sc.querySelector(".kcar");
-    if (car) {
-      const deg = ((X / (car.getBoundingClientRect().width * 0.094 || 12)) * 57.3) % 360;
-      const sp = car.querySelectorAll(".spin");
-      if (sp[0]) sp[0].setAttribute("transform", `rotate(${deg} 180 254)`);
-      if (sp[1]) sp[1].setAttribute("transform", `rotate(${deg} 465 254)`);
+    for (const l of r.layers) if (l.el) l.el.style.transform = `translate3d(${-((X * l.f) % r.tile)}px,0,0)`;
+    if (r.lane) r.lane.style.transform = `translate3d(${-(X % 60)}px,0,0)`;
+    if (r.world) r.world.style.transform = `translate3d(${-X}px,0,0)`;
+    const deg = ((X / r.wheel) * 57.3) % 360;
+    if (r.spin[0]) r.spin[0].setAttribute("transform", `rotate(${deg.toFixed(1)} 180 254)`);
+    if (r.spin[1]) r.spin[1].setAttribute("transform", `rotate(${deg.toFixed(1)} 465 254)`);
+    const f = Math.min(1, km / r.tot);
+    if (r.mfill) r.mfill.style.transform = `scaleX(${f})`;
+    if (r.mrun) r.mrun.style.transform = `translate3d(${f * 100}%,0,0)`;
+    const n = Math.round(km);
+    if (r.num && r.shown !== n) {
+      r.shown = n;
+      r.num.textContent = String(n);
     }
-    const tot = +sc.dataset.total || 1;
-    const mk = document.getElementById("mmark"), fl = document.getElementById("mfill");
-    if (mk) mk.style.left = (km / tot) * 100 + "%";
-    if (fl) fl.style.width = (km / tot) * 100 + "%";
   }
   let raf = 0;
   /** Drives from one km value to another: parallax, spinning wheels, dust, speed lines, engine sound. */
   function driveTo(from, to, lv, done) {
-    const sc = document.getElementById("scene"), box = document.getElementById("carbox"), num = document.getElementById("kmnum");
+    const sc = document.getElementById("scene"), box = document.getElementById("carbox");
     cancelAnimationFrame(raf);
     if (!sc || !box || FX.reduced() || from === to) {
       place(to);
-      if (num) num.textContent = String(to);
       return done && done();
     }
+    const R = sceneRefs();
     const dur = 1100 + (to - from) * 45;
     FX.sound.engine(dur / 1000, lv);
     sc.classList.add("driving");
@@ -187,8 +219,11 @@ window.mountHalal = function (app) {
       const v = km - last;
       last = km;
       place(km);
-      if (num) num.textContent = String(Math.round(km));
-      sc.classList.toggle("fast", v > 0.12);
+      const fast = v > 0.12;
+      if (fast !== R.fast) {
+        R.fast = fast;
+        sc.classList.toggle("fast", fast);
+      }
       if (body) body.style.transform = `translateY(${Math.sin(now / 45) * Math.min(2.2, v * 9)}px) rotate(${p < 0.5 ? -Math.min(2.4, v * 9) : Math.min(1.6, (1 - p) * 4)}deg)`;
       if (v > 0.05 && now - lastDust > 70) {
         lastDust = now;
@@ -202,6 +237,7 @@ window.mountHalal = function (app) {
       if (p < 1) raf = requestAnimationFrame(step);
       else {
         sc.classList.remove("driving", "fast");
+        R.fast = false;
         box.classList.remove("nitro");
         if (body) body.style.transform = "";
         done && done();
@@ -248,6 +284,10 @@ window.mountHalal = function (app) {
     ];
     const right = quiz.picks.filter((p, k) => p === quiz.qs[k].a).length;
     const hit = picked && picked === q.a;
+    // keep the running scene (landscape, car, decoded images) instead of rebuilding it for every question
+    const keep = document.getElementById("scene");
+    const reuse = keep && !keep.classList.contains("end") && keep.dataset.total === String(tot) ? keep : null;
+    if (reuse) reuse.remove();
     app.innerHTML =
       band(
         `<div class="quiz"><h1>Quiz</h1>
@@ -267,7 +307,7 @@ window.mountHalal = function (app) {
         <div class="trip">
           ${scene(quiz.prev, tot)}
           <div class="mm" aria-hidden="true">
-            <div class="mtrack"><i id="mfill"></i><span id="mmark"></span><em></em></div>
+            <div class="mtrack"><i id="mfill"></i><b class="mrun" id="mrun"><span id="mmark"></span></b><em></em></div>
             <div class="mdots">${mdots()}</div>
           </div>
         </div>
@@ -295,6 +335,12 @@ window.mountHalal = function (app) {
           }
         </article>
       </section></div>`;
+    if (reuse) {
+      document.getElementById("scene")?.replaceWith(reuse);
+      reuse.classList.remove("quake", "driving", "fast");
+      reuse.querySelector("#carbox")?.classList.remove("stall", "nitro");
+      if (SC) SC.fast = false;
+    }
     place(quiz.prev);
     app.querySelectorAll("[data-mode]").forEach((b) =>
       b.addEventListener("click", () => {

@@ -155,6 +155,9 @@ window.mountKosher = function (app) {
     ];
     const right = quiz.picks.filter((p, k) => p === quiz.qs[k].a).length;
     const hit = picked && picked === q.a;
+    // keep the sack (big SVG) between questions instead of rebuilding it
+    const keepSack = document.getElementById("vsack");
+    if (keepSack) keepSack.remove();
     app.innerHTML =
       band(
         `<div class="quiz"><h1>Quiz</h1>
@@ -178,7 +181,7 @@ window.mountKosher = function (app) {
           <div class="vinfo">
             <div class="vgold"><i class="vcoin" aria-hidden="true"></i><span id="goldnum">${quiz.prev}</span></div>
             <small>${T("von", "of")} ${max} ${T("Gold möglich", "gold possible")}</small>
-            <div class="vmeter" aria-hidden="true"><i id="vmeter" style="width:${(quiz.prev / max) * 100}%"></i></div>
+            <div class="vmeter" aria-hidden="true"><i id="vmeter" style="--f:${quiz.prev / max}"></i></div>
             <div class="vdots" aria-hidden="true">${dots()}</div>
           </div>
         </div>
@@ -208,6 +211,14 @@ window.mountKosher = function (app) {
         </article>
         </div>
       </section></div>`;
+    if (keepSack) {
+      const fresh = document.getElementById("vsack");
+      if (fresh) {
+        keepSack.dataset.fill = fresh.dataset.fill;
+        keepSack.style.setProperty("--s", fresh.style.getPropertyValue("--s"));
+        fresh.replaceWith(keepSack);
+      }
+    }
     app.querySelectorAll("[data-mode]").forEach((b) =>
       b.addEventListener("click", () => {
         if (b.dataset.mode === quiz.mode) return;
@@ -264,7 +275,7 @@ window.mountKosher = function (app) {
       s.style.setProperty("--s", sackScale(quiz.gold, max));
     }
     const m = document.getElementById("vmeter");
-    if (m) m.style.width = (quiz.gold / max) * 100 + "%";
+    if (m) m.style.setProperty("--f", String(quiz.gold / max));
   }
 
   /** Coins fly in an arc from the card into the sack; each landing rings, sparks and bumps the sack. */
@@ -301,12 +312,11 @@ window.mountKosher = function (app) {
         c.remove();
         FX.sound.coin(landed);
         FX.burst(x1, y1, 5, "spark", { power: 46, size: 6, dur: 520, up: true, gravity: 30 });
-        const s = document.getElementById("vsack");
-        if (s) {
-          s.classList.remove("bump");
-          void s.getBoundingClientRect();
-          s.classList.add("bump");
-        }
+        // bounce on the wrapper with the Web Animations API – no forced layout, runs on the compositor
+        document.getElementById("vsack")?.animate(
+          [{ transform: "scale(1)" }, { transform: "scale(1.14,.88)", offset: 0.4 }, { transform: "scale(1)" }],
+          { duration: 340, easing: "cubic-bezier(.3,1.6,.5,1)" }
+        );
         if (++landed === n) {
           settle();
           FX.floatText(x1, b.top, `+${gain}`, "gold");
