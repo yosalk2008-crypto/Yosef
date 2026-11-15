@@ -34,6 +34,7 @@ window.mountHalal = function (app) {
     `<section class="band ${cls}"><div class="glow" aria-hidden="true"></div><div class="wrap">
       <nav class="knav" aria-label="${T("Ist das halal?", "Is it halal?")}">
         <a href="#/" class="kbrand"><span class="seal" aria-hidden="true">?</span>${T("Ist das halal?", "Is it halal?")}</a>
+        ${window.KTFX.soundBtn(T("Ton an", "Sound on"), T("Ton aus", "Sound off"))}
       </nav>${inner}</div></section>`;
 
   function setNav(route) {
@@ -85,9 +86,12 @@ window.mountHalal = function (app) {
   }
 
   // ---------- Quiz ----------
+  const FX = window.KTFX;
+  const ART = window.KT_ART || {};
   const LVL = { 1: { de: "Leicht", en: "Easy", n: 10 }, 2: { de: "Mittel", en: "Medium", n: 20 }, 3: { de: "Schwer", en: "Hard", n: 30 } };
   const lvOf = (q) => LVL[q.lv] || LVL[2];
   const worth = (q) => lvOf(q).n;
+  const lvN = (q) => q.lv || 2;
   const KEY = "kt-daily-halal";
   const berlinDay = () => {
     try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date()); } catch (e) { return new Date().toISOString().slice(0, 10); }
@@ -102,7 +106,6 @@ window.mountHalal = function (app) {
   }
   const loadDone = () => { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } };
   const saveDone = (o) => { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} };
-  const reduced = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   let quiz = null;
   function newQuiz(mode, cat) {
@@ -117,56 +120,111 @@ window.mountHalal = function (app) {
   }
   const total = () => quiz.qs.reduce((s, q) => s + worth(q), 0);
 
-  /** Road scene: car, hills, finish flag. `from`/`to` are km values; the car drives from one to the other. */
-  const CAR = `<svg viewBox="0 0 122 58" aria-hidden="true"><path d="M5 40 L9 28 Q11 23 18 22 L36 21 L46 9 Q48 7 53 7 L84 7 Q89 7 92 10 L101 21 L111 23 Q117 25 117 31 L117 40 Q117 44 113 44 L9 44 Q5 44 5 40 Z" fill="#0f8a5f"/><path d="M50 11 L84 11 L94 21 L44 21 Z" fill="#d6f3e7"/><path d="M67 11 V21" stroke="#0f8a5f" stroke-width="2.5"/><rect x="8" y="36" width="109" height="3" fill="#0b6e4b" opacity=".55"/><circle cx="111" cy="31" r="3.2" fill="#ffe27a"/><rect x="5" y="30" width="4" height="5" rx="1.5" fill="#e0524a"/><g class="wh"><circle cx="30" cy="45" r="11.5" fill="#1b2421"/><circle cx="30" cy="45" r="5.5" fill="#cfd6d3"/><path d="M30 39.5 v11 M24.5 45 h11" stroke="#8c9894" stroke-width="2"/></g><g class="wh"><circle cx="93" cy="45" r="11.5" fill="#1b2421"/><circle cx="93" cy="45" r="5.5" fill="#cfd6d3"/><path d="M93 39.5 v11 M87.5 45 h11" stroke="#8c9894" stroke-width="2"/></g></svg>`;
-  const FLAG = `<svg viewBox="0 0 40 70" aria-hidden="true"><rect x="3" y="2" width="3.5" height="66" rx="1.5" fill="#33423d"/><g><rect x="6.5" y="4" width="28" height="22" fill="#fff" stroke="#33423d" stroke-width="1.5"/><path d="M6.5 4h7v5.5h-7zM20.5 4h7v5.5h-7zM13.5 9.5h7v5.5h-7zM27.5 9.5h7v5.5h-7zM6.5 15h7v5.5h-7zM20.5 15h7v5.5h-7zM13.5 20.5h7v5.5h-7zM27.5 20.5h7v5.5h-7z" fill="#1b2421"/></g></svg>`;
-  const carLeft = (p) => `calc(8px + ${p.toFixed(4)} * (100% - 148px))`;
-  const scene = (from, to, cls = "") => {
-    const t = total() || 1;
-    return `<div class="road ${cls}" id="road" data-from="${from}" data-to="${to}" role="img" aria-label="${T("Straße mit Auto", "Road with a car")}">
-      <div class="sun"></div>
-      <div class="hills far" style="background-position-x:${-from * 3}px"></div>
-      <div class="hills near" style="background-position-x:${-from * 7}px"></div>
-      <div class="asphalt"><div class="lane" style="background-position-x:${-from * 14}px"></div></div>
-      <div class="flag">${FLAG}</div>
-      <div class="car" style="left:${carLeft(from / t)}">${CAR}<i class="puff p1"></i><i class="puff p2"></i><i class="puff p3"></i></div>
+  // ----- Road scene (landscape, car and treasure art come from Figma, see /koscher/art.js and /halal/art/) -----
+  const PXK = 18; // road pixels per km
+  const GATE = `<svg viewBox="0 0 150 170" aria-hidden="true"><defs><pattern id="hchk" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#fff"/><rect width="10" height="10" fill="#14282d"/><rect x="10" y="10" width="10" height="10" fill="#14282d"/></pattern></defs><g stroke="#14282d" stroke-width="4" stroke-linejoin="round"><rect x="12" y="20" width="12" height="148" rx="4" fill="#e0524a"/><rect x="126" y="20" width="12" height="148" rx="4" fill="#e0524a"/><path d="M12 60h12M12 100h12M12 140h12M126 60h12M126 100h12M126 140h12" stroke="#fff" stroke-width="7"/><rect x="6" y="8" width="138" height="40" rx="6" fill="url(#hchk)"/></g><circle cx="18" cy="12" r="8" fill="#ffe27a" stroke="#14282d" stroke-width="4"/><circle cx="132" cy="12" r="8" fill="#ffe27a" stroke="#14282d" stroke-width="4"/></svg>`;
+  const scene = (km, tot, cls = "") => {
+    const signs = [];
+    for (let s = 50; s < tot; s += 50) signs.push(`<span class="sign" style="--k:${s}"><b>${s}</b><i></i></span>`);
+    return `<div class="scene ${cls}" id="scene" data-total="${tot}" role="img" aria-label="${T("Ein Auto fährt durch eine Landschaft zum Ziel", "A car drives through a landscape to the finish")}">
+      <div class="ly sky"></div><div class="ly dunes"></div><div class="ly clouds"></div><div class="ly mid"></div><div class="ly front"></div>
+      <div class="road"><div class="lane"></div></div>
+      <div class="world">${signs.join("")}<span class="gate" style="--k:${tot}">${GATE}</span></div>
+      <div class="lines" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div class="carbox" id="carbox"><i class="flame"></i><i class="puff p1"></i><i class="puff p2"></i><i class="puff p3"></i><div class="carbody">${ART.car || ""}<i class="haz h1"></i><i class="haz h2"></i></div><i class="shadow"></i></div>
+      <div class="hud"><b><span id="kmnum">${km}</span> km</b></div>
+      <div class="hud r">${T("Ziel", "Finish")} ${tot} km</div>
     </div>`;
   };
-  /** Starts the drive animation of a freshly rendered scene. */
-  function drive(hit) {
-    const road = document.getElementById("road");
-    if (!road) return;
-    const from = +road.dataset.from, to = +road.dataset.to;
-    const car = road.querySelector(".car");
-    if (!hit) {
-      car.classList.add("stall");
-      return;
+  /** Puts every layer of the scene at the given distance. */
+  function place(km) {
+    const sc = document.getElementById("scene");
+    if (!sc) return;
+    const X = km * PXK;
+    const set = (sel, f) => { const el = sc.querySelector(sel); if (el) el.style.backgroundPositionX = -X * f + "px"; };
+    set(".dunes", 0.06);
+    set(".mid", 0.3);
+    set(".front", 0.62);
+    set(".lane", 1);
+    const w = sc.querySelector(".world");
+    if (w) w.style.transform = `translate3d(${-X}px,0,0)`;
+    const car = sc.querySelector(".kcar");
+    if (car) {
+      const deg = ((X / (car.getBoundingClientRect().width * 0.094 || 12)) * 57.3) % 360;
+      const sp = car.querySelectorAll(".spin");
+      if (sp[0]) sp[0].setAttribute("transform", `rotate(${deg} 180 254)`);
+      if (sp[1]) sp[1].setAttribute("transform", `rotate(${deg} 465 254)`);
     }
-    const num = document.getElementById("kmnum");
-    const t = total() || 1;
-    if (reduced()) {
-      car.style.left = carLeft(to / t);
-      if (num) num.textContent = String(to);
-      return;
-    }
-    road.classList.add("driving");
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        car.style.left = carLeft(to / t);
-        road.querySelector(".hills.far").style.backgroundPositionX = -to * 3 + "px";
-        road.querySelector(".hills.near").style.backgroundPositionX = -to * 7 + "px";
-        road.querySelector(".lane").style.backgroundPositionX = -to * 14 + "px";
-      })
-    );
-    const t0 = performance.now();
-    const tick = (now) => {
-      const p = Math.min(1, (now - t0) / 1500);
-      if (num && num.isConnected) num.textContent = String(Math.round(from + (to - from) * p));
-      if (p < 1) requestAnimationFrame(tick);
-      else road.classList.remove("driving");
-    };
-    requestAnimationFrame(tick);
+    const tot = +sc.dataset.total || 1;
+    const mk = document.getElementById("mmark"), fl = document.getElementById("mfill");
+    if (mk) mk.style.left = (km / tot) * 100 + "%";
+    if (fl) fl.style.width = (km / tot) * 100 + "%";
   }
+  let raf = 0;
+  /** Drives from one km value to another: parallax, spinning wheels, dust, speed lines, engine sound. */
+  function driveTo(from, to, lv, done) {
+    const sc = document.getElementById("scene"), box = document.getElementById("carbox"), num = document.getElementById("kmnum");
+    cancelAnimationFrame(raf);
+    if (!sc || !box || FX.reduced() || from === to) {
+      place(to);
+      if (num) num.textContent = String(to);
+      return done && done();
+    }
+    const dur = 1100 + (to - from) * 45;
+    FX.sound.engine(dur / 1000, lv);
+    sc.classList.add("driving");
+    if (lv >= 3) box.classList.add("nitro");
+    const body = box.querySelector(".carbody");
+    const t0 = performance.now();
+    let last = from, lastDust = 0;
+    const ease = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
+    const step = (now) => {
+      if (!sc.isConnected) return;
+      const p = Math.min(1, (now - t0) / dur);
+      const km = from + (to - from) * ease(p);
+      const v = km - last;
+      last = km;
+      place(km);
+      if (num) num.textContent = String(Math.round(km));
+      sc.classList.toggle("fast", v > 0.12);
+      if (body) body.style.transform = `translateY(${Math.sin(now / 45) * Math.min(2.2, v * 9)}px) rotate(${p < 0.5 ? -Math.min(2.4, v * 9) : Math.min(1.6, (1 - p) * 4)}deg)`;
+      if (v > 0.05 && now - lastDust > 70) {
+        lastDust = now;
+        const d = document.createElement("i");
+        d.className = "dust";
+        d.style.setProperty("--r", (0.6 + Math.random() * 0.9).toFixed(2));
+        d.style.setProperty("--y", (-8 - Math.random() * 26).toFixed(0) + "px");
+        box.appendChild(d);
+        setTimeout(() => d.remove(), 700);
+      }
+      if (p < 1) raf = requestAnimationFrame(step);
+      else {
+        sc.classList.remove("driving", "fast");
+        box.classList.remove("nitro");
+        if (body) body.style.transform = "";
+        done && done();
+      }
+    };
+    raf = requestAnimationFrame(step);
+  }
+  function stall() {
+    FX.sound.stall();
+    FX.vibrate([50, 40, 50, 40, 80]);
+    document.getElementById("carbox")?.classList.add("stall");
+    document.getElementById("scene")?.classList.add("quake");
+  }
+  /** Point above the car in viewport coordinates. */
+  const carTop = () => {
+    const r = document.getElementById("carbox")?.getBoundingClientRect();
+    return r ? [r.left + r.width / 2, r.top] : [window.innerWidth / 2, 200];
+  };
+  const mdots = () =>
+    quiz.qs
+      .map((q, k) => {
+        const p = quiz.picks[k];
+        return `<i class="l${lvN(q)}${p ? (p === q.a ? " ok" : " no") : k === quiz.i ? " cur" : ""}"></i>`;
+      })
+      .join("");
 
   function quizView() {
     if (!quiz) newQuiz("daily");
@@ -178,6 +236,7 @@ window.mountHalal = function (app) {
     const q = quiz.qs[quiz.i];
     const picked = quiz.picks[quiz.i];
     const L = lvOf(q);
+    const tot = total();
     const opts = [
       ["halal", "✓", "Halal"],
       ["haram", "✕", "Haram"],
@@ -198,18 +257,20 @@ window.mountHalal = function (app) {
             ? `<div class="cats" role="group" aria-label="${T("Thema", "Topic")}">${CATS.map((c) => `<button type="button" class="chip" data-cat="${c}" aria-pressed="${quiz.cat === c}">${esc(catName(c))}</button>`).join("")}</div>`
             : `<p class="dnote">${T(`${quiz.qs.length} neue Fragen vom ${dayLabel(quiz.day)}`, `${quiz.qs.length} new questions from ${dayLabel(quiz.day)}`)}</p>`
         }
-        <div class="progress"><span>${T("Frage", "Question")} ${quiz.i + 1} ${T("von", "of")} ${quiz.qs.length}</span><span>${right} ${T("richtig", "right")}</span></div>
-        <div class="bar"><i style="width:${(quiz.i / quiz.qs.length) * 100}%"></i></div></div>`,
+        <div class="progress"><span>${T("Frage", "Question")} ${quiz.i + 1} ${T("von", "of")} ${quiz.qs.length}</span><span>${right} ${T("richtig", "right")}</span></div></div>`,
         "short"
       ) +
       `<div class="wrap lift"><section class="quiz">
         <div class="trip">
-          ${scene(quiz.prev, quiz.km)}
-          <div class="kmrow"><strong><span id="kmnum">${quiz.prev}</span> km</strong><small>${T("Ziel in", "finish at")} ${total()} km</small></div>
+          ${scene(quiz.prev, tot)}
+          <div class="mm" aria-hidden="true">
+            <div class="mtrack"><i id="mfill"></i><span id="mmark"></span><em></em></div>
+            <div class="mdots">${mdots()}</div>
+          </div>
         </div>
-        <article class="qcard${picked ? (hit ? " pop" : " shake") : ""}" aria-live="polite">
+        <article class="qcard${picked ? (hit ? " pop" : " shake") : " deal"}" aria-live="polite">
           <span class="kicker">${esc(catName(q.cat))} · ${T("Ist das halal?", "Is it halal?")}</span>
-          <span class="worth w${q.lv || 2}"><span class="chev" aria-hidden="true">${"▸".repeat(q.lv || 2)}</span>${T(L.de, L.en)} · ${L.n} km</span>
+          <span class="worth w${lvN(q)}"><span class="chev" aria-hidden="true">${"<i></i>".repeat(lvN(q))}</span>${T(L.de, L.en)} · ${L.n} km</span>
           <h2>${esc(qq(q))}</h2>
           <div class="answers">
             ${opts
@@ -226,11 +287,12 @@ window.mountHalal = function (app) {
                   <p>${esc(qe(q))}</p>
                   ${q.src ? `<p class="src">${T("Quelle", "Source")}: ${esc(qs(q))}</p>` : ""}
                 </div>
-                <div class="next"><button type="button" class="btn" id="next">${quiz.i + 1 < quiz.qs.length ? T("Nächste Frage", "Next question") : T("Ergebnis ansehen", "See result")}</button></div>`
+                <div class="next"><button type="button" class="btn" id="next">${quiz.i + 1 < quiz.qs.length ? T("Nächste Frage", "Next question") : T("Zur Zieleinfahrt", "To the finish")}</button></div>`
               : ""
           }
         </article>
       </section></div>`;
+    place(quiz.prev);
     app.querySelectorAll("[data-mode]").forEach((b) =>
       b.addEventListener("click", () => {
         if (b.dataset.mode === quiz.mode) return;
@@ -259,7 +321,14 @@ window.mountHalal = function (app) {
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
     if (picked) {
-      drive(hit);
+      if (hit) {
+        FX.vibrate(18);
+        driveTo(quiz.prev, quiz.km, lvN(q), () => {
+          const [x, y] = carTop();
+          FX.floatText(x, y, `+${L.n} km`, "km");
+          FX.burst(x, y + 20, 10, "spark", { power: 70, size: 7, up: true, colors: ["#34d399", "#ffe27a", "#ffffff"] });
+        });
+      } else stall();
       document.getElementById("next")?.focus({ preventScroll: true });
     }
   }
@@ -276,7 +345,7 @@ window.mountHalal = function (app) {
     } catch (e) {}
   }
 
-  function summary(h1, right, n, km, max, marks, extra, review) {
+  function summary(h1, right, n, km, max, marks, extra, review, fresh) {
     const ratio = km / max;
     const [title, text] =
       ratio >= 0.95
@@ -286,20 +355,31 @@ window.mountHalal = function (app) {
           : ratio >= 0.4
             ? [T("Nicht schlecht.", "Not bad."), T("Ein paar Antworten haben dich überrascht – genau dafür ist das Quiz da.", "A few answers surprised you – that’s exactly what the quiz is for.")]
             : [T("Da geht noch was.", "Room to grow."), T("Kein Problem: Mit den Erklärungen und Quellen klappt es beim nächsten Mal besser.", "No problem: with the explanations and sources it’ll go better next time.")];
+    const from = fresh ? Math.max(0, km - 45) : km;
     app.innerHTML =
       band(`<div class="quiz"><h1>${h1}</h1></div>`, "short") +
       `<div class="wrap lift"><section class="quiz">
         <div class="result">
-          <div class="trip flat">${scene(km, km, "end")}</div>
-          <div class="big">${km} km</div>
+          <div class="trip flat">${scene(from, max, "end")}</div>
+          <div class="big"><span id="bignum">${fresh ? 0 : km}</span> km</div>
           <p class="goldsub">${T("von", "of")} ${max} km · ${right}/${n} ${T("richtig", "right")}</p>
-          <h1 style="font-size:32px;margin-top:10px">${title}</h1>
+          <div class="marks" aria-hidden="true">${[...marks].map((m, k) => `<i class="${m === "🟩" ? "ok" : "no"}" style="animation-delay:${0.25 + k * 0.07}s"></i>`).join("")}</div>
+          <h1 style="font-size:32px;margin-top:14px">${title}</h1>
           <p>${text}</p>
           ${extra}
         </div>
         ${review}
       </section></div>`;
+    place(from);
     document.getElementById("share")?.addEventListener("click", () => share(shareText(right, n, km, max, marks)));
+    if (fresh) {
+      FX.count(document.getElementById("bignum"), 0, km, 1600);
+      driveTo(from, km, 2, () => {
+        if (ratio >= 0.7) FX.sound.win();
+        if (ratio >= 0.95) FX.sound.honk();
+        if (ratio >= 0.7) FX.rain(Math.round(30 + 50 * ratio), "paper");
+      });
+    }
   }
 
   function resultView() {
@@ -309,7 +389,7 @@ window.mountHalal = function (app) {
     const marks = quiz.picks.map((p, k) => (p === quiz.qs[k].a ? "🟩" : "🟥")).join("");
     if (quiz.mode === "daily" && !quiz.replay) saveDone({ day: quiz.day, right, n, km: quiz.km, max, marks });
     summary(
-      T("Dein Ergebnis", "Your result"),
+      T("Deine Strecke", "Your trip"),
       right,
       n,
       quiz.km,
@@ -324,7 +404,8 @@ window.mountHalal = function (app) {
         ${quiz.qs
           .map((q, k) => `<div><b class="${quiz.picks[k] === q.a ? "" : "x"}">${quiz.picks[k] === q.a ? "✓" : "✕"}</b><span>${esc(qq(q))} – <em>${stampText(q.a)}</em> <small>${worth(q)} km</small></span></div>`)
           .join("")}
-      </div>`
+      </div>`,
+      true
     );
     document.getElementById("again")?.addEventListener("click", () => {
       newQuiz("free", quiz.cat);
@@ -350,7 +431,8 @@ window.mountHalal = function (app) {
         <button type="button" class="btn ghost" id="replay">${T("Nochmal fahren", "Drive again")}</button>
       </div>
       <p class="comeback">${T("Morgen gibt es 10 neue Fragen.", "Tomorrow there are 10 new questions.")}</p>`,
-      ""
+      "",
+      false
     );
     document.getElementById("free").addEventListener("click", () => {
       newQuiz("free");
@@ -388,6 +470,10 @@ window.mountHalal = function (app) {
     window.scrollTo(0, 0);
   }
   window.addEventListener("hashchange", route);
+  const unbindSound = window.KTFX.bindSound(app, T("Ton an", "Sound on"), T("Ton aus", "Sound off"));
   route();
-  return () => window.removeEventListener("hashchange", route);
+  return () => {
+    window.removeEventListener("hashchange", route);
+    unbindSound();
+  };
 };

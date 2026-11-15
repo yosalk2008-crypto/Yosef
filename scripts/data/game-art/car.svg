@@ -1,0 +1,59 @@
+<svg width="640" height="360" viewBox="0 0 640 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="640" height="360" fill="#E5E5E5"/>
+<g id="Generated illustration">
+<g id="roof-spoiler">
+<path id="Vector" d="M194 106L204 130L224 118L214 103L194 106Z" fill="#087C58" stroke="#172D32" stroke-width="6" stroke-linejoin="round"/>
+<path id="Vector_2" d="M173 96C173 92.6667 175.333 91 180 91H230C234.667 91.6667 237.333 94.3333 238 99L237 107H176L173 96Z" fill="#17B47B" stroke="#172D32" stroke-width="6" stroke-linejoin="round"/>
+<path id="Vector_3" d="M183 98H228" stroke="#6DE0AB" stroke-width="4" stroke-linecap="round"/>
+</g>
+<g id="car-body">
+<path id="Vector_4" d="M80 186C80.6667 178 86.6667 172.667 98 170L153 160L199 117C207 109 218 105 232 105H337C349 105 359.667 110 369 120L416 166L524 178C539.333 179.333 550.333 186.333 557 199L569 226V249C568.333 256.333 563.333 260 554 260H88C78 259.333 73 254.333 73 245V204C73 196.667 75.3333 190.667 80 186Z" fill="#0AAA73" stroke="#172D32" stroke-width="7" stroke-linejoin="round"/>
+<path id="Vector_5" d="M89 183L159 171L207 125C214.333 117.667 223.667 114 235 114H336C345.333 114 353.333 117.667 360 125L406 171L524 186C534 186.667 541 190.333 545 197L420 188C400 185.333 381 184 363 184L99 192L89 183Z" fill="#31C88D"/>
+<path id="Vector_6" d="M77 230C143.667 234.667 210 236 276 234L564 226L565 246C565 252 560.667 255 552 255H91C82.3333 255 78 251.333 78 244L77 230Z" fill="#07865F"/>
+<path id="Vector_7" d="M77 204H557L565 221H77V204Z" fill="#F7FAF0"/>
+<path id="Vector_8" d="M77 217H563L565 221H77V217Z" fill="#C9DED7"/>
+<path id="Vector_9" d="M358 182L375 203V235C375 240.333 371.667 243 365 243H250C244 243 241 239.667 241 233V183" stroke="#172D32" stroke-width="3" stroke-linecap="round"/>
+<path id="Vector_10" d="M319 191C319 188.333 320.333 187 323 187H344C347.333 187 349 188.333 349 191C349 193.667 347.333 195 344 195H323C320.333 195 319 193.667 319 191Z" fill="#172D32"/>
+<path id="Vector_11" d="M426 180L518 190" stroke="#69DBAB" stroke-width="4" stroke-linecap="round"/>
+<path id="Vector_12" d="M247 248H397V260H247V248Z" fill="#263B40" stroke="#172D32" stroke-width="4" stroke-linejoin="round"/>
+</g>
+<g id="windows">
+<path id="Vector_13" d="M211 128C216.333 122.667 223.333 120 232 120H249V167H171L211 128Z" fill="#254A55" stroke="#172D32" stroke-width="6" stroke-linejoin="round"/>
+<path id="Vector_14" d="M266 120H333C341 120 348.333 123.667 355 131L389 166H266V120Z" fill="#254A55" stroke="#172D32" stroke-width="6" stroke-linejoin="round"/>
+<path id="Vector_15" d="M215 133C220.333 127.667 226.333 125 233 125H244V140L190 156L215 133Z" fill="#416C76"/>
+<path id="Vector_16" d="M271 125H331C339 125 345.667 128.333 351 135L356 141L271 159V125Z" fill="#416C76"/>
+<path id="Vector_17" d="M276 129H330C336 129 341.333 131.667 346 137" stroke="#72959A" stroke-width="3" stroke-linecap="round"/>
+</g>
+<g id="side-mirror">
+<path id="Vector_18" d="M377 169L387 179" stroke="#172D32" stroke-width="6" stroke-linecap="round"/>
+<path id="Vector_19" d="M375 164C375 160 377.333 158 382 158L394 160C398.667 160.667 401.333 163.667 402 169L401 178H382C377.333 176.667 375 174.333 375 171V164Z" fill="#0C966A" stroke="#172D32" stroke-width="5" stroke-linejoin="round"/>
+<path id="Vector_20" d="M383 164L393 166" stroke="#58D9A3" stroke-width="3" stroke-linecap="round"/>
+</g>
+<g id="lights-and-bumpers">
+<path id="Vector_21" d="M83 184L103 181V199L77 202L83 184Z" fill="#F27859" stroke="#172D32" stroke-width="4" stroke-linejoin="round"/>
+<path id="Vector_22" d="M531 189C540.333 189.667 547 194 551 202L555 211L534 209C530 208.333 527.667 206 527 202L526 190L531 189Z" fill="#FFF5C9" stroke="#172D32" stroke-width="4" stroke-linejoin="round"/>
+<path id="Vector_23" d="M551 229H568V245H550L551 229Z" fill="#35464A" stroke="#172D32" stroke-width="4" stroke-linejoin="round"/>
+<path id="Vector_24" d="M74 230H94V246H75L74 230Z" fill="#35464A" stroke="#172D32" stroke-width="4" stroke-linejoin="round"/>
+</g>
+<g id="rear-wheel">
+<path id="Vector_25" d="M122 257V248C122 216 147 194 179 194C211 194 237 217 237 249V260H122V257Z" fill="#172D32" stroke="#172D32" stroke-width="5"/>
+<path id="Vector_26" d="M180 302C206.51 302 228 280.51 228 254C228 227.49 206.51 206 180 206C153.49 206 132 227.49 132 254C132 280.51 153.49 302 180 302Z" fill="#222A30" stroke="#14282D" stroke-width="6"/>
+<path id="Vector_27" d="M141 250C141.661 244.05 143.683 238.333 146.909 233.29C150.135 228.248 154.479 224.015 159.603 220.921C164.728 217.827 170.496 215.954 176.461 215.448C182.426 214.941 188.427 215.814 194 218" stroke="#41494D" stroke-width="5" stroke-linecap="round"/>
+<path id="Vector_28" d="M180 284C196.569 284 210 270.569 210 254C210 237.431 196.569 224 180 224C163.431 224 150 237.431 150 254C150 270.569 163.431 284 180 284Z" fill="#B9C8CE" stroke="#172D32" stroke-width="5"/>
+<path id="Vector_29" d="M180 276C192.15 276 202 266.15 202 254C202 241.85 192.15 232 180 232C167.85 232 158 241.85 158 254C158 266.15 167.85 276 180 276Z" fill="#53646E"/>
+<path id="Vector_30" d="M180 254V233M180 254L200 248M180 254L192 271M180 254L167 271M180 254L160 248" stroke="#DBE5E8" stroke-width="8" stroke-linecap="round"/>
+<path id="Vector_31" d="M180 263C184.971 263 189 258.971 189 254C189 249.029 184.971 245 180 245C175.029 245 171 249.029 171 254C171 258.971 175.029 263 180 263Z" fill="#A5B8C1" stroke="#253C44" stroke-width="3"/>
+<path id="Vector_32" d="M178 255C179.657 255 181 253.657 181 252C181 250.343 179.657 249 178 249C176.343 249 175 250.343 175 252C175 253.657 176.343 255 178 255Z" fill="#E9EFF0"/>
+</g>
+<g id="front-wheel">
+<path id="Vector_33" d="M407 257V248C407 216 432 194 464 194C496 194 522 217 522 249V260H407V257Z" fill="#172D32" stroke="#172D32" stroke-width="5"/>
+<path id="Vector_34" d="M465 302C491.51 302 513 280.51 513 254C513 227.49 491.51 206 465 206C438.49 206 417 227.49 417 254C417 280.51 438.49 302 465 302Z" fill="#222A30" stroke="#14282D" stroke-width="6"/>
+<path id="Vector_35" d="M426 250C426.661 244.05 428.683 238.333 431.909 233.29C435.135 228.248 439.479 224.015 444.603 220.921C449.728 217.827 455.496 215.954 461.461 215.448C467.426 214.941 473.427 215.814 479 218" stroke="#41494D" stroke-width="5" stroke-linecap="round"/>
+<path id="Vector_36" d="M465 284C481.569 284 495 270.569 495 254C495 237.431 481.569 224 465 224C448.431 224 435 237.431 435 254C435 270.569 448.431 284 465 284Z" fill="#B9C8CE" stroke="#172D32" stroke-width="5"/>
+<path id="Vector_37" d="M465 276C477.15 276 487 266.15 487 254C487 241.85 477.15 232 465 232C452.85 232 443 241.85 443 254C443 266.15 452.85 276 465 276Z" fill="#53646E"/>
+<path id="Vector_38" d="M465 254V233M465 254L485 248M465 254L477 271M465 254L452 271M465 254L445 248" stroke="#DBE5E8" stroke-width="8" stroke-linecap="round"/>
+<path id="Vector_39" d="M465 263C469.971 263 474 258.971 474 254C474 249.029 469.971 245 465 245C460.029 245 456 249.029 456 254C456 258.971 460.029 263 465 263Z" fill="#A5B8C1" stroke="#253C44" stroke-width="3"/>
+<path id="Vector_40" d="M463 255C464.657 255 466 253.657 466 252C466 250.343 464.657 249 463 249C461.343 249 460 250.343 460 252C460 253.657 461.343 255 463 255Z" fill="#E9EFF0"/>
+</g>
+</g>
+</svg>

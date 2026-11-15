@@ -36,6 +36,7 @@ window.mountKosher = function (app) {
     `<section class="band ${cls}"><div class="glow" aria-hidden="true"></div><div class="wrap">
       <nav class="knav" aria-label="${T("Ist das koscher?", "Is it kosher?")}">
         <a href="#/" class="kbrand"><span class="seal" aria-hidden="true">?</span>${T("Ist das koscher?", "Is it kosher?")}</a>
+        ${window.KTFX.soundBtn(T("Ton an", "Sound on"), T("Ton aus", "Sound off"))}
       </nav>${inner}</div></section>`;
 
   function setNav(route) {
@@ -87,6 +88,8 @@ window.mountKosher = function (app) {
   }
 
   // ---------- Quiz ----------
+  const FX = window.KTFX;
+  const ART = window.KT_ART || {};
   const LVL = { 1: { de: "Leicht", en: "Easy", n: 10 }, 2: { de: "Mittel", en: "Medium", n: 20 }, 3: { de: "Schwer", en: "Hard", n: 30 } };
   const lvOf = (q) => LVL[q.lv] || LVL[2];
   const worth = (q) => lvOf(q).n;
@@ -104,7 +107,6 @@ window.mountKosher = function (app) {
   }
   const loadDone = () => { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } };
   const saveDone = (o) => { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} };
-  const reduced = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   let quiz = null;
   function newQuiz(mode, cat) {
@@ -118,9 +120,18 @@ window.mountKosher = function (app) {
     }
   }
   const maxGold = () => quiz.qs.reduce((s, q) => s + worth(q), 0);
-  const coinsOf = (q) => q.lv || 2;
-
-  const SACK = `<svg class="sack" viewBox="0 0 80 92" aria-hidden="true"><path d="M27 13 Q40 2 53 13 L50 25 Q74 39 71 67 Q68 87 40 87 Q12 87 9 67 Q6 39 30 25 Z" fill="#d4a24a" stroke="#7a5214" stroke-width="3" stroke-linejoin="round"/><path d="M25 26 Q40 35 55 26" fill="none" stroke="#7a5214" stroke-width="3" stroke-linecap="round"/><path d="M29 19 Q40 24 51 19" fill="none" stroke="#a9772a" stroke-width="3" stroke-linecap="round"/><circle cx="40" cy="58" r="14" fill="#f6c945" stroke="#a9772a" stroke-width="3"/><path d="M40 51 v14 M35 55 h10" stroke="#a9772a" stroke-width="3" stroke-linecap="round"/></svg>`;
+  const lvN = (q) => q.lv || 2;
+  /** 0–4: how many coins peek out of the sack. */
+  const fillOf = (gold, max) => (gold <= 0 ? 0 : Math.min(4, 1 + Math.floor((gold / max) * 3.999)));
+  const sackScale = (gold, max) => (0.8 + 0.32 * Math.min(1, gold / max)).toFixed(3);
+  const STARS = Array.from({ length: 14 }, (_, k) => `<i style="left:${(k * 37 + 11) % 100}%;top:${(k * 53 + 7) % 78}%;animation-delay:${((k * 0.37) % 2.4).toFixed(2)}s"></i>`).join("");
+  const dots = () =>
+    quiz.qs
+      .map((q, k) => {
+        const p = quiz.picks[k];
+        return `<i class="l${lvN(q)}${p ? (p === q.a ? " ok" : " no") : k === quiz.i ? " cur" : ""}"></i>`;
+      })
+      .join("");
 
   function quizView() {
     if (!quiz) newQuiz("daily");
@@ -133,6 +144,7 @@ window.mountKosher = function (app) {
     const picked = quiz.picks[quiz.i];
     const isFood = food(q);
     const L = lvOf(q);
+    const max = maxGold();
     const opts = [
       ["nein", "✕", stampText("nein", isFood)],
       ["ja", "✓", stampText("ja", isFood)],
@@ -152,18 +164,28 @@ window.mountKosher = function (app) {
             ? `<div class="cats" role="group" aria-label="${T("Thema", "Topic")}">${CATS.map((c) => `<button type="button" class="chip" data-cat="${c}" aria-pressed="${quiz.cat === c}">${esc(catName(c))}</button>`).join("")}</div>`
             : `<p class="dnote">${T(`${quiz.qs.length} neue Fragen vom ${dayLabel(quiz.day)}`, `${quiz.qs.length} new questions from ${dayLabel(quiz.day)}`)}</p>`
         }
-        <div class="progress"><span>${T("Frage", "Question")} ${quiz.i + 1} ${T("von", "of")} ${quiz.qs.length}</span><span>${right} ${T("richtig", "right")}</span></div>
-        <div class="bar"><i style="width:${(quiz.i / quiz.qs.length) * 100}%"></i></div></div>`,
+        <div class="progress"><span>${T("Frage", "Question")} ${quiz.i + 1} ${T("von", "of")} ${quiz.qs.length}</span><span>${right} ${T("richtig", "right")}</span></div></div>`,
         "short"
       ) +
       `<div class="wrap lift"><section class="quiz">
-        <div class="sackrow" id="sackrow">${SACK}<div><strong><span id="goldnum">${quiz.prev}</span> ${T("Gold", "gold")}</strong><small>${T("von", "of")} ${maxGold()} ${T("möglich", "possible")}</small></div></div>
-        <article class="qcard swipe${picked ? (hit ? " pop" : " shake") : ""}" id="card" aria-live="polite">
+        <div class="vault" id="vault">
+          <div class="vstars" aria-hidden="true">${STARS}</div>
+          <div class="vbeam" aria-hidden="true"></div>
+          <div class="vsack" id="vsack" data-fill="${fillOf(quiz.prev, max)}" style="--s:${sackScale(quiz.prev, max)}">${ART.sack || ""}</div>
+          <div class="vinfo">
+            <div class="vgold"><i class="vcoin" aria-hidden="true"></i><span id="goldnum">${quiz.prev}</span></div>
+            <small>${T("von", "of")} ${max} ${T("Gold möglich", "gold possible")}</small>
+            <div class="vmeter" aria-hidden="true"><i id="vmeter" style="width:${(quiz.prev / max) * 100}%"></i></div>
+            <div class="vdots" aria-hidden="true">${dots()}</div>
+          </div>
+        </div>
+        <div class="deck">
+        <article class="qcard swipe${picked ? (hit ? " pop" : " shake") : " deal"}" id="card" aria-live="polite">
           <span class="ov" id="ov" aria-hidden="true"></span>
           <span class="kicker">${esc(catName(q.cat))} · ${EN ? `Is it ${isFood ? "kosher" : "allowed"}?` : `Ist das ${isFood ? "koscher" : "erlaubt"}?`}</span>
-          <span class="worth w${coinsOf(q)}"><span class="cn" aria-hidden="true">${"<i></i>".repeat(coinsOf(q))}</span>${T(L.de, L.en)} · ${L.n} ${T("Gold", "gold")}</span>
+          <span class="worth w${lvN(q)}"><span class="cn" aria-hidden="true">${"<i></i>".repeat(lvN(q))}</span>${T(L.de, L.en)} · ${L.n} ${T("Gold", "gold")}</span>
           <h2>${esc(qq(q))}</h2>
-          ${picked ? "" : `<p class="swtip"><span>← ${stampText("nein", isFood)}</span><span>${stampText("ja", isFood)} →</span></p>`}
+          ${picked ? "" : `<p class="swtip"><span>← ${stampText("nein", isFood)}</span><span class="hand" aria-hidden="true"></span><span>${stampText("ja", isFood)} →</span></p>`}
           <div class="answers">
             ${opts
               .map(
@@ -179,10 +201,11 @@ window.mountKosher = function (app) {
                   <p>${esc(qe(q))}</p>
                   ${q.src ? `<p class="src">${T("Quelle", "Source")}: ${esc(qs(q))}</p>` : ""}
                 </div>
-                <div class="next"><button type="button" class="btn" id="next">${quiz.i + 1 < quiz.qs.length ? T("Nächste Frage", "Next question") : T("Ergebnis ansehen", "See result")}</button></div>`
+                <div class="next"><button type="button" class="btn" id="next">${quiz.i + 1 < quiz.qs.length ? T("Nächste Frage", "Next question") : T("Schatz ansehen", "See your treasure")}</button></div>`
               : ""
           }
         </article>
+        </div>
       </section></div>`;
     app.querySelectorAll("[data-mode]").forEach((b) =>
       b.addEventListener("click", () => {
@@ -204,8 +227,8 @@ window.mountKosher = function (app) {
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
     if (picked) {
-      if (hit) flyCoins(coinsOf(q));
-      else document.getElementById("sackrow")?.classList.add("nope");
+      if (hit) flyCoins(lvN(q) * 2 + 1, L.n);
+      else loseCoin();
       document.getElementById("next")?.focus({ preventScroll: true });
       return;
     }
@@ -216,10 +239,11 @@ window.mountKosher = function (app) {
     const answer = (a) => {
       if (busy) return;
       busy = true;
+      FX.sound.swipe();
       const out = a === "ja" ? 1 : a === "nein" ? -1 : 0;
-      card.classList.remove("dragging");
-      card.style.transition = "transform .26s ease-in, opacity .26s";
-      card.style.transform = out ? `translate(${out * 560}px, -30px) rotate(${out * 22}deg)` : "translate(0, -420px) scale(.9)";
+      card.classList.remove("dragging", "deal");
+      card.style.transition = "transform .28s ease-in, opacity .28s";
+      card.style.transform = out ? `translate(${out * 620}px, -40px) rotate(${out * 26}deg)` : "translate(0, -460px) scale(.85) rotate(-4deg)";
       card.style.opacity = "0";
       setTimeout(
         () => {
@@ -227,7 +251,7 @@ window.mountKosher = function (app) {
           if (a === q.a) quiz.gold += worth(q);
           quizView();
         },
-        reduced() ? 0 : 240
+        FX.reduced() ? 0 : 250
       );
     };
     card.addEventListener("pointerdown", (e) => {
@@ -236,17 +260,21 @@ window.mountKosher = function (app) {
       sx = e.clientX;
       sy = e.clientY;
       dx = 0;
+      card.classList.remove("deal");
       card.classList.add("dragging");
     });
     card.addEventListener("pointermove", (e) => {
       if (!drag) return;
       dx = e.clientX - sx;
       const dy = (e.clientY - sy) * 0.15;
-      card.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx / 20}deg)`;
+      const k = Math.min(1, Math.abs(dx) / 110);
+      card.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx / 18}deg)`;
       const side = dx > 0 ? "ja" : "nein";
+      card.style.boxShadow = `0 24px 50px -28px rgb(10 22 48 / .35), 0 0 0 ${3 * k}px ${side === "ja" ? "rgb(29 122 82 / .85)" : "rgb(200 55 45 / .85)"}, 0 0 ${46 * k}px ${side === "ja" ? "rgb(29 122 82 / .5)" : "rgb(200 55 45 / .5)"}`;
       ov.className = `ov show ${side}`;
       ov.textContent = stampText(side, isFood);
-      ov.style.opacity = String(Math.min(1, Math.abs(dx) / 110));
+      ov.style.opacity = String(k);
+      ov.style.transform = `rotate(${side === "ja" ? 9 : -9}deg) scale(${0.8 + 0.3 * k})`;
     });
     const release = () => {
       if (!drag) return;
@@ -254,6 +282,7 @@ window.mountKosher = function (app) {
       if (Math.abs(dx) > 100) return answer(dx > 0 ? "ja" : "nein");
       card.classList.remove("dragging");
       card.style.transform = "";
+      card.style.boxShadow = "";
       ov.style.opacity = "0";
     };
     card.addEventListener("pointerup", release);
@@ -261,52 +290,89 @@ window.mountKosher = function (app) {
     app.querySelectorAll(".answer").forEach((b) => b.addEventListener("click", () => answer(b.dataset.a)));
   }
 
-  /** Coins fly from the card into the sack, then the gold counter counts up. */
-  function flyCoins(n) {
+  /** Updates sack size, peeking coins and meter to the current gold. */
+  function settle() {
+    const max = maxGold();
+    const s = document.getElementById("vsack");
+    if (s) {
+      s.dataset.fill = String(fillOf(quiz.gold, max));
+      s.style.setProperty("--s", sackScale(quiz.gold, max));
+    }
+    const m = document.getElementById("vmeter");
+    if (m) m.style.width = (quiz.gold / max) * 100 + "%";
+  }
+
+  /** Coins fly in an arc from the card into the sack; each landing rings, sparks and bumps the sack. */
+  function flyCoins(n, gain) {
     const card = document.getElementById("card");
-    const sack = app.querySelector(".sack");
+    const sack = document.getElementById("vsack");
     const num = document.getElementById("goldnum");
-    const set = () => num && (num.textContent = String(quiz.gold));
-    if (!card || !sack || !num || reduced()) return set();
+    if (!card || !sack || !num || FX.reduced()) {
+      if (num) num.textContent = String(quiz.gold);
+      return settle();
+    }
+    FX.vibrate(18);
     const a = card.getBoundingClientRect();
     const b = sack.getBoundingClientRect();
-    const x0 = a.left + a.width / 2 - 11;
-    const y0 = a.top + Math.min(a.height * 0.3, 140);
-    const dx = b.left + b.width / 2 - 11 - x0;
-    const dy = b.top + b.height / 2 - 11 - y0;
+    const x0 = a.left + a.width / 2, y0 = a.top + Math.min(a.height * 0.28, 130);
+    const x1 = b.left + b.width / 2, y1 = b.top + b.height * 0.22;
     let landed = 0;
     for (let k = 0; k < n; k++) {
       const c = document.createElement("i");
       c.className = "flycoin";
-      c.style.left = x0 + (k - (n - 1) / 2) * 26 + "px";
+      c.style.left = x0 + "px";
       c.style.top = y0 + "px";
       document.body.appendChild(c);
+      const spread = (k - (n - 1) / 2) * 34, lift = 110 + Math.random() * 90;
       c.animate(
         [
-          { transform: "translate(0,0) scale(.6) rotate(0deg)", opacity: 0 },
-          { transform: `translate(${dx * 0.35}px, ${dy * 0.35 - 70}px) scale(1.25) rotate(160deg)`, opacity: 1, offset: 0.4 },
-          { transform: `translate(${dx}px, ${dy}px) scale(.55) rotate(360deg)`, opacity: 1 },
+          { transform: "translate(-50%,-50%) translate(0,0) scale(.3) rotateY(0deg)", opacity: 0 },
+          { transform: `translate(-50%,-50%) translate(${spread}px, ${-lift * 0.5}px) scale(1.25) rotateY(200deg)`, opacity: 1, offset: 0.25 },
+          { transform: `translate(-50%,-50%) translate(${(x1 - x0) * 0.6 + spread * 0.5}px, ${(y1 - y0) * 0.55 - lift}px) scale(1.1) rotateY(520deg)`, opacity: 1, offset: 0.62 },
+          { transform: `translate(-50%,-50%) translate(${x1 - x0}px, ${y1 - y0}px) scale(.5) rotateY(900deg)`, opacity: 1 },
         ],
-        { duration: 820, delay: k * 130, easing: "cubic-bezier(.45,.05,.55,.95)", fill: "forwards" }
+        { duration: 900 + Math.random() * 120, delay: k * 95, easing: "cubic-bezier(.35,0,.6,1)", fill: "forwards" }
       ).onfinish = () => {
         c.remove();
-        const s = app.querySelector(".sack");
+        FX.sound.coin(landed);
+        FX.burst(x1, y1, 5, "spark", { power: 46, size: 6, dur: 520, up: true, gravity: 30 });
+        const s = document.getElementById("vsack");
         if (s) {
           s.classList.remove("bump");
           void s.getBoundingClientRect();
           s.classList.add("bump");
         }
         if (++landed === n) {
-          const from = quiz.prev, to = quiz.gold, t0 = performance.now();
-          const tick = (t) => {
-            const p = Math.min(1, (t - t0) / 450);
-            if (num.isConnected) num.textContent = String(Math.round(from + (to - from) * p));
-            if (p < 1) requestAnimationFrame(tick);
-          };
-          requestAnimationFrame(tick);
+          settle();
+          FX.floatText(x1, b.top, `+${gain}`, "gold");
+          FX.count(document.getElementById("goldnum"), quiz.prev, quiz.gold, 520);
+          document.getElementById("vault")?.classList.add("flash");
         }
       };
     }
+  }
+
+  /** Wrong answer: the sack shakes and one grey coin tumbles away. */
+  function loseCoin() {
+    FX.sound.wrong();
+    FX.vibrate([40, 50, 40]);
+    const v = document.getElementById("vault"), sack = document.getElementById("vsack");
+    if (!v || !sack || FX.reduced()) return;
+    v.classList.add("nope");
+    const b = sack.getBoundingClientRect();
+    const c = document.createElement("i");
+    c.className = "flycoin lost";
+    c.style.left = b.left + b.width / 2 + "px";
+    c.style.top = b.top + b.height * 0.2 + "px";
+    document.body.appendChild(c);
+    c.animate(
+      [
+        { transform: "translate(-50%,-50%) translate(0,0) rotate(0deg)", opacity: 1 },
+        { transform: "translate(-50%,-50%) translate(46px,-60px) rotate(160deg)", opacity: 1, offset: 0.3 },
+        { transform: "translate(-50%,-50%) translate(120px,260px) rotate(520deg)", opacity: 0 },
+      ],
+      { duration: 1000, easing: "cubic-bezier(.3,0,.7,1)", fill: "forwards" }
+    ).onfinish = () => c.remove();
   }
 
   const shareText = (right, n, gold, max, marks) =>
@@ -321,30 +387,39 @@ window.mountKosher = function (app) {
     } catch (e) {}
   }
 
-  function summary(h1, right, n, gold, max, marks, extra, review) {
+  function summary(h1, right, n, gold, max, marks, extra, review, fresh) {
     const ratio = gold / max;
     const [title, text] =
       ratio >= 0.95
         ? [T("Glatt koscher!", "Glatt kosher!"), T("Fast alles geholt. Du könntest im Rabbinat anfangen.", "Nearly every coin. You could start at the rabbinate.")]
         : ratio >= 0.7
-          ? ["Mazel tov!", T("Dein Sack ist ordentlich gefüllt.", "Your sack is nicely filled.")]
+          ? ["Mazel tov!", T("Deine Schatztruhe ist ordentlich gefüllt.", "Your treasure chest is nicely filled.")]
           : ratio >= 0.4
             ? [T("Nicht schlecht.", "Not bad."), T("Ein paar Regeln haben dich überrascht – genau dafür ist das Quiz da.", "A few rules surprised you – that’s exactly what the quiz is for.")]
             : [T("So ein Schlamassel.", "What a schlamassel."), T("Kein Problem: Die Erklärungen unten helfen beim nächsten Mal.", "No problem: the explanations below will help next time.")];
+    const rich = ratio >= 0.7;
     app.innerHTML =
       band(`<div class="quiz"><h1>${h1}</h1></div>`, "short") +
       `<div class="wrap lift"><section class="quiz">
-        <div class="result">
-          <div class="sackbig">${SACK}</div>
-          <div class="big">${gold}</div>
+        <div class="result treasure${rich ? " rich" : ""}">
+          <div class="tstage"><div class="tglow" aria-hidden="true"></div>${rich ? ART.chest || "" : `<div class="vsack" data-fill="${fillOf(gold, max)}" style="--s:1">${ART.sack || ""}</div>`}</div>
+          <div class="big"><span id="bignum">${fresh ? 0 : gold}</span></div>
           <p class="goldsub">${T("Gold von", "gold of")} ${max} · ${right}/${n} ${T("richtig", "right")}</p>
-          <h1 style="font-size:32px;margin-top:10px">${title}</h1>
+          <div class="marks" aria-hidden="true">${[...marks].map((m, k) => `<i class="${m === "🟩" ? "ok" : "no"}" style="animation-delay:${0.25 + k * 0.07}s"></i>`).join("")}</div>
+          <h1 style="font-size:32px;margin-top:14px">${title}</h1>
           <p>${text}</p>
           ${extra}
         </div>
         ${review}
       </section></div>`;
     document.getElementById("share")?.addEventListener("click", () => share(shareText(right, n, gold, max, marks)));
+    if (fresh) {
+      FX.count(document.getElementById("bignum"), 0, gold, 1400);
+      if (rich) {
+        FX.sound.win();
+        FX.rain(Math.round(14 + 26 * ratio), "coin");
+      }
+    }
   }
 
   function resultView() {
@@ -354,7 +429,7 @@ window.mountKosher = function (app) {
     const marks = quiz.picks.map((p, k) => (p === quiz.qs[k].a ? "🟩" : "🟥")).join("");
     if (quiz.mode === "daily" && !quiz.replay) saveDone({ day: quiz.day, right, n, gold: quiz.gold, max, marks });
     summary(
-      T("Dein Ergebnis", "Your result"),
+      T("Dein Schatz", "Your treasure"),
       right,
       n,
       quiz.gold,
@@ -369,7 +444,8 @@ window.mountKosher = function (app) {
         ${quiz.qs
           .map((q, k) => `<div><b class="${quiz.picks[k] === q.a ? "" : "x"}">${quiz.picks[k] === q.a ? "✓" : "✕"}</b><span>${esc(qq(q))} – <em>${stampText(q.a, food(q))}</em> <small>${worth(q)} ${T("Gold", "gold")}</small></span></div>`)
           .join("")}
-      </div>`
+      </div>`,
+      true
     );
     document.getElementById("again")?.addEventListener("click", () => {
       newQuiz("free", quiz.cat);
@@ -395,7 +471,8 @@ window.mountKosher = function (app) {
         <button type="button" class="btn ghost" id="replay">${T("Nochmal spielen", "Play again")}</button>
       </div>
       <p class="comeback">${T("Morgen gibt es 10 neue Fragen.", "Tomorrow there are 10 new questions.")}</p>`,
-      ""
+      "",
+      false
     );
     document.getElementById("free").addEventListener("click", () => {
       newQuiz("free");
@@ -433,6 +510,10 @@ window.mountKosher = function (app) {
     window.scrollTo(0, 0);
   }
   window.addEventListener("hashchange", route);
+  const unbindSound = window.KTFX.bindSound(app, T("Ton an", "Sound on"), T("Ton aus", "Sound off"));
   route();
-  return () => window.removeEventListener("hashchange", route);
+  return () => {
+    window.removeEventListener("hashchange", route);
+    unbindSound();
+  };
 };

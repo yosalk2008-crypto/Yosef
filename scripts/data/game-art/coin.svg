@@ -1,0 +1,19 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="256" height="256" fill="#E5E5E5"/>
+<g id="Generated icon">
+<g id="coin">
+<path id="Vector" d="M128 233C184.885 233 231 186.885 231 130C231 73.1147 184.885 27 128 27C71.1147 27 25 73.1147 25 130C25 186.885 71.1147 233 128 233Z" fill="#F4AC20" stroke="#613616" stroke-width="9"/>
+<path id="Vector_2" d="M41.0001 130C40.9854 116.605 44.0639 103.388 49.9958 91.3775C55.9276 79.3676 64.5526 68.8895 75.1985 60.7599C85.8444 52.6303 98.2238 47.0687 111.372 44.5085C124.52 41.9484 138.082 42.4588 151 46" stroke="#FFE789" stroke-width="9" stroke-linecap="round"/>
+<path id="Vector_3" d="M215 128C215.328 141.563 212.479 155.014 206.682 167.28C200.884 179.546 192.299 190.285 181.611 198.641C170.923 206.998 158.429 212.738 145.126 215.405C131.824 218.072 118.083 217.591 105 214" stroke="#CE7716" stroke-width="9" stroke-linecap="round"/>
+<path id="Vector_4" d="M128 206C169.974 206 204 171.974 204 130C204 88.0264 169.974 54 128 54C86.0264 54 52 88.0264 52 130C52 171.974 86.0264 206 128 206Z" fill="#FFD24A" stroke="#A96518" stroke-width="5"/>
+</g>
+<g id="embossed-star">
+<path id="Vector_5" d="M128 84L143 116L178 121C180.667 121.667 181 123.333 179 126L154 150L160 184C160.667 187.333 159.333 188.333 156 187L128 171L99.9999 187C96.6666 188.333 95.3333 187.333 95.9999 184L102 150L76.9999 126C74.9999 123.333 75.3333 121.667 77.9999 121L113 116L128 84Z" fill="#DC8A17"/>
+<path id="Vector_6" d="M128 77L144 110L180 115L154 141L160 177L128 160L96 177L102 141L76 115L112 110L128 77Z" fill="#FFF08B" stroke="#89501A" stroke-width="5" stroke-linejoin="round"/>
+<path id="Vector_7" d="M91 120L117 116L128 93" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g id="highlight-glint">
+<path id="Vector_8" d="M198 37L204 55L222 61L204 67L198 85L192 67L174 61L192 55L198 37Z" fill="#FFF9D5" stroke="#613616" stroke-width="4" stroke-linejoin="round"/>
+</g>
+</g>
+</svg>
