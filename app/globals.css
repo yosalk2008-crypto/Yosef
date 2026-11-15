@@ -338,3 +338,56 @@ h3,
 @media (prefers-reduced-motion: reduce) {
   .mp-tile, .mp-game, .mp-p, .mp-pop, .mp-empty, .mp-wait i, .mp-led.on, .mp-go, .mp-ring, .mp-cplayers > span, .mp-num, .mp-num.go { animation: none; }
 }
+
+/* ---------- Multiplayer: Goldsäcke (koscher) und Autorennen (halal), Grafiken aus /koscher/art.js ---------- */
+.mpr-vault { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 10px 8px; padding: 16px 14px 12px; border-radius: 1.5rem; background: #fff; box-shadow: 0 4px 0 var(--color-edge); }
+.mpr-sackbox { position: relative; display: flex; flex-direction: column; align-items: center; padding: 6px 4px 8px; border-radius: 16px; }
+.mpr-sackbox.me { background: var(--color-brand-soft); }
+.mpr-sack { width: 74px; height: 82px; margin-bottom: 14px; display: grid; place-items: end center; }
+.mpr-sack .ksack { width: 100%; height: auto; transform: scale(var(--s, 1)); transform-origin: 50% 96%; transition: transform .6s cubic-bezier(.3,1.5,.5,1); overflow: visible; }
+.mpr-sack .gold-coins > g, .mpr-sack .sparkles { opacity: 0; transform-box: fill-box; transform-origin: 50% 100%; transform: translateY(24px) scale(.4); transition: opacity .3s, transform .45s cubic-bezier(.3,1.6,.5,1); }
+.mpr-sack[data-fill="1"] .coin-front, .mpr-sack[data-fill="2"] .coin-front, .mpr-sack[data-fill="3"] .coin-front, .mpr-sack[data-fill="4"] .coin-front,
+.mpr-sack[data-fill="2"] .coin-left, .mpr-sack[data-fill="3"] .coin-left, .mpr-sack[data-fill="4"] .coin-left,
+.mpr-sack[data-fill="3"] .coin-right, .mpr-sack[data-fill="4"] .coin-right,
+.mpr-sack[data-fill="4"] .coin-high, .mpr-sack[data-fill="3"] .sparkles, .mpr-sack[data-fill="4"] .sparkles { opacity: 1; transform: none; }
+.mpr-sack.bump .ksack { animation: mpr-bump .4s cubic-bezier(.3,1.6,.5,1) both; animation-delay: calc(var(--d, 0s) + .55s); }
+@keyframes mpr-bump { 0% { transform: scale(var(--s,1)); } 40% { transform: scale(calc(var(--s,1) * 1.16), calc(var(--s,1) * .86)); } 100% { transform: scale(var(--s,1)); } }
+.mpr-sackbox.miss .mpr-sack .ksack { animation: mpr-no .5s ease .3s; }
+@keyframes mpr-no { 0%,100% { transform: scale(var(--s,1)) rotate(0); } 25% { transform: scale(var(--s,1)) rotate(-10deg); } 60% { transform: scale(var(--s,1)) rotate(8deg); } }
+.mpr-coin, .mpr-coinicon { background: url("/koscher/art/coin.svg") center / contain no-repeat; }
+.mpr-coin { position: absolute; top: -6px; width: 22px; height: 22px; opacity: 0; pointer-events: none; animation: mpr-drop .65s cubic-bezier(.5,0,.8,.6) both; }
+@keyframes mpr-drop { 0% { transform: translateY(-46px) rotateY(0); opacity: 0; } 20% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateY(46px) rotateY(540deg); opacity: 0; } }
+.mpr-gold { position: relative; z-index: 1; display: flex; align-items: center; gap: 4px; padding: 3px 10px 3px 6px; border-radius: 999px; background: #fff7e0; box-shadow: 0 2px 0 #f0d58a; font-family: var(--font-display); font-size: 20px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; color: #a8700c; }
+.mpr-coinicon { display: inline-block; width: 16px; height: 16px; }
+.mpr-plus { position: absolute; top: 2px; right: 6px; font-family: var(--font-display); font-weight: 600; font-size: 15px; color: var(--color-ok); animation: mpr-plus 1.4s ease .5s both; }
+@keyframes mpr-plus { 0% { opacity: 0; transform: translateY(8px) scale(.6); } 25% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-10px); } }
+.mpr-name { max-width: 100%; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 700; }
+
+.mpr-track { position: relative; display: grid; gap: 6px; padding: 14px 12px; border-radius: 1.5rem; background: #fff; box-shadow: 0 4px 0 var(--color-edge); overflow: hidden; }
+.mpr-finish { position: absolute; top: 8px; bottom: 8px; right: 62px; width: 10px; border-radius: 3px; background: conic-gradient(#2c2a35 25%, #fff 0 50%, #2c2a35 0 75%, #fff 0) 0 0 / 10px 10px; opacity: .8; }
+.mpr-lane { display: grid; grid-template-columns: 64px 1fr 58px; align-items: center; gap: 8px; }
+.mpr-lane.me .mpr-road { box-shadow: 0 0 0 3px var(--color-brand); }
+.mpr-lname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 700; }
+.mpr-lane.me .mpr-lname { color: var(--color-brand); }
+.mpr-road { position: relative; height: 40px; border-radius: 12px; background: linear-gradient(#4a5753, #3a4643); overflow: hidden; }
+.mpr-road::after { content: ""; position: absolute; left: 0; right: 0; top: 19px; height: 3px; background-image: repeating-linear-gradient(90deg, #ffe9a8 0 16px, transparent 16px 32px); opacity: .7; }
+.mpr-car { position: absolute; bottom: 3px; width: 70px; z-index: 1; transition: left 1.4s cubic-bezier(.45,0,.2,1); }
+.mpr-car > span, .mpr-car .kcar { display: block; width: 100%; height: auto; overflow: visible; }
+.mpr-car .spin { transform-box: fill-box; transform-origin: center; }
+.mpr-car.moving .spin { animation: mpr-wheel .28s linear 6; }
+.mpr-car.moving > span { animation: mpr-shake .14s ease-in-out 10 alternate; }
+@keyframes mpr-wheel { to { transform: rotate(360deg); } }
+@keyframes mpr-shake { from { transform: translateY(0); } to { transform: translateY(-1.5px); } }
+.mpr-dust { position: absolute; left: -10px; bottom: 2px; width: 14px; height: 14px; border-radius: 50%; background: #e9d9b8; opacity: 0; animation: mpr-dust .5s ease-out 3; }
+@keyframes mpr-dust { 0% { opacity: .8; transform: scale(.5); } 100% { opacity: 0; transform: translate(-26px,-8px) scale(2); } }
+.mpr-car.stall > span { animation: mpr-stall .5s ease .2s; }
+@keyframes mpr-stall { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px) rotate(-2deg); } 60% { transform: translateX(4px) rotate(2deg); } }
+.mpr-puff { position: absolute; left: -2px; bottom: 10px; width: 14px; height: 14px; border-radius: 50%; background: #9aa3a0; opacity: 0; animation: mpr-puff 1.1s ease-out .2s; }
+@keyframes mpr-puff { 0% { opacity: .9; transform: scale(.5); } 100% { opacity: 0; transform: translate(-20px,-26px) scale(2.4); } }
+.mpr-km { text-align: right; font-family: var(--font-display); font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mpr-km small { font-size: 13px; color: var(--color-muted); }
+@media (max-width: 420px) { .mpr-lane { grid-template-columns: 52px 1fr 52px; gap: 6px; } .mpr-car { width: 58px; } .mpr-finish { right: 56px; } }
+@media (prefers-reduced-motion: reduce) {
+  .mpr-coin, .mpr-plus, .mpr-sack.bump .ksack, .mpr-sackbox.miss .mpr-sack .ksack, .mpr-car.moving .spin, .mpr-car.moving > span, .mpr-dust, .mpr-car.stall > span, .mpr-puff { animation: none; }
+  .mpr-car, .mpr-sack .ksack { transition: none; }
+}

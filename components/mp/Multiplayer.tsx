@@ -32,6 +32,7 @@ import {
   type GameId,
   type HostSave,
   type Phase,
+  type PAns,
   type QView,
   type RoomState,
 } from "@/lib/mp";
@@ -42,6 +43,7 @@ import type { Impact } from "../tiefgang/OceanFx";
 import { Suggestion } from "../Suggestion";
 import { DailySolution } from "./DailySolution";
 import { prefetchOrte } from "@/lib/tiefgangOrte";
+import { CarRace, GoldRace, type RaceRow } from "./MpRace";
 import { GameArt } from "../GameArt";
 import { DailyGame } from "@/app/(de)/taeglich/[spiel]/DailyGame";
 import { MpDailyContext, mpLoad, type MpDaily } from "@/lib/mpDaily";
@@ -1147,8 +1149,19 @@ function QuestionView({
         )}
       </QHead>
 
+      {raceKind(st) && (
+        <div className="mt-3">
+          <RaceBoard st={st} me={me} rows={raceRows(st, members)} animate={false} />
+        </div>
+      )}
+
       <div className={`chunk mt-3 px-5 py-6 sm:px-8 sm:py-8 ${g.light ? "text-white" : "text-ink"}`} style={{ background: g.bg, ["--edge" as string]: g.edge }}>
         {q.kind === "choice" && q.cat && <span className={`rounded-full px-3 py-1 text-sm font-bold ${g.light ? "bg-white/15" : "bg-white/60"}`}>{lang === "en" ? q.catEn ?? q.cat : q.cat}</span>}
+        {q.kind === "choice" && q.lv && raceKind(st) && (
+          <span className={`ml-2 rounded-full px-3 py-1 text-sm font-bold ${g.light ? "bg-white/25" : "bg-white/80"}`}>
+            {[t("Leicht", "Easy"), t("Mittel", "Medium"), t("Schwer", "Hard")][q.lv - 1]} · {q.lv * 10} {st.game === "halal" ? "km" : "Gold"}
+          </span>
+        )}
         {q.kind === "choice" && q.img && (
           <div className="mx-auto mb-4 mt-1 flex w-full max-w-sm items-center justify-center rounded-2xl bg-surface p-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1295,13 +1308,21 @@ function RevealView({ st, q, me, host, onNext, dive }: { st: RoomState; q: QView
                 ? t(`+${mineA.pts} Punkte`, `+${mineA.pts} points`)
                 : t("Keine Antwort", "No answer")
               : mineA?.ok
-                ? t("Richtig!", "Correct!")
+                ? raceKind(st)
+                  ? t(`Richtig! +${mineA.pts} ${st.game === "halal" ? "km" : "Gold"}`, `Correct! +${mineA.pts} ${st.game === "halal" ? "km" : "gold"}`)
+                  : t("Richtig!", "Correct!")
                 : mineA
                   ? t("Leider falsch", "Wrong")
                   : t("Keine Antwort", "No answer")}
           </p>
         )}
       </div>
+
+      {raceKind(st) && (
+        <div className="mt-4">
+          <RaceBoard key={`${st.round}-${st.i}`} st={st} me={me} rows={raceRows(st, null, rv.answers)} animate />
+        </div>
+      )}
 
       {q.kind === "choice" ? (
         <ul className="mt-4 grid gap-2.5">
@@ -1394,13 +1415,30 @@ function RevealView({ st, q, me, host, onNext, dive }: { st: RoomState; q: QView
   );
 }
 
+/** Koscher plays for gold, Halal drives km (10 / 20 / 30 by difficulty); everything else has no race board. */
+const raceKind = (st: RoomState) => (st.game === "koscher" ? "gold" : st.game === "halal" ? "car" : null);
+function raceRows(st: RoomState, members: Record<string, Member> | null, gained?: Record<string, PAns | null>): RaceRow[] {
+  const ids = new Set([...Object.keys(st.scores), ...Object.keys(members ?? {}), ...Object.keys(gained ?? {})]);
+  return [...ids].map((id) => {
+    const now = st.scores[id] ?? 0;
+    const a = gained?.[id];
+    return { id, name: members?.[id]?.name ?? st.names[id] ?? "?", now, prev: now - (a?.pts ?? 0), hit: !!a?.ok, missed: !!gained && !a?.ok };
+  });
+}
+function RaceBoard({ st, me, rows, animate }: { st: RoomState; me: string; rows: RaceRow[]; animate: boolean }) {
+  const k = raceKind(st);
+  if (!k) return null;
+  const finish = Math.max(st.total * 15, ...rows.map((r) => r.now * 1.08), 30);
+  return k === "gold" ? <GoldRace rows={rows} me={me} finish={finish} animate={animate} /> : <CarRace rows={rows} me={me} finish={finish} animate={animate} />;
+}
+
 function Scores({ st, me, compact = false }: { st: RoomState; me: string; compact?: boolean }) {
   const lang = useLang();
   const t = useT();
   const rows = Object.entries(st.scores)
     .map(([id, p]) => ({ id, p, name: st.names[id] ?? "?" }))
     .sort((a, b) => b.p - a.p || a.name.localeCompare(b.name));
-  const unit = st.game === "tiefgang" || isDaily(st.game) ? t("Punkte", "points") : t("richtig", "right");
+  const unit = st.game === "koscher" ? "Gold" : st.game === "halal" ? "km" : st.game === "tiefgang" || isDaily(st.game) ? t("Punkte", "points") : t("richtig", "right");
   let rank = 0;
   let prev = -1;
   return (
@@ -1451,6 +1489,11 @@ function EndView({ st, me, host, onLobby }: { st: RoomState; me: string; host: b
               : t(`Unentschieden: ${winners.join(" & ")}`, `Tie: ${winners.join(" & ")}`)}
         </p>
       </div>
+      {raceKind(st) && (
+        <div className="mt-5">
+          <RaceBoard st={st} me={me} rows={raceRows(st, null)} animate={false} />
+        </div>
+      )}
       <Scores st={st} me={me} />
       <div className="mt-6">
         {host ? (

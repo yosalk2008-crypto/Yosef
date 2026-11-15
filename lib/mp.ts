@@ -46,7 +46,7 @@ export const gameDesc = (g: { desc: string; descEn: string }, lang: "de" | "en")
 /** Questions carry both languages, so German and English players can share a room. */
 export type Opt = { id: string; label: string; labelEn?: string };
 export type QView =
-  | { kind: "choice"; text: string; cat?: string; img?: string; options: Opt[]; textEn?: string; catEn?: string }
+  | { kind: "choice"; text: string; cat?: string; img?: string; options: Opt[]; textEn?: string; catEn?: string; lv?: number }
   | { kind: "tiefgang"; key: string; text: string; hint: string }
   | { kind: "daily"; game: DailyId; day: string };
 /** A question as only the admin knows it (with the solution). */
@@ -104,9 +104,9 @@ export const TIEFGANG_DEFAULT_SECS = 30;
 
 // ---------- questions ----------
 
-type RawQ = { cat: string; q: string; a: string; e: string; src: string };
+type RawQ = { cat: string; q: string; a: string; e: string; src: string; lv?: number };
 
-function loadScript(src: string) {
+export function loadScript(src: string) {
   return new Promise<void>((resolve, reject) => {
     const found = document.querySelector<HTMLScriptElement>(`script[data-k="${src}"]`);
     if (found?.dataset.ready) return resolve();
@@ -172,6 +172,7 @@ export async function buildQuestions(game: GameId, n: number): Promise<HostQ[]> 
           kind: "choice",
           text: r.q,
           cat: r.cat,
+          lv: r.lv ?? 2,
           textEn: e?.[0],
           catEn: CAT_EN[r.cat],
           options: [
@@ -198,6 +199,7 @@ export async function buildQuestions(game: GameId, n: number): Promise<HostQ[]> 
           kind: "choice",
           text: r.q,
           cat: r.cat,
+          lv: r.lv ?? 2,
           textEn: e?.[0],
           catEn: CAT_EN[r.cat],
           options: ["halal", "haram", "makruh", "kommt"].map((id) => ({ id, label: HALAL_LABEL[id], labelEn: HALAL_LABEL_EN[id] })),
@@ -244,7 +246,8 @@ export function judge(hq: HostQ, msg: AnswerMsg): PAns | null {
     const o = hq.view.options.find((x) => x.id === msg.choice);
     if (!o) return null;
     const ok = o.id === hq.correct;
-    return { label: o.label, choice: o.id, ok, pts: ok ? 1 : 0 };
+    // koscher/halal: 10 / 20 / 30 gold or km by difficulty; other quizzes: 1 point per right answer
+    return { label: o.label, choice: o.id, ok, pts: ok ? (hq.view.lv ? hq.view.lv * 10 : 1) : 0 };
   }
   if (hq.view.kind === "daily") {
     const r = msg.daily;
