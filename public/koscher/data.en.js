@@ -774,5 +774,55 @@ window.QUESTIONS_EN = {
 "Saying Kiddush over a cup of wine on Friday evening",
 "According to the Talmud, the commandment to sanctify Shabbat is fulfilled with a blessing over wine at the start of Shabbat. Grape juice can be used instead of wine.",
 "Talmud, Pesachim 106a"
+],
+"Ein Hühnerei zum Frühstück essen": [
+"Eating a chicken egg for breakfast",
+"The Mishnah teaches: whatever comes from a kosher animal is kosher. Because the chicken is a kosher bird, its eggs are kosher too – and they count as neither meat nor dairy.",
+"Mishnah, Bechorot 1:2"
+],
+"Gemüse essen, das in einem Topf gekocht wurde, in dem vorher Schweinefleisch gekocht wurde": [
+"Eating vegetables cooked in a pot that was previously used to cook pork",
+"Pots absorb the taste of the food cooked in them. A non-kosher pot therefore has to be kashered first – this is derived from the Torah, where metal vessels had to be purified by fire or water.",
+"Numbers 31:23"
+],
+"Ein Stück Fleisch essen, das von einem noch lebenden Tier abgeschnitten wurde": [
+"Eating a piece of meat cut from an animal that is still alive",
+"The Torah forbids eating “the life with the flesh”. From this comes the prohibition of eating a limb taken from a living animal – even if the animal itself is kosher.",
+"Deuteronomy 12:23"
+],
+"Den Eltern im Haushalt helfen, wenn sie darum bitten": [
+"Helping your parents with the housework when they ask",
+"“Honour your father and your mother” is one of the Ten Commandments. Honouring your parents includes helping and supporting them.",
+"Exodus 20:12"
+],
+"Einem Armen, der um Hilfe bittet, gar nichts geben": [
+"Giving nothing at all to a poor person who asks for help",
+"The Torah says: do not harden your heart or close your hand to your poor brother. Anyone who is able to help should give something to the needy – even if it is only a little.",
+"Deuteronomy 15:7"
+],
+"Beim Online-Verkauf verschweigen, dass die Spielkonsole einen Defekt hat": [
+"Hiding the fact that a games console is faulty when selling it online",
+"The Torah forbids people to wrong one another when buying and selling. Anyone who conceals a known defect is cheating the buyer.",
+"Leviticus 25:14"
+],
+"Einen kranken Mitschüler besuchen": [
+"Visiting a classmate who is ill",
+"Visiting the sick (bikur cholim) is an important mitzvah. The Talmud says that whoever visits a sick person takes away part of their suffering.",
+"Talmud, Nedarim 39b"
+],
+"Einem Mitschüler zum Spaß etwas aus dem Rucksack nehmen und es später zurückgeben": [
+"Taking something out of a classmate’s backpack as a joke and giving it back later",
+"Even stealing “just for fun” or with the intention of giving it back is forbidden. That way you never get used to taking other people’s things in the first place.",
+"Shulchan Aruch, Choshen Mishpat 348:1"
+],
+"Am Schabbat die Mahlzeit mit zwei ganzen Broten (Challot) beginnen": [
+"Starting the Shabbat meal with two whole loaves (challot)",
+"The Talmud teaches that on Shabbat the blessing is said over two whole loaves. This recalls the manna in the desert, of which there was a double portion before Shabbat.",
+"Talmud, Shabbat 117b"
+],
+"An Rosch Haschana einen Apfel in Honig tunken und essen": [
+"Dipping an apple in honey and eating it on Rosh Hashanah",
+"Many communities eat a sweet apple with honey on Rosh Hashanah – as a sign for a good, sweet new year. It is a widespread custom, not a commandment from the Torah.",
+"Rema on Orach Chayim 583:1"
 ]
 };

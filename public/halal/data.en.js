@@ -774,5 +774,55 @@ window.HALAL_EN = {
 "Shortening the four-rak’ah prayers to two rak’ahs while travelling",
 "The Quran permits shortening the prayer when travelling. Anas reports that on the journey from Medina to Mecca the Prophet ﷺ prayed the prayers with two rak’ahs until he was back in Medina.",
 "Quran 4:101 with Tafsir Ibn Kathir · Sahih al-Bukhari 1081 · Sahih Muslim 693"
+],
+"Nicht zurückgrüßen, wenn ein Mitschüler dich mit „Salam“ grüßt": [
+"Not returning the greeting when a classmate greets you with “Salam”",
+"The Quran says: when you are greeted, return the greeting with a better one or at least return it. Returning a greeting is therefore a duty, not just a nice gesture.",
+"Quran 4:86 with Tafsir Ibn Kathir"
+],
+"Bei einer Gruppenarbeit nichts beitragen, aber sich für das Ergebnis loben lassen": [
+"Contributing nothing to a group project but accepting praise for the result",
+"The Quran rebukes people who love to be praised for what they have not done. Taking credit for other people’s work deceives teachers and classmates.",
+"Quran 3:188 with Tafsir Ibn Kathir"
+],
+"Beim Fußball vor Wut einen Gegenspieler schlagen": [
+"Hitting an opposing player in anger during a football match",
+"The Quran praises those who restrain their anger. The Prophet ﷺ said: the strong one is not the one who overpowers others, but the one who controls himself when he is angry.",
+"Quran 3:134 with Tafsir Ibn Kathir · Sahih al-Bukhari 6114 · Sahih Muslim 2609"
+],
+"Fleisch von einem Huhn essen, das erwürgt wurde": [
+"Eating meat from a chicken that was strangled",
+"The Quran explicitly lists strangled animals among the things that are forbidden – just like animals that died by themselves and blood. An animal has to be slaughtered properly.",
+"Quran 5:3 with Tafsir Ibn Kathir"
+],
+"Ein Wildtier essen, das ein Muslim mit seinem abgerichteten Jagdhund erlegt hat": [
+"Eating game that a Muslim caught with his trained hunting dog",
+"The Quran permits what trained hunting animals catch for you, provided Allah’s name is mentioned over it. The Prophet ﷺ told Adi ibn Hatim: if you send out your trained dog with Bismillah, you may eat the catch – even if the dog has killed it.",
+"Quran 5:4 with Tafsir Ibn Kathir · Sahih al-Bukhari 5476 · Sahih Muslim 1929"
+],
+"Frische Datteln zusammen mit Gurke essen": [
+"Eating fresh dates together with cucumber",
+"Abdullah ibn Ja’far reports that he saw the Prophet ﷺ eating fresh dates together with cucumber. A simple, healthy combination.",
+"Sahih al-Bukhari 5440 · Sahih Muslim 2043"
+],
+"Vor dem Schlafengehen eine brennende Kerze ausmachen": [
+"Putting out a burning candle before going to bed",
+"The Prophet ﷺ said: do not leave fire burning in your houses when you go to sleep. A hadith that still protects against house fires today.",
+"Sahih al-Bukhari 6293 · Sahih Muslim 2015"
+],
+"Einem Freund mehr Zeit geben, weil er geliehenes Geld gerade nicht zurückzahlen kann": [
+"Giving a friend more time because he can’t pay back borrowed money right now",
+"The Quran says: if a debtor is in difficulty, give him time until things are easier for him – and whoever cancels the debt does even better.",
+"Quran 2:280 with Tafsir Ibn Kathir"
+],
+"Ein verschlafenes Gebet nachholen, sobald man aufwacht": [
+"Making up a prayer you slept through as soon as you wake up",
+"The Prophet ﷺ said: whoever forgets a prayer or sleeps through it should pray it as soon as he remembers. There is no other expiation for it.",
+"Sahih al-Bukhari 597 · Sahih Muslim 684"
+],
+"Während des Gebets nach links und rechts schauen": [
+"Looking left and right during the prayer",
+"Aisha asked the Prophet ﷺ about looking around during prayer. He answered that it is a theft by which Satan snatches away part of a person’s prayer. One should concentrate on the prayer.",
+"Sahih al-Bukhari 751"
 ]
 };
