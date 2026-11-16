@@ -379,8 +379,44 @@ function geoQuestions(rng: ReturnType<typeof makeRng>, n: number): Question[] {
 
 // ---------- endless mode topics (from 2026-11-16): football, food, series, general knowledge ----------
 export const MIN_THEMA = 20;
+/** Questions about people (players, painters …) where the surname alone counts as the answer. */
+const PERSON_Q = /^(f-spieler-|f-ballon|f-dfb-|f-wm-|f-trainer|f-torh|w-maler|w-komponist|w-wissenschaftler|w-schriftsteller)/;
+const PARTICLES = new Set(["van", "von", "de", "der", "den", "di", "da", "del", "della", "dos", "das", "do", "ter", "le", "la", "du", "mac", "mc", "al", "el", "ten", "zu"]);
+const SUFFIX = new Set(["jr.", "jr", "júnior", "junior", "sr.", "ii", "iii"]);
+/** "Kevin De Bruyne" → "De Bruyne", "Pierre-Emerick Aubameyang" → "Aubameyang", "Neymar" → null. */
+export function surnameOf(name: string): string | null {
+  const w = name.replace(/\(.*?\)/g, "").trim().split(/\s+/).filter((x) => !SUFFIX.has(x.toLowerCase()));
+  if (w.length < 2) return null;
+  let i = w.length - 1;
+  while (i > 1 && PARTICLES.has(w[i - 1].toLowerCase())) i--;
+  const sur = w.slice(i).join(" ");
+  return sur.length >= 3 ? sur : null;
+}
+/**
+ * Adds the surname of every person as an extra alias. If two people in one question share a surname, it goes to
+ * the first (better-known) one only, so no answer is lost.
+ */
+export function withSurnames(key: string, lines: string[]): string[] {
+  if (!PERSON_Q.test(key)) return lines;
+  const used = new Set(lines.flatMap((l) => l.split("|").map(norm)));
+  return lines.map((l) => {
+    const parts = l.split("|");
+    const extra: string[] = [];
+    for (const n of parts) {
+      const sur = surnameOf(n);
+      if (sur && !used.has(norm(sur))) {
+        used.add(norm(sur));
+        extra.push(sur);
+      }
+    }
+    return extra.length ? [...parts, ...extra].join("|") : l;
+  });
+}
+/** A topic question as the game uses it. */
+export const themaQ = (p: { key: string; text: string; hint: string; answers: string[] }): Question =>
+  curatedQ({ key: p.key, text: p.text, hint: p.hint, answers: ranked(withSurnames(p.key, p.answers)) });
 const THEMA_Q: Record<Exclude<Thema, "erdkunde">, Question[]> = Object.fromEntries(
-  Object.entries(THEMA_FRAGEN).map(([k, list]) => [k, list.map((p) => curatedQ({ key: p.key, text: p.text, hint: p.hint, answers: ranked(p.answers) })).filter((q) => q.answers.length >= MIN_THEMA)])
+  Object.entries(THEMA_FRAGEN).map(([k, list]) => [k, list.map(themaQ).filter((q) => q.answers.length >= MIN_THEMA)])
 ) as Record<Exclude<Thema, "erdkunde">, Question[]>;
 /** How many questions a topic has (geography: the whole pool). */
 export const themaCount = (t: Thema) => (t === "erdkunde" ? BIG_POOL.length + TAGES.length : THEMA_Q[t].length);

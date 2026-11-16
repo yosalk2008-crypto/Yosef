@@ -4,9 +4,8 @@
  *   npx tsx scripts/data/check-tiefgang-themen.ts
  */
 import { THEMA_FRAGEN } from "../../lib/data/tiefgang-themen";
-import { ALL_CURATED, BIG_POOL, MIN_THEMA, curatedQ } from "../../lib/tiefgang";
+import { ALL_CURATED, BIG_POOL, MIN_THEMA, themaQ } from "../../lib/tiefgang";
 import { TAEGLICH } from "../../lib/data/tiefgang-taeglich";
-import { ranked } from "../../lib/data/tiefgang-katalog3";
 
 const PREFIX: Record<string, string> = { fussball: "f-", essen: "e-", serien: "s-", wissen: "w-" };
 let errors = 0;
@@ -35,7 +34,7 @@ for (const [thema, list] of Object.entries(THEMA_FRAGEN)) {
     // slurs and racist dish names (the username blocklist is too broad here: it would hit "Rummenigge" or "Gochujang")
     const bad = /\bn[i1!]+gg|\bneger|negerk|mohrenk|mohr im|zigeuner|eskimo|indianer/i;
     for (const a of p.answers) if (bad.test(a)) err(`${p.key}: diskriminierender Begriff in „${a}“`);
-    const q = curatedQ({ key: p.key, text: p.text, hint: p.hint, answers: ranked(p.answers) });
+    const q = themaQ(p);
     if (q.answers.length < MIN_THEMA) err(`${p.key}: nur ${q.answers.length} Antworten (mindestens ${MIN_THEMA})`);
     if (q.answers.length !== p.answers.length) {
       const seen = new Map<string, string>();
