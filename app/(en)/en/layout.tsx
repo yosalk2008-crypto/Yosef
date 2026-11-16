@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Koshertrivia – daily geography puzzles",
     description: "Eight new puzzles every day plus unlimited country quizzes. Free, no sign-up.",
+    siteName: "Koshertrivia",
     locale: "en_US",
     type: "website",
   },

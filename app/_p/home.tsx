@@ -13,8 +13,25 @@ export const meta = (lang: Lang): import("next").Metadata =>
 
 export default function Home({ lang }: { lang: Lang }) {
   const t = tr(lang);
+  // tells Google the site's name, so a search for "Koshertrivia" shows it as the brand (and as "Kosher Trivia")
+  const ld = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://koshertrivia.de/#website",
+        name: "Koshertrivia",
+        alternateName: ["Kosher Trivia", "koshertrivia.de"],
+        url: lang === "en" ? "https://koshertrivia.de/en" : "https://koshertrivia.de/",
+        inLanguage: lang,
+        publisher: { "@id": "https://koshertrivia.de/#org" },
+      },
+      { "@type": "Organization", "@id": "https://koshertrivia.de/#org", name: "Koshertrivia", url: "https://koshertrivia.de/"},
+    ],
+  };
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
       <section className="mx-auto grid max-w-6xl gap-4 px-4 pt-5 sm:pt-7 lg:grid-cols-[2fr_1fr]">
         <Link
           href="/koscher"
