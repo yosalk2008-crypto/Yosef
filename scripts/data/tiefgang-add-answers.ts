@@ -3,9 +3,15 @@
  * Input text file:  "## <key>" followed by one answer per line ("Name|Alias|English").
  * Answers whose name or alias is already in the question are skipped.
  *   npx tsx scripts/data/tiefgang-add-answers.ts fussball /tmp/mehr.txt
+ * (Club player questions "f-spieler-…" live in fussball-spieler.ts and are generated – not edited here.)
  */
 import { readFileSync, writeFileSync } from "fs";
-import { THEMA_FRAGEN, type ThemaFrage } from "../../lib/data/tiefgang-themen";
+import type { ThemaFrage } from "../../lib/data/tiefgang-themen";
+import { FUSSBALL } from "../../lib/data/tiefgang-themen/fussball";
+import { ESSEN } from "../../lib/data/tiefgang-themen/essen";
+import { SERIEN } from "../../lib/data/tiefgang-themen/serien";
+import { WISSEN } from "../../lib/data/tiefgang-themen/wissen";
+const THEMA_FRAGEN = { fussball: FUSSBALL, essen: ESSEN, serien: SERIEN, wissen: WISSEN };
 
 const [thema, src] = process.argv.slice(2) as [keyof typeof THEMA_FRAGEN, string];
 const list: ThemaFrage[] = THEMA_FRAGEN[thema];

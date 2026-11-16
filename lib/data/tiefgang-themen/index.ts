@@ -1,5 +1,6 @@
 import type { Thema, ThemaFrage } from "./types";
 import { FUSSBALL } from "./fussball";
+import { FUSSBALL_SPIELER } from "./fussball-spieler";
 import { ESSEN } from "./essen";
 import { SERIEN } from "./serien";
 import { WISSEN } from "./wissen";
@@ -12,4 +13,4 @@ export const THEMEN: { key: Thema; de: string; en: string; emoji: string }[] = [
   { key: "serien", de: "Serien", en: "TV series", emoji: "📺" },
   { key: "wissen", de: "Allgemeinwissen", en: "General knowledge", emoji: "💡" },
 ];
-export const THEMA_FRAGEN: Record<Exclude<Thema, "erdkunde">, ThemaFrage[]> = { fussball: FUSSBALL, essen: ESSEN, serien: SERIEN, wissen: WISSEN };
+export const THEMA_FRAGEN: Record<Exclude<Thema, "erdkunde">, ThemaFrage[]> = { fussball: [...FUSSBALL, ...FUSSBALL_SPIELER], essen: ESSEN, serien: SERIEN, wissen: WISSEN };
