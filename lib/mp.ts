@@ -5,7 +5,7 @@ import { SUPA_KEY, SUPA_URL } from "./leaderboard";
 import { entitiesFor } from "./data/regions";
 import { NEVER_ASKED, flagUrl } from "./data/countries";
 import { randomRng } from "./rng";
-import { BIG_POOL, randomQuestions, type Question } from "./tiefgang";
+import { questionByKey, randomQuestions, type Question } from "./tiefgang";
 import { ortById, prefetchOrte } from "./tiefgangOrte";
 import { LAUNCH, addDays, utcDate, type DailyResult, type GameKey } from "./daily";
 import { GAMES } from "./games";
@@ -238,7 +238,7 @@ export async function buildQuestions(game: GameId, n: number): Promise<HostQ[]> 
   return qs.map((q) => ({ view: { kind: "tiefgang", key: q.key, text: q.text, hint: q.hint } }));
 }
 
-export const tiefgangQ = (key: string): Question | undefined => BIG_POOL.find((q) => q.key === key);
+export const tiefgangQ = (key: string): Question | undefined => questionByKey(key);
 
 /** The admin turns a player's answer into what everyone sees. */
 export function judge(hq: HostQ, msg: AnswerMsg): PAns | null {

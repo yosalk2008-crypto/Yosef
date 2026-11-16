@@ -5,6 +5,7 @@ import { findOrt } from "./tiefgangOrte";
 import { KATALOG, cleanAnswers, type KatalogPrompt } from "./data/tiefgang-katalog";
 import { EXTEND, KATALOG3, ranked } from "./data/tiefgang-katalog3";
 import { TAEGLICH, type TagesFrage } from "./data/tiefgang-taeglich";
+import { THEMA_FRAGEN, type Thema } from "./data/tiefgang-themen";
 import { makeRng, type Rng } from "./rng";
 import { ansAltsEn, ansName } from "./tiefgang-i18n";
 
@@ -182,7 +183,7 @@ TEMPLATES.push(
   }
 );
 
-function curatedQ(p: KatalogPrompt): Question {
+export function curatedQ(p: KatalogPrompt): Question {
   const seen = new Set<string>();
   const answers: Answer[] = [];
   for (const line of cleanAnswers(p.answers)) {
@@ -367,14 +368,53 @@ export function dailyQuestions(day: string): Question[] {
   return [...own, ...fill];
 }
 
-/** Free play: the big pool plus every daily question whose day is over. */
-export function randomQuestions(n = ROUNDS): Question[] {
+/** Geography questions for free play: the big pool plus every daily question whose day is over. */
+function geoQuestions(rng: ReturnType<typeof makeRng>, n: number): Question[] {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
   const past = TAGES.filter((q) => TAGES_DAY[q.key] < today && valid(q));
-  const rng = makeRng(Math.floor(Math.random() * 2 ** 32));
-  if (!past.length) return pickBig(rng, n);
+  if (!past.length || n <= 0) return pickBig(rng, n);
   const fromPast = rng.sample(past, Math.min(past.length, Math.round(n * Math.min(0.5, past.length / (past.length + BIG_POOL.length)) + 1)));
   return rng.shuffle([...fromPast, ...pickBig(rng, n - fromPast.length)]);
+}
+
+// ---------- endless mode topics (from 2026-11-16): football, food, series, general knowledge ----------
+export const MIN_THEMA = 20;
+const THEMA_Q: Record<Exclude<Thema, "erdkunde">, Question[]> = Object.fromEntries(
+  Object.entries(THEMA_FRAGEN).map(([k, list]) => [k, list.map((p) => curatedQ({ key: p.key, text: p.text, hint: p.hint, answers: ranked(p.answers) })).filter((q) => q.answers.length >= MIN_THEMA)])
+) as Record<Exclude<Thema, "erdkunde">, Question[]>;
+/** How many questions a topic has (geography: the whole pool). */
+export const themaCount = (t: Thema) => (t === "erdkunde" ? BIG_POOL.length + TAGES.length : THEMA_Q[t].length);
+
+/**
+ * Free play. `themes` = the chosen topics (default geography only, as before). The questions are spread over the
+ * topics in proportion to their size, at least one per chosen topic when there is room.
+ */
+export function randomQuestions(n = ROUNDS, themes: Thema[] = ["erdkunde"]): Question[] {
+  const rng = makeRng(Math.floor(Math.random() * 2 ** 32));
+  const use = themes.filter((t) => themaCount(t) > 0);
+  if (!use.length || (use.length === 1 && use[0] === "erdkunde")) return geoQuestions(rng, n);
+  // draw topic by topic, weighted by size, so every question is equally likely
+  const counts: Record<string, number> = {};
+  const total = use.reduce((s, t) => s + themaCount(t), 0);
+  for (const t of rng.shuffle(use).slice(0, n)) counts[t] = 1;
+  let left = n - Object.values(counts).reduce((a, b) => a + b, 0);
+  while (left-- > 0) {
+    let r = rng.next() * total;
+    const t = use.find((x) => (r -= themaCount(x)) < 0) ?? use[0];
+    counts[t] = (counts[t] ?? 0) + 1;
+  }
+  const out: Question[] = [];
+  for (const t of use) {
+    const k = counts[t] ?? 0;
+    if (!k) continue;
+    out.push(...(t === "erdkunde" ? geoQuestions(rng, k) : rng.sample(THEMA_Q[t], Math.min(k, THEMA_Q[t].length))));
+  }
+  return rng.shuffle(out);
+}
+
+/** Any question by key – geography pool, daily questions and topics (multiplayer looks questions up by key). */
+export function questionByKey(key: string): Question | undefined {
+  return BIG_POOL.find((q) => q.key === key) ?? TAGES.find((q) => q.key === key) ?? Object.values(THEMA_Q).flat().find((q) => q.key === key);
 }
 
 // ---------- answer checking ----------

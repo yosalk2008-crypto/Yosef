@@ -7,7 +7,8 @@ import { useDaily } from "@/lib/useDaily";
 import { LeaderboardJoin } from "../LeaderboardJoin";
 import { Suggestion } from "../Suggestion";
 import { prefetchOrte } from "@/lib/tiefgangOrte";
-import { MAX_PTS, ROUNDS, SECONDS, check, dailyQuestions, emojiFor, meters, randomQuestions, tierDesc, tierName, tierOf, type Question } from "@/lib/tiefgang";
+import { MAX_PTS, ROUNDS, SECONDS, check, dailyQuestions, emojiFor, meters, randomQuestions, themaCount, tierDesc, tierName, tierOf, type Question } from "@/lib/tiefgang";
+import { THEMEN, type Thema } from "@/lib/data/tiefgang-themen";
 import { useLang, useT } from "@/lib/i18n";
 import { ansName, qHint, qText } from "@/lib/tiefgang-i18n";
 import { AnswerExplorer } from "./AnswerExplorer";
@@ -47,10 +48,25 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
   const nf = lang === "en" ? nfEn : nfDe;
   const daily = useDaily<S>("tiefgang");
   const [seed, setSeed] = useState(0);
+  // endless mode: chosen topics (one, several or all), remembered in the browser
+  const [themes, setThemes] = useState<Thema[]>(["erdkunde"]);
+  useEffect(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem("kt-tg-themen") || "null");
+      if (Array.isArray(v) && v.length && v.every((x) => THEMEN.some((t) => t.key === x))) setThemes(v);
+    } catch {}
+  }, []);
+  const pickThemes = (next: Thema[]) => {
+    if (!next.length) return;
+    setThemes(next);
+    try {
+      localStorage.setItem("kt-tg-themen", JSON.stringify(next));
+    } catch {}
+  };
   const questions = useMemo<Question[]>(
-    () => (mode === "daily" ? dailyQuestions(daily.day) : randomQuestions(ROUNDS)),
+    () => (mode === "daily" ? dailyQuestions(daily.day) : randomQuestions(ROUNDS, themes)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mode, daily.day, seed]
+    [mode, daily.day, seed, themes.join()]
   );
   const N = questions.length;
   // full place lists for city questions load in the background
@@ -295,6 +311,7 @@ export function Tiefgang({ mode }: { mode: "daily" | "endlos" }) {
                       <li>Falsche Antworten kosten nur Zeit. Ist die Zeit um, gibt es 0 Meter. Kleine Tippfehler verzeihen wir.</li>
                     </ul>
                   )}
+                  {mode === "endlos" && <ThemePicker themes={themes} onChange={pickThemes} />}
                 </>
               ) : (
                 <>
@@ -557,3 +574,39 @@ function DiveLog({ results, n }: { results: Result[]; n: number }) {
 }
 
 export { oceanAt };
+
+/** Endless mode: pick one topic, several or all of them. */
+function ThemePicker({ themes, onChange }: { themes: Thema[]; onChange: (t: Thema[]) => void }) {
+  const lang = useLang();
+  const t_ = useT();
+  const avail = THEMEN.filter((t) => themaCount(t.key) > 0);
+  const all = avail.every((t) => themes.includes(t.key));
+  const chip = (on: boolean) =>
+    `inline-flex min-h-11 items-center gap-1.5 rounded-2xl border px-3.5 py-2 text-[15px] font-bold transition ${on ? "border-[#f3d272] bg-[#f3d272] text-ink shadow-[0_3px_0_#b8962f]" : "border-white/25 bg-white/10 text-white hover:bg-white/20"}`;
+  return (
+    <div className="mt-5">
+      <p className="mb-2 text-sm font-bold text-white/70">{t_("Themen – eins, mehrere oder alle", "Topics – one, several or all")}</p>
+      <div className="flex flex-wrap gap-2" role="group" aria-label={t_("Themen", "Topics")}>
+        <button type="button" aria-pressed={all} onClick={() => onChange(all ? ["erdkunde"] : avail.map((t) => t.key))} className={chip(all)}>
+          {t_("Alle", "All")}
+        </button>
+        {avail.map((t) => {
+          const on = themes.includes(t.key);
+          return (
+            <button
+              key={t.key}
+              type="button"
+              aria-pressed={on}
+              onClick={() => onChange(on ? themes.filter((x) => x !== t.key) : [...themes, t.key])}
+              className={chip(on)}
+              title={t_(`${themaCount(t.key)} Fragen`, `${themaCount(t.key)} questions`)}
+            >
+              <span aria-hidden>{t.emoji}</span>
+              {t[lang]}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
