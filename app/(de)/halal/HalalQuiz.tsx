@@ -47,7 +47,7 @@ export function HalalQuiz() {
         const w = window as unknown as { KTFX?: unknown; KT_ART?: unknown };
         if (!w.KTFX) await load("/koscher/fx.js?v=3");
         if (!w.KT_ART) await load("/koscher/art.js?v=1");
-        if (!window.mountHalal) await load("/halal/app.js?v=7");
+        if (!window.mountHalal) await load("/halal/app.js?v=8");
         if (alive && ref.current && window.mountHalal) cleanup = window.mountHalal(ref.current);
       } catch {
         if (alive) setFailed(true);

@@ -368,3 +368,10 @@
 .kosher .fhit.ok { color: var(--ok); }
 .kosher .fhit.no { color: var(--no); }
 @media (prefers-reduced-motion: reduce) { .kosher .fsol { transition: none; } .kosher .fsol.open .verdict .stamp { animation: none; } }
+
+/* Freies Spiel: Rookie oder Rabbi/Imam */
+.kosher .cats.lvls { gap: 8px; }
+.kosher .chip.lvl { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 9.5rem; border-radius: 14px; padding: 8px 16px; line-height: 1.15; text-align: left; }
+.kosher .chip.lvl b { font-size: 16px; }
+.kosher .chip.lvl small { font-size: 12px; font-weight: 600; opacity: .7; }
+.kosher .chip.lvl-boss[aria-pressed="true"] { background: linear-gradient(135deg, #f0a01e, #ffd75e); color: #3a2500; border-color: #ffd75e; }

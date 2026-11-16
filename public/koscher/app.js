@@ -111,11 +111,22 @@ window.mountKosher = function (app) {
   const saveDone = (o) => { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} };
 
   let quiz = null;
+  // free play: "rookie" = easy + medium questions, "boss" (Rabbi) = the hard ones
+  const LVKEY = "kt-level-koscher";
+  let level = (() => { try { return localStorage.getItem(LVKEY) === "boss" ? "boss" : "rookie"; } catch (e) { return "rookie"; } })();
+  const LEVELS = { rookie: ["Rookie", "Rookie", "leicht & mittel", "easy & medium"], boss: ["Rabbi", "Rabbi", "schwer", "hard"] };
+  function levelPool(pool) {
+    const lv = (q) => q.lv || 2;
+    if (level === "rookie") return shuffle(pool.filter((q) => lv(q) <= 2)).slice(0, ROUND);
+    // hard questions first; topics with only a few of them are topped up with medium ones
+    const hard = shuffle(pool.filter((q) => lv(q) === 3)).slice(0, ROUND);
+    return hard.length >= ROUND ? hard : shuffle([...hard, ...shuffle(pool.filter((q) => lv(q) === 2)).slice(0, ROUND - hard.length)]);
+  }
   function newQuiz(mode, cat) {
     if (mode === "free") {
       cat = cat || "Alle";
       const pool = cat === "Alle" ? Q : Q.filter((q) => q.cat === cat);
-      quiz = { mode, cat, qs: shuffle(pool).slice(0, ROUND), i: 0, picks: [], gold: 0, prev: 0 };
+      quiz = { mode, cat, level, qs: levelPool(pool), i: 0, picks: [], gold: 0, prev: 0 };
     } else {
       const d = dailySet();
       quiz = { mode: "daily", cat: "Alle", day: d.day, qs: shuffle(d.qs), i: 0, picks: [], gold: 0, prev: 0 };
@@ -167,7 +178,7 @@ window.mountKosher = function (app) {
         </div>
         ${
           quiz.mode === "free"
-            ? `<div class="cats" role="group" aria-label="${T("Thema", "Topic")}">${CATS.map((c) => `<button type="button" class="chip" data-cat="${c}" aria-pressed="${quiz.cat === c}">${esc(catName(c))}</button>`).join("")}</div>`
+            ? `<div class="cats lvls" role="group" aria-label="${T("Schwierigkeit", "Difficulty")}">${Object.entries(LEVELS).map(([k, v]) => `<button type="button" class="chip lvl lvl-${k}" data-level="${k}" aria-pressed="${quiz.level === k}"><b>${T(v[0], v[1])}</b> <small>${T(v[2], v[3])}</small></button>`).join("")}</div><div class="cats" role="group" aria-label="${T("Thema", "Topic")}">${CATS.map((c) => `<button type="button" class="chip" data-cat="${c}" aria-pressed="${quiz.cat === c}">${esc(catName(c))}</button>`).join("")}</div>`
             : `<p class="dnote">${T(`${quiz.qs.length} neue Fragen vom ${dayLabel(quiz.day)}`, `${quiz.qs.length} new questions from ${dayLabel(quiz.day)}`)}</p>`
         }
         <div class="progress"><span>${T("Frage", "Question")} ${quiz.i + 1} ${T("von", "of")} ${quiz.qs.length}</span><span>${right} ${T("richtig", "right")}</span></div></div>`,
@@ -223,6 +234,15 @@ window.mountKosher = function (app) {
       b.addEventListener("click", () => {
         if (b.dataset.mode === quiz.mode) return;
         newQuiz(b.dataset.mode);
+        quizView();
+      })
+    );
+    app.querySelectorAll("[data-level]").forEach((b) =>
+      b.addEventListener("click", () => {
+        if (b.dataset.level === quiz.level) return;
+        level = b.dataset.level;
+        try { localStorage.setItem(LVKEY, level); } catch (e) {}
+        newQuiz("free", quiz.cat);
         quizView();
       })
     );
