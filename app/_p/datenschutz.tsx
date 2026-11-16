@@ -17,7 +17,7 @@ function DatenschutzDe() {
         <p>
           Verantwortlich für die Datenverarbeitung auf dieser Website ist:
           <br />
-          <strong>{site.owner}</strong>, {site.company}, {site.street}, {site.city}
+          <strong>{site.owner}</strong>, {site.street}, {site.city}
           <br />
           E-Mail: <a href={`mailto:${site.email}`}>{site.email}</a> · Telefon:{" "}
           <a href={`tel:${site.phoneHref}`}>{site.phone}</a>
@@ -143,7 +143,7 @@ function PrivacyEn() {
         <p>
           The controller responsible for data processing on this website is:
           <br />
-          <strong>{site.owner}</strong>, {site.company}, {site.street}, {site.city}
+          <strong>{site.owner}</strong>, {site.street}, {site.city}
           <br />
           Email: <a href={`mailto:${site.email}`}>{site.email}</a> · Phone: <a href={`tel:${site.phoneHref}`}>{site.phone}</a>
         </p>

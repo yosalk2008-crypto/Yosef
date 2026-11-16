@@ -14,7 +14,7 @@ export function SiteFooter() {
     <footer className="border-t-2 border-line bg-paper">
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
         <p>
-          © {new Date().getFullYear()} {site.name} · {t("ein Projekt von", "a project by")} {site.company}
+          © {new Date().getFullYear()} {site.name}
         </p>
         <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label={t("Rechtliches", "Legal")}>
           <Link href="/laender" className="hover:text-ink">

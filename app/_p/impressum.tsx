@@ -16,8 +16,6 @@ export default function Impressum({ lang }: { lang: Lang }) {
         <p>
           <strong>{site.owner}</strong>
           <br />
-          {site.company}
-          <br />
           {site.street}
           <br />
           {site.city}

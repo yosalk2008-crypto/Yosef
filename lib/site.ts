@@ -1,8 +1,7 @@
 export const site = {
   name: "Koshertrivia",
-  company: "Firmengrafik",
   url: "https://koshertrivia.de",
-  email: "firmengrafik@gmail.com",
+  email: "yos.alk2008@gmail.com",
   phone: "0176 57998306",
   phoneHref: "+4917657998306",
   owner: "Yosef Al Khatib",
