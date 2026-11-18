@@ -84,6 +84,9 @@ export function SiteHeader() {
             <Link href="/gipfelsturm" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #4a2a6a, #b8486a 70%, #f6935a)", ["--edge" as string]: "#120c1c" }}>
               {t("Gipfelsturm", "Summit Rush")}
             </Link>
+            <Link href="/fernweh" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold" style={{ background: "#a9d3dc", ["--edge" as string]: "#7fb0bc" }}>
+              {t("Fernweh", "Wanderlust")}
+            </Link>
             <Link
               href="/koscher"
               className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white"

@@ -13,7 +13,7 @@ const loading = () => (
   </div>
 );
 
-const MAP: Record<Exclude<GameKey, "tiefgang" | "gipfelsturm">, React.ComponentType> = {
+const MAP: Record<Exclude<GameKey, "tiefgang" | "gipfelsturm" | "fernweh">, React.ComponentType> = {
   laenderjagd: dynamic(() => import("@/components/games/Laenderjagd").then((m) => m.Laenderjagd), { ssr: false, loading }),
   massstab: dynamic(() => import("@/components/games/Massstab").then((m) => m.Massstab), { ssr: false, loading }),
   viererbande: dynamic(() => import("@/components/games/Viererbande").then((m) => m.Viererbande), { ssr: false, loading }),
@@ -24,7 +24,7 @@ const MAP: Record<Exclude<GameKey, "tiefgang" | "gipfelsturm">, React.ComponentT
   spurensuche: dynamic(() => import("@/components/games/Spurensuche").then((m) => m.Spurensuche), { ssr: false, loading }),
 };
 
-export function DailyGame({ game }: { game: Exclude<GameKey, "tiefgang" | "gipfelsturm"> }) {
+export function DailyGame({ game }: { game: Exclude<GameKey, "tiefgang" | "gipfelsturm" | "fernweh"> }) {
   const C = MAP[game];
   return (
     <GameBoundary game={game}>

@@ -118,7 +118,26 @@ export default function Home({ lang }: { lang: Lang }) {
           </span>
           <span className="relative btn-primary shrink-0 bg-white px-4 text-ink max-sm:min-h-0 max-sm:py-2 max-sm:text-sm shadow-[0_4px_0_#9aa6c2] hover:bg-[#eef1f8]"><span className="sm:hidden">{t("Los", "Go")}</span><span className="hidden sm:inline">{t("Aufsteigen", "Start climbing")}</span></span>
         </Link>
-        <Link href="/bestenliste" className="chunk flex items-center justify-between gap-4 px-5 py-4 lg:col-start-2 lg:row-span-2 lg:row-start-3" style={{ background: "#f3d272", ["--edge" as string]: "#c9a43c" }}>
+        <Link
+          href="/fernweh"
+          className="chunk relative flex items-center justify-between gap-3 overflow-hidden px-5 py-4 sm:px-8 lg:col-start-1"
+          style={{ background: "#a9d3dc", ["--edge" as string]: "#7fb0bc" }}
+        >
+          <svg viewBox="0 0 220 90" className="pointer-events-none absolute -bottom-2 right-24 hidden h-[90px] w-[220px] sm:block" aria-hidden="true">
+            <path d="M20 70c10-30 40-40 60-30s30 20 50 6 40-30 70-10" fill="none" stroke="#2c2a35" strokeWidth="2.5" strokeDasharray="4 6" strokeLinecap="round" opacity=".5" />
+            <path d="M150 40c0-8 6-14 14-14s14 6 14 14c0 10-14 22-14 22s-14-12-14-22z" fill="#d6453d" stroke="#2c2a35" strokeWidth="2.5" />
+            <circle cx="164" cy="40" r="5" fill="#fff" />
+            <path d="M40 30l8 4-8 4-8-4z M52 62h22l-4 8H56z" fill="#f6efe0" stroke="#2c2a35" strokeWidth="2" />
+          </svg>
+          <span className="relative">
+            <span className="block font-display text-2xl font-semibold sm:text-3xl">{t("Fernweh", "Wanderlust")}</span>
+            <span className="mt-1 hidden max-w-md text-base font-semibold text-ink/75 sm:block sm:text-lg">
+              {t("5 Hinweise, 5 Pins auf einer Karte ohne Namen. Je seltener dein Land, desto weiter kommst du – bis 500 km am Tag.", "5 clues, 5 pins on a map without names. The rarer your country, the further you get – up to 500 km a day.")}
+            </span>
+          </span>
+          <span className="relative btn-primary shrink-0 px-4 max-sm:min-h-0 max-sm:py-2 max-sm:text-sm"><span className="sm:hidden">{t("Los", "Go")}</span><span className="hidden sm:inline">{t("Losreisen", "Set off")}</span></span>
+        </Link>
+        <Link href="/bestenliste" className="chunk flex items-center justify-between gap-4 px-5 py-4 lg:col-start-2 lg:row-span-3 lg:row-start-3" style={{ background: "#f3d272", ["--edge" as string]: "#c9a43c" }}>
           <span>
             <span className="block font-display text-2xl font-semibold sm:text-3xl">{t("Bestenliste", "Leaderboard")}</span>
             <span className="mt-1 hidden text-base font-semibold text-ink/75 sm:block sm:text-lg">{t("Wer hat heute die meisten Punkte?", "Who has the most points today?")}</span>

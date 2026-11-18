@@ -19,5 +19,5 @@ export async function metaFor(lang: Lang, params: Promise<{ spiel: string }>): P
 export default async function Page({ params }: { params: Promise<{ spiel: string }> }) {
   const { spiel } = await params;
   if (!GAME_BY_KEY[spiel as GameKey]) notFound();
-  return <DailyGame game={spiel as Exclude<GameKey, "tiefgang" | "gipfelsturm">} />;
+  return <DailyGame game={spiel as Exclude<GameKey, "tiefgang" | "gipfelsturm" | "fernweh">} />;
 }

@@ -15,7 +15,8 @@ export type GameKey =
   | "grenzgang"
   | "spurensuche"
   | "tiefgang"
-  | "gipfelsturm";
+  | "gipfelsturm"
+  | "fernweh";
 
 export type DailyResult = {
   done: boolean;

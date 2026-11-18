@@ -8,14 +8,14 @@ import { KENNZAHLEN, type Kennzahl } from "@/lib/data/kennzahlen";
 import type { Entity, Pred, Theme } from "./core";
 
 /** Never an answer here (no Middle East conflict in the quizzes); typing them just says "doesn't count". */
-const LEFT_OUT = new Set(["ISR", "PSE"]);
-const LAND = COUNTRIES.filter((c) => !LEFT_OUT.has(c.id));
+export const LEFT_OUT = new Set(["ISR", "PSE"]);
+export const LAND = COUNTRIES.filter((c) => !LEFT_OUT.has(c.id));
 const ALL = COUNTRIES;
 
-type Clause = { key: string; de: string; en: string; ids: string[]; loc?: boolean; src?: string };
+export type Clause = { key: string; de: string; en: string; ids: string[]; loc?: boolean; src?: string };
 const ids = (f: (c: Country) => boolean) => LAND.filter(f).map((c) => c.id);
 
-function clauses(): Clause[] {
+export function clauses(): Clause[] {
   const out: Clause[] = [];
   for (const k of CONTINENTS) out.push({ key: `kont-${k}`, de: `in ${k}`, en: `in ${CONTINENT_EN[k]}`, ids: ids((c) => c.cont === k), loc: true });
   for (const [sub, de] of Object.entries(SUBREGION_DE)) {
@@ -71,7 +71,7 @@ function clauses(): Clause[] {
   return out.filter((c) => c.ids.length > 0);
 }
 
-const join = (a: Clause, b: Clause, lang: "de" | "en") => {
+export const join = (a: Clause, b: Clause, lang: "de" | "en") => {
   const x = lang === "de" ? a.de : a.en;
   const y = lang === "de" ? b.de : b.en;
   return lang === "de" && /^(das|dessen)\b/.test(y) ? `${x}, ${y}` : `${x} ${y}`;

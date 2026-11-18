@@ -19,7 +19,11 @@ type Props = {
   fill: (id: string) => string;
   stroke?: string;
   showBorders?: boolean;
-  onPick?: (id: string) => void;
+  onPick?: (id: string, at: { x: number; y: number }) => void;
+  /** A tap that hits no country (open sea). */
+  onSea?: (at: { x: number; y: number }) => void;
+  /** Drawn on top of the map, inside the zoomed layer (k = current zoom, for constant-size markers). */
+  overlay?: (k: number, ppu: number) => React.ReactNode;
   /** Draw clickable dots for entities that are too small to see. */
   dots?: (id: string) => boolean;
   dotFill?: (id: string) => string;
@@ -45,6 +49,8 @@ export function MapView({
   stroke = "#6da5e4",
   showBorders = true,
   onPick,
+  onSea,
+  overlay,
   dots,
   dotFill,
   aspect = 1.9,
@@ -194,8 +200,9 @@ export function MapView({
       const d = Math.hypot(cx - mx, cy - my);
       if (d <= reach && (!near || d < near.d)) near = { id, d };
     }
-    if (near && !LAND_ONLY.has(near.id)) return onPick(near.id);
-    if (under && !LAND_ONLY.has(under)) onPick(under);
+    if (near && !LAND_ONLY.has(near.id)) return onPick(near.id, { x: centroids[near.id][0], y: centroids[near.id][1] });
+    if (under && !LAND_ONLY.has(under)) return onPick(under, { x: mx, y: my });
+    onSea?.({ x: mx, y: my });
   };
 
   const zoomBtn = (f: number) => setT((cur) => clamp(zoomAtStatic({ x: W / 2, y: H / 2 }, f, cur)));
@@ -244,6 +251,7 @@ export function MapView({
               className={onPick ? "cursor-pointer" : ""}
             />
           ))}
+          {overlay?.(t.k, ppu)}
         </g>
       </svg>
       <div className="absolute right-2 top-2 flex flex-col gap-1">
