@@ -444,3 +444,97 @@ h3,
 @media (prefers-reduced-motion: reduce) {
   .sp-float, .sp-country, .sp-cat.hit, .sp-rank, .sp-end { animation: none; }
 }
+
+/* ===================================================================
+   Gipfelsturm: mountain scene, camps, timer, input (components/gipfel)
+   Only transform/opacity are animated; reduced motion turns movement off.
+   =================================================================== */
+.gs-scene {
+  position: relative;
+  height: clamp(210px, 38vh, 330px);
+  border-radius: 1.75rem;
+  overflow: hidden;
+  box-shadow: 0 5px 0 #c9a77e;
+  background: linear-gradient(180deg, #ffc98a 0%, #ffe2b8 35%, #bfe0f6 100%);
+  transition: height 0.25s ease;
+  isolation: isolate;
+}
+.gs-scene::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #5c6c87 0%, #8b9bb8 60%, #c9d4e6 100%);
+  opacity: 0;
+  transition: opacity 1.2s ease;
+  z-index: -1;
+}
+.gs-tense::before { opacity: 0.55; }
+.gs-storm::before, .gs-lost::before { opacity: 1; }
+.gs-won { background: linear-gradient(180deg, #8fd0ff 0%, #c9ecff 55%, #f1fbff 100%); }
+@media (max-width: 640px) { .gs-compact { height: 132px; } }
+.gs-svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.gs-sun { transition: transform 1.2s ease, opacity 1.2s ease; transform-origin: 330px 52px; }
+.gs-storm .gs-sun, .gs-lost .gs-sun { opacity: 0.15; transform: translateY(14px); }
+.gs-clouds { animation: gs-drift 26s linear infinite alternate; }
+@keyframes gs-drift { to { transform: translateX(26px); } }
+.gs-trail { opacity: 0.8; }
+.gs-camp .gs-dot { fill: #fff; stroke: #2c2a35; stroke-width: 1.8; }
+.gs-camp .gs-flag { fill: #fff; stroke: #2c2a35; stroke-width: 1.4; stroke-linejoin: round; }
+.gs-camp .gs-num { font: 700 9px var(--font-display); fill: #2c2a35; }
+.gs-camp.done .gs-dot { fill: #9fd06f; }
+.gs-camp.done .gs-flag { fill: #ee8a2f; }
+.gs-camp.cur .gs-dot { fill: #f3d272; }
+.gs-ring { fill: none; stroke: #fff; stroke-width: 2.5; transform-box: fill-box; transform-origin: center; animation: gs-ring 1.4s ease-out infinite; }
+@keyframes gs-ring { from { transform: scale(0.6); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
+.gs-climber { transition: transform 0.9s cubic-bezier(0.35, 0.1, 0.25, 1.2); }
+.gs-body { transform-box: fill-box; transform-origin: 50% 100%; animation: gs-bob 1.1s ease-in-out infinite; }
+@keyframes gs-bob { 50% { transform: translateY(-1.5px); } }
+.gs-tense .gs-body { animation: gs-shiver 0.25s linear infinite; }
+.gs-storm .gs-body { animation: gs-shiver 0.12s linear infinite; }
+@keyframes gs-shiver { 25% { transform: translateX(-0.8px); } 75% { transform: translateX(0.8px); } }
+.gs-tense .gs-mouth, .gs-storm .gs-mouth, .gs-lost .gs-mouth { d: path("M.2 -5.6q1.6 -1.3 3.2 0"); }
+.gs-lost .gs-body { animation: gs-tumble 1.4s 0.5s ease-in forwards; }
+@keyframes gs-tumble { to { transform: translate(-40px, 70px) rotate(-260deg); opacity: 0; } }
+.gs-summit { opacity: 0; transform-box: fill-box; transform-origin: 0 100%; transform: scaleY(0); }
+.gs-won .gs-summit { opacity: 1; transform: scaleY(1); transition: transform 0.6s 0.6s cubic-bezier(0.2, 1.6, 0.4, 1), opacity 0.2s 0.6s; }
+.gs-wave { transform-box: fill-box; transform-origin: 0 50%; animation: gs-wave 1.2s ease-in-out infinite; }
+@keyframes gs-wave { 50% { transform: skewY(-6deg) scaleX(0.92); } }
+.gs-avalanche { opacity: 0; transform: translate(-30px, -260px); }
+.gs-lost .gs-avalanche { animation: gs-aval 1.6s 0.2s cubic-bezier(0.5, 0, 0.75, 0.6) forwards; }
+@keyframes gs-aval { 0% { opacity: 0.2; transform: translate(-30px, -260px); } 30% { opacity: 1; } 100% { opacity: 0.92; transform: translate(0, 40px); } }
+.gs-snow { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.8s; }
+.gs-tense .gs-snow { opacity: 0.6; }
+.gs-storm .gs-snow, .gs-lost .gs-snow { opacity: 1; }
+.gs-snow i { position: absolute; top: -8px; width: 5px; height: 5px; border-radius: 50%; background: #fff; animation: gs-flake 1.6s linear infinite; }
+.gs-snow i:nth-child(3n) { width: 3px; height: 3px; }
+@keyframes gs-flake { to { transform: translate(-40px, 360px); } }
+.gs-hud { position: absolute; left: 12px; right: 12px; top: 12px; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; }
+.gs-pill { background: rgb(255 255 255 / 0.92); border-radius: 999px; padding: 4px 12px; font: 600 15px var(--font-display); box-shadow: 0 2px 0 rgb(0 0 0 / 0.12); }
+.gs-time { font-variant-numeric: tabular-nums; min-width: 72px; text-align: center; }
+.gs-time.low { background: #d6453d; color: #fff; }
+.gs-bar { position: absolute; left: 14px; right: 14px; bottom: 12px; height: 9px; border-radius: 999px; background: rgb(255 255 255 / 0.55); overflow: hidden; }
+.gs-bar i { position: absolute; inset: 0; transform-origin: 0 50%; background: #3e9a3a; border-radius: 999px; transition: transform 0.1s linear, background-color 0.4s; }
+.gs-bar i.read { background: #fff; }
+.gs-bar i.tense { background: #ee8a2f; }
+.gs-bar i.storm { background: #d6453d; }
+.gs-qtext { animation: gs-in 0.35s ease-out; }
+@keyframes gs-in { from { opacity: 0; transform: translateY(8px); } }
+.gs-shake { animation: gs-shake 0.32s ease; }
+@keyframes gs-shake { 20% { transform: translateX(-7px); } 45% { transform: translateX(6px); } 70% { transform: translateX(-3px); } }
+.gs-sugs { position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 6px); background: #fff; border-radius: 1rem; box-shadow: 0 4px 0 var(--color-edge), 0 10px 30px rgb(0 0 0 / 0.08); padding: 6px; max-height: 46vh; overflow: auto; }
+.gs-sugs button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; text-align: left; padding: 9px 12px; border-radius: 0.7rem; font-weight: 600; }
+.gs-sugs button:hover, .gs-sugs button.on { background: var(--color-brand-soft); }
+.gs-usedtag { font-size: 12px; font-weight: 700; color: var(--color-muted); background: var(--color-surface); border-radius: 999px; padding: 1px 8px; }
+.gs-fb-ok { background: #e5f4dc; color: #2f6f2c; }
+.gs-fb-used { background: #fff1d6; color: #8a5a00; }
+.gs-fb-wrong, .gs-fb-unknown { background: #fde4e2; color: #9b2a24; }
+.gs-fb-type { background: #e4effc; color: #1f4f8f; }
+.gs-chip { background: var(--color-surface); border-radius: 999px; padding: 2px 10px; font-size: 14px; font-weight: 700; text-decoration: line-through; text-decoration-color: rgb(44 42 53 / 0.35); }
+.gs-badge { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--color-surface); font: 700 16px var(--font-display); }
+.gs-badge.ok { background: #9fd06f; }
+.gs-badge.bad { background: #d6453d; color: #fff; }
+.gs-trap { color: #c4620f; font-weight: 800; }
+@media (prefers-reduced-motion: reduce) {
+  .gs-scene *, .gs-qtext, .gs-shake { animation: none !important; transition: none !important; }
+  .gs-snow { display: none; }
+}

@@ -14,7 +14,7 @@ import { pointsFor } from "./leaderboard";
 // ---------- games ----------
 
 /** Daily games that can be played in a room. Spurensuche only in a 1v1: every round costs Street View loads. */
-export type DailyId = Exclude<GameKey, "tiefgang">;
+export type DailyId = Exclude<GameKey, "tiefgang" | "gipfelsturm">;
 export type GameId = "koscher" | "halal" | "flaggen" | "hauptstaedte" | "tiefgang" | DailyId;
 export const isDaily = (g: GameId): g is DailyId => GAMES.some((x) => x.key === g);
 

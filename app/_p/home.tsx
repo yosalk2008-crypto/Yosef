@@ -95,7 +95,27 @@ export default function Home({ lang }: { lang: Lang }) {
           </span>
           <span className="relative btn-primary shrink-0 bg-[#f3d272] px-4 text-ink max-sm:min-h-0 max-sm:py-2 max-sm:text-sm shadow-[0_4px_0_#b8962f] hover:bg-[#f7dc8a]"><span className="sm:hidden">{t("Los", "Go")}</span><span className="hidden sm:inline">{t("Jetzt abtauchen", "Dive in")}</span></span>
         </Link>
-        <Link href="/bestenliste" className="chunk flex items-center justify-between gap-4 px-5 py-4" style={{ background: "#f3d272", ["--edge" as string]: "#c9a43c" }}>
+        <Link
+          href="/gipfelsturm"
+          className="chunk relative flex items-center justify-between gap-3 overflow-hidden px-5 py-4 text-white sm:px-8 lg:col-start-1"
+          style={{ background: "linear-gradient(165deg, #ffb36b 0%, #c98a7a 38%, #5b6b8c 72%, #43506d 100%)", ["--edge" as string]: "#2e3852" }}
+        >
+          <svg viewBox="0 0 160 70" className="pointer-events-none absolute bottom-0 right-20 hidden h-[70px] w-40 sm:block" aria-hidden="true">
+            <path d="M0 70l38-34 14 8 34-42 22 26 14-8 38 50z" fill="#fff" opacity=".16" />
+            <path d="M86 2l12 14-6-2-6 6-6-6-6 4z" fill="#fff" opacity=".7" />
+          </svg>
+          <span className="relative">
+            <span className="flex flex-wrap items-center gap-x-3 gap-y-1 font-display text-2xl font-semibold sm:text-3xl">
+              {t("Gipfelsturm", "Summit Rush")}
+              <span className="hidden rounded-full bg-white px-2.5 py-0.5 text-sm text-ink sm:inline">{t("Neu", "New")}</span>
+            </span>
+            <span className="mt-1 hidden max-w-md text-base font-semibold text-white/90 sm:block sm:text-lg">
+              {t("7 Fragen, 7 Lager bis zum Gipfel – und jede Antwort zählt nur einmal. Heb dir die Berühmten für oben auf.", "7 questions, 7 camps to the summit – and every answer counts only once. Save the famous ones for the top.")}
+            </span>
+          </span>
+          <span className="relative btn-primary shrink-0 bg-white px-4 text-ink max-sm:min-h-0 max-sm:py-2 max-sm:text-sm shadow-[0_4px_0_#9aa6c2] hover:bg-[#eef1f8]"><span className="sm:hidden">{t("Los", "Go")}</span><span className="hidden sm:inline">{t("Aufsteigen", "Start climbing")}</span></span>
+        </Link>
+        <Link href="/bestenliste" className="chunk flex items-center justify-between gap-4 px-5 py-4 lg:col-start-2 lg:row-span-2 lg:row-start-3" style={{ background: "#f3d272", ["--edge" as string]: "#c9a43c" }}>
           <span>
             <span className="block font-display text-2xl font-semibold sm:text-3xl">{t("Bestenliste", "Leaderboard")}</span>
             <span className="mt-1 hidden text-base font-semibold text-ink/75 sm:block sm:text-lg">{t("Wer hat heute die meisten Punkte?", "Who has the most points today?")}</span>

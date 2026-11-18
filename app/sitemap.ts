@@ -13,6 +13,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/archiv",
     "/tiefgang",
     "/tiefgang/endlos",
+    "/gipfelsturm",
+    "/gipfelsturm/endlos",
     "/koscher",
     "/halal",
     "/multiplayer",
