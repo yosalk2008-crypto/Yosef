@@ -5,7 +5,7 @@
  * as Gipfelsturm), so every answer can be checked.
  */
 import { BEKANNTHEIT } from "@/lib/data/bekanntheit";
-import { BY_ID, CONTINENT_EN, type Country } from "@/lib/data/countries";
+import { BY_ID, CONTINENT_EN, SUBREGION_DE, type Country } from "@/lib/data/countries";
 import { rng } from "@/lib/gipfel/core";
 import { LAND, LEFT_OUT, clauses, join, type Clause } from "@/lib/gipfel/laender";
 
@@ -25,7 +25,7 @@ export const TERRITORY_OWNER: Record<string, string> = { GRL: "DNK", FLK: "GBR",
 /** Can be tapped on the map but never locked in (no Middle East conflict in the quizzes; Western Sahara is disputed). */
 export const NOT_PINNABLE = new Set([...LEFT_OUT, "ESH"]);
 
-export type Clue = { key: string; de: string; en: string; ids: string[]; src?: string };
+export type Clue = { key: string; de: string; en: string; ids: string[]; src?: string; parts: string[] };
 
 const fame = (id: string) => BEKANNTHEIT[id] ?? 30;
 
@@ -36,7 +36,7 @@ export function cluePool(): Clue[] {
   const cl = clauses();
   const out: Clue[] = [];
   const add = (key: string, de: string, en: string, ids: string[], src?: string) => {
-    if (ids.length >= 3 && ids.length <= 30) out.push({ key, de, en, ids, src });
+    if (ids.length >= 3 && ids.length <= 30) out.push({ key, de, en, ids, src, parts: key.split("+") });
   };
   for (const c of cl) add(c.key, `Ein Land${/^(das|dessen)\b/.test(c.de) ? "," : ""} ${c.de}.`, `A country ${c.en}.`, c.ids, c.src);
   const locs = cl.filter((c: Clause) => c.loc);
@@ -104,3 +104,57 @@ export function factLine(id: string, lang: "de" | "en"): string {
 }
 
 export const LAND_IDS = new Set(LAND.map((c) => c.id));
+
+// ----------------------------------------------------------------------------------------------
+// Why a country fits (or not): one short fact per building block of the clue
+// ----------------------------------------------------------------------------------------------
+
+let CLAUSES: Map<string, Clause> | null = null;
+const clauseMap = () => (CLAUSES ??= new Map(clauses().map((c) => [c.key, c])));
+const TOP_LABEL: Record<string, [string, string]> = {
+  "top-gdp": ["größten Volkswirtschaften", "largest economies"],
+  "top-gdppc": ["reichsten Länder pro Kopf", "richest countries per person"],
+  "top-life": ["höchsten Lebenserwartungen", "highest life expectancies"],
+  "top-tour": ["meistbesuchten Länder", "most visited countries"],
+  "top-forest": ["waldreichsten Länder", "most forested countries"],
+  "top-elev": ["höchsten Gipfel", "highest peaks"],
+  "top-coast": ["längsten Küsten", "longest coastlines"],
+  "top-age": ["ältesten Bevölkerungen", "oldest populations"],
+  "top-birth": ["höchsten Geburtenraten", "highest birth rates"],
+  "top-rail": ["längsten Schienennetze", "longest rail networks"],
+  "top-airports": ["meisten Flughäfen", "most airports"],
+  "top-area": ["größten Länder", "largest countries"],
+  "top-pop": ["bevölkerungsreichsten Länder", "most populous countries"],
+};
+
+export function why(clue: Clue, id: string, lang: "de" | "en"): string[] {
+  const c = BY_ID[id];
+  if (!c) return [];
+  const f = nf(lang);
+  const en = lang === "en";
+  const name = en ? c.nEn : c.n;
+  const people = (n: number | null) => (n == null ? "?" : n >= 1e6 ? `${f.format(n / 1e6)} ${en ? "million" : "Mio."}` : f.format(n));
+  return clue.parts.map((k) => {
+    const cl = clauseMap().get(k);
+    const ok = !!cl && cl.ids.includes(id);
+    if (k.startsWith("kont-")) return en ? `${name} is in ${CONTINENT_EN[c.cont]}.` : `${name} liegt in ${c.cont}.`;
+    if (k.startsWith("sub-")) return en ? `${name} is in ${c.sub}.` : `${name} liegt in ${SUBREGION_DE[c.sub] ?? c.sub}.`;
+    if (k === "binnen") return ok ? (en ? `${name} has no coast.` : `${name} hat keinen Zugang zum Meer.`) : en ? `${name} has a coast.` : `${name} hat eine Küste.`;
+    if (k === "insel" || k.startsWith("nachbar"))
+      return c.borders.length === 0 ? (en ? `${name} has no land border.` : `${name} hat keine Landgrenze.`) : en ? `${name} has ${c.borders.length} neighbouring countr${c.borders.length === 1 ? "y" : "ies"}.` : `${name} hat ${c.borders.length} Nachbarl${c.borders.length === 1 ? "and" : "änder"}.`;
+    if (k.startsWith("pop")) return en ? `${name} has ${people(c.pop)} people.` : `${name} hat ${people(c.pop)} Einwohner.`;
+    if (k.startsWith("area")) return en ? `${name} covers ${f.format(c.area)} km².` : `${name} ist ${f.format(c.area)} km² groß.`;
+    if (k.startsWith("cap")) return en ? `${c.capEn ?? "Its capital"} has ${people(c.capPop)} people.` : `${c.cap ?? "Die Hauptstadt"} hat ${people(c.capPop)} Einwohner.`;
+    if (k.startsWith("grenze-")) {
+      const y = BY_ID[k.slice(7)];
+      const yn = y ? (en ? y.nEn : y.n) : "";
+      return ok ? (en ? `${name} borders ${yn}.` : `${name} grenzt an ${yn}.`) : en ? `${name} does not border ${yn}.` : `${name} grenzt nicht an ${yn}.`;
+    }
+    if (k.startsWith("top-") && cl) {
+      const [de, enl] = TOP_LABEL[k] ?? ["Spitzenreiter", "leaders"];
+      const n = cl.ids.length;
+      return ok ? (en ? `${name} is among the ${enl} (no. ${cl.ids.indexOf(id) + 1} here).` : `${name} gehört zu den ${de} (hier Platz ${cl.ids.indexOf(id) + 1}).`) : en ? `${name} is not in the top ${n}.` : `${name} gehört nicht zu den ${n} ${de}.`;
+    }
+    return "";
+  }).filter(Boolean);
+}

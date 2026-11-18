@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { geoAlbersUsa, geoEqualEarth, geoMercator, geoPath, type GeoProjection } from "d3-geo";
+import { geoAlbersUsa, geoEqualEarth, geoGraticule10, geoMercator, geoPath, type GeoProjection } from "d3-geo";
 import { LAND_ONLY, type Shape } from "@/lib/geo";
 import { useT } from "@/lib/i18n";
 
@@ -24,6 +24,12 @@ type Props = {
   onSea?: (at: { x: number; y: number }) => void;
   /** Drawn on top of the map, inside the zoomed layer (k = current zoom, for constant-size markers). */
   overlay?: (k: number, ppu: number) => React.ReactNode;
+  /** Draw a 10° grid of latitude/longitude lines under the countries. */
+  graticule?: string;
+  /** Zoom smoothly to this shape (e.g. the picked country) whenever it changes; "*" flies back to the whole map. */
+  focus?: string | null;
+  /** Draw this shape on top with a glowing outline in this colour. */
+  highlight?: { id: string; color: string } | null;
   /** Draw clickable dots for entities that are too small to see. */
   dots?: (id: string) => boolean;
   dotFill?: (id: string) => string;
@@ -51,6 +57,9 @@ export function MapView({
   onPick,
   onSea,
   overlay,
+  graticule,
+  focus,
+  highlight,
   dots,
   dotFill,
   aspect = 1.9,
@@ -61,7 +70,7 @@ export function MapView({
   const tt = useT();
   const fitKey = (fit || shapes).map((s) => s.id).join(",") + (fitBox ? fitBox.flat().join(",") : "");
 
-  const { paths, centroids, areas } = useMemo(() => {
+  const { paths, centroids, areas, bounds, grid } = useMemo(() => {
     let proj: GeoProjection;
     if (projection === "usa") proj = geoAlbersUsa() as unknown as GeoProjection;
     else if (projection === "mercator") proj = geoMercator();
@@ -88,16 +97,19 @@ export function MapView({
     const paths: Record<string, string> = {};
     const centroids: Record<string, [number, number]> = {};
     const areas: Record<string, number> = {};
+    const bounds: Record<string, [[number, number], [number, number]]> = {};
     for (const s of shapes) {
       const d = gp(s);
       if (!d) continue;
       paths[s.id] = d;
       centroids[s.id] = gp.centroid(s) as [number, number];
       areas[s.id] = gp.area(s);
+      bounds[s.id] = gp.bounds(s) as [[number, number], [number, number]];
     }
-    return { paths, centroids, areas };
+    const grid = graticule ? gp(geoGraticule10()) ?? "" : "";
+    return { paths, centroids, areas, bounds, grid };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shapes, fitKey, projection, rotate, H]);
+  }, [shapes, fitKey, projection, rotate, H, graticule]);
 
   // ---- pan & zoom ----
   const [t, setT] = useState({ k: 1, x: 0, y: 0 });
@@ -138,6 +150,31 @@ export function MapView({
     },
     [H]
   );
+
+  // fly to a shape (smoothly, for 0.7 s) when `focus` changes
+  const [flying, setFlying] = useState(false);
+  useEffect(() => {
+    if (focus === "*") {
+      // fly back to the whole map
+      setFlying(true);
+      setT({ k: 1, x: 0, y: 0 });
+      const id = setTimeout(() => setFlying(false), 750);
+      return () => clearTimeout(id);
+    }
+    if (!focus || !bounds[focus]) return;
+    const [[x0, y0], [x1, y1]] = bounds[focus];
+    const w = Math.max(x1 - x0, 1);
+    const h = Math.max(y1 - y0, 1);
+    if (w > W * 0.8) return; // spans the whole map (crosses the date line) – leave the view
+    const k = Math.min(14, Math.max(1, 0.55 * Math.min(W / w, H / h)));
+    const cx = (x0 + x1) / 2;
+    const cy = (y0 + y1) / 2;
+    setFlying(true);
+    setT(clamp({ k, x: W / 2 - cx * k, y: H / 2 - cy * k }));
+    const id = setTimeout(() => setFlying(false), 750);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus, bounds]);
 
   useEffect(() => {
     const el = svgRef.current;
@@ -221,7 +258,8 @@ export function MapView({
         onPointerUp={onPointerUp}
         onPointerCancel={(e) => pointers.current.delete(e.pointerId)}
       >
-        <g transform={`translate(${t.x} ${t.y}) scale(${t.k})`}>
+        <g transform={`translate(${t.x} ${t.y}) scale(${t.k})`} style={flying ? { transform: `translate(${t.x}px, ${t.y}px) scale(${t.k})`, transition: "transform 0.7s cubic-bezier(0.3, 0.1, 0.2, 1)" } : undefined}>
+          {grid && <path d={grid} fill="none" stroke={graticule} strokeWidth={0.8} strokeDasharray="2 3" vectorEffect="non-scaling-stroke" pointerEvents="none" />}
           {shapes.map((s) =>
             paths[s.id] ? (
               <path
@@ -251,6 +289,13 @@ export function MapView({
               className={onPick ? "cursor-pointer" : ""}
             />
           ))}
+          {highlight && paths[highlight.id] && (
+            <g pointerEvents="none">
+              <path d={paths[highlight.id]} fill="none" stroke={highlight.color} strokeOpacity={0.25} strokeWidth={14} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+              <path d={paths[highlight.id]} fill="none" stroke={highlight.color} strokeOpacity={0.45} strokeWidth={7} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+              <path d={paths[highlight.id]} fill="none" stroke={highlight.color} strokeWidth={2.4} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+            </g>
+          )}
           {overlay?.(t.k, ppu)}
         </g>
       </svg>

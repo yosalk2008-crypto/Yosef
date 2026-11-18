@@ -575,28 +575,99 @@ h3,
 /* ===================================================================
    Fernweh: expedition atlas (components/fernweh)
    =================================================================== */
-.fw-atlas {
-  background-color: #a9d3dc !important;
-  background-image:
-    radial-gradient(ellipse at 50% 45%, rgb(255 255 255 / 0.25), transparent 65%),
-    repeating-linear-gradient(0deg, transparent 0 46px, rgb(60 110 125 / 0.12) 46px 47px),
-    repeating-linear-gradient(90deg, transparent 0 46px, rgb(60 110 125 / 0.12) 46px 47px) !important;
-  border-radius: 1.5rem !important;
-  box-shadow: 0 5px 0 #7fb0bc, inset 0 0 0 3px rgb(255 255 255 / 0.35);
+/* ---------- Fernweh: map left, logbook right (typewriter + parchment) ---------- */
+.fw-app {
+  --fw-paper: #f3ead3; --fw-paper2: #e9dcbc; --fw-ink: #2a211c; --fw-red: #c9302c; --fw-sea: #b9d3d3;
+  display: grid; grid-template-columns: minmax(0, 1fr) 380px; height: calc(100dvh - 64px); min-height: 560px;
+  background: var(--fw-paper); color: var(--fw-ink); font-family: var(--font-fw-mono), ui-monospace, monospace;
 }
+.fw-loading { background: #f3ead3; }
+.fw-page { font-family: var(--font-fw-mono), ui-monospace, monospace; }
+.fw-mapcol { position: relative; min-width: 0; overflow: hidden; background: var(--fw-sea); }
+.fw-mapcol > .fw-atlas { height: 100%; }
+.fw-atlas {
+  background-color: #b9d3d3 !important;
+  background-image:
+    radial-gradient(ellipse at 50% 45%, rgb(255 255 255 / 0.28), transparent 70%),
+    repeating-linear-gradient(115deg, transparent 0 7px, rgb(42 33 28 / 0.035) 7px 8px) !important;
+  border-radius: 0 !important;
+}
+.fw-page .fw-atlas { border-radius: 10px !important; border: 2px solid #2a211c; }
 .fw-atlas path { transition: fill 0.35s ease; }
-.fw-intro { position: absolute; inset: 0; display: grid; place-items: center; padding: 12px; background: rgb(169 211 220 / 0.55); border-radius: 1.5rem; }
-@media (max-width: 640px) { .fw-intro { position: static; background: none; padding: 12px 0 0; } }
-.fw-clue { border-left: 8px solid #ee8a2f; }
-.fw-cluetext { animation: fw-in 0.35s ease-out; }
+.fw-pin { animation: fw-drop .28s cubic-bezier(.3,1.6,.5,1); transform-box: fill-box; }
+@keyframes fw-drop { from { opacity: 0; translate: 0 -14px; } }
+.fw-target { position: absolute; left: 14px; top: 14px; background: var(--fw-paper); border: 2px solid var(--fw-ink); padding: 4px 10px; font-weight: 700; box-shadow: 3px 3px 0 var(--fw-ink); }
+
+.fw-panel { display: flex; flex-direction: column; gap: 14px; padding: 18px 20px; border-left: 2px solid var(--fw-ink); overflow-y: auto;
+  background: var(--fw-paper) repeating-linear-gradient(0deg, transparent 0 27px, rgb(42 33 28 / .05) 27px 28px); }
+.fw-small { font: 700 12px/1.2 var(--font-fw-mono), monospace; letter-spacing: .14em; text-transform: uppercase; color: #6b5d50; }
+.fw-red { color: var(--fw-red) !important; }
+.fw-top { display: flex; justify-content: space-between; gap: 10px; padding-bottom: 12px; border-bottom: 2px dashed rgb(42 33 28 / .35); }
+.fw-dist { font: 400 44px/1 var(--font-fw-type), monospace; font-variant-numeric: tabular-nums; }
+.fw-dist span { font-size: 20px; }
+.fw-badge { display: inline-block; border: 2px solid var(--fw-ink); padding: 2px 8px; font-weight: 700; font-size: 14px; transform: rotate(2deg); background: #fffaf0; }
+.fw-cells { display: flex; gap: 4px; margin-top: 8px; justify-content: flex-end; }
+.fw-cells i { width: 22px; height: 14px; border: 2px solid var(--fw-ink); background: #fffaf0; display: block; }
+.fw-cells i.cur { background: repeating-linear-gradient(45deg, #fffaf0 0 3px, #e8c9a4 3px 6px); }
+.fw-stars { display: block; margin-top: 4px; color: #b8860b; font-size: 14px; }
+.fw-prompt { min-height: 120px; }
+.fw-cluetext { font: 400 27px/1.3 var(--font-fw-type), monospace; margin-top: 6px; animation: fw-in .35s ease-out; }
 @keyframes fw-in { from { opacity: 0; transform: translateY(6px); } }
-.fw-step { font: 700 14px var(--font-display); background: var(--color-surface); border-radius: 999px; padding: 3px 10px; }
-.fw-km { font: 700 20px var(--font-display); background: #2c2a35; color: #fff; border-radius: 999px; padding: 4px 14px; font-variant-numeric: tabular-nums; }
-.fw-time { font: 700 16px var(--font-display); background: #e4effc; border-radius: 999px; padding: 4px 12px; font-variant-numeric: tabular-nums; }
-.fw-time.low { background: #d6453d; color: #fff; }
-.fw-bar { position: sticky; bottom: 10px; z-index: 10; }
-.fw-tier { display: inline-block; border-radius: 999px; padding: 2px 10px; font: 700 13px var(--font-display); }
-.fw-leg { display: inline-flex; align-items: center; gap: 5px; background: #fff; border-radius: 999px; padding: 2px 9px 2px 4px; box-shadow: 0 2px 0 var(--color-edge); }
-.fw-leg i { width: 14px; height: 14px; border-radius: 50%; display: inline-block; border: 1.5px solid #2c2a35; }
-.fw-reveal { animation: fw-in 0.3s ease-out; }
-@media (prefers-reduced-motion: reduce) { .fw-cluetext, .fw-reveal { animation: none; } .fw-atlas path { transition: none; } }
+.fw-time { display: inline-block; margin-top: 8px; font-weight: 700; border: 2px solid var(--fw-ink); padding: 1px 8px; font-variant-numeric: tabular-nums; }
+.fw-time.low { background: var(--fw-red); color: #fff; border-color: var(--fw-red); }
+.fw-route { border: 2px solid var(--fw-ink); background: #efe2c2; box-shadow: 3px 3px 0 rgb(42 33 28 / .8); }
+.fw-route svg { display: block; width: 100%; height: auto; }
+.fw-route-camp { align-self: start; }
+.fw-status { font-size: 15px; line-height: 1.45; }
+.fw-factcard { background: #fffaf0; border: 2px solid var(--fw-ink); padding: 12px 14px; box-shadow: 3px 3px 0 rgb(42 33 28 / .8); animation: fw-in .3s ease-out; }
+.fw-fact { font-size: 14px; line-height: 1.5; margin-top: 4px; }
+.fw-plus { font: 400 24px var(--font-fw-type), monospace; font-variant-numeric: tabular-nums; }
+.fw-stamp { display: inline-block; border: 3px double currentColor; padding: 3px 10px; font: 700 14px var(--font-fw-mono), monospace; letter-spacing: .1em; text-transform: uppercase; transform: rotate(-6deg); background: rgb(255 255 255 / .55); filter: saturate(1.15); }
+.fw-stamp.small { font-size: 12px; padding: 2px 8px; }
+.fw-actions { margin-top: auto; padding-top: 8px; position: sticky; bottom: 0; background: linear-gradient(transparent, var(--fw-paper) 18%); }
+.fw-keys { text-align: center; font-size: 12px; color: #6b5d50; margin-bottom: 6px; }
+.fw-keys kbd { border: 1.5px solid #6b5d50; border-bottom-width: 3px; padding: 0 5px; font: inherit; background: #fffaf0; }
+.fw-drop { width: 100%; padding: 16px; background: var(--fw-red); color: #fff8ec; border: 2px solid var(--fw-ink); box-shadow: 0 5px 0 var(--fw-ink);
+  font: 700 19px var(--font-fw-mono), monospace; letter-spacing: .14em; text-transform: uppercase; transition: transform .08s, box-shadow .08s; }
+.fw-drop:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 var(--fw-ink); }
+.fw-drop:disabled { background: #b7a98f; color: #f3ead3; cursor: not-allowed; }
+.fw-drop:focus-visible, .fw-opt:focus-visible { outline: 3px solid #2f6fb5; outline-offset: 3px; }
+.fw-opt { border: 2px solid var(--fw-ink); padding: 4px 12px; font-weight: 700; background: #fffaf0; }
+.fw-opt.on { background: var(--fw-ink); color: var(--fw-paper); }
+.fw-intro { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.fw-title { font: 400 40px/1 var(--font-fw-type), monospace; }
+.fw-rules { list-style: "✦  "; padding-left: 1.3em; font-size: 14px; line-height: 1.5; display: grid; gap: 4px; }
+
+.fw-stampcard { position: absolute; left: 50%; bottom: 22px; translate: -50% 0; min-width: 300px; max-width: calc(100% - 28px); text-align: center;
+  background: #fffaf0; border: 2px solid var(--fw-ink); padding: 12px 20px 14px; box-shadow: 5px 5px 0 rgb(42 33 28 / .85); animation: fw-card .35s cubic-bezier(.3,1.4,.5,1); }
+@keyframes fw-card { from { opacity: 0; transform: translateY(18px) rotate(-1.5deg); } }
+.fw-country { font: 400 30px/1.1 var(--font-fw-type), monospace; text-transform: uppercase; margin-top: 2px; }
+.fw-stamprow { display: flex; align-items: center; gap: 10px; justify-content: center; margin-top: 8px; }
+.fw-dots { flex: 1; max-width: 70px; border-bottom: 2px dotted rgb(42 33 28 / .5); }
+.fw-newtag { position: absolute; top: -13px; right: 14px; background: #e2b714; border: 2px solid var(--fw-ink); padding: 0 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; transform: rotate(3deg); }
+
+.fw-campgrid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) 340px; align-items: start; }
+.fw-tier { display: inline-block; border-radius: 3px; padding: 1px 8px; font: 700 13px var(--font-fw-mono), monospace; border: 1.5px solid var(--fw-ink, #2a211c); }
+.fw-leg { display: inline-flex; align-items: center; gap: 5px; background: #fffaf0; border: 1.5px solid #2a211c; padding: 1px 8px 1px 4px; }
+.fw-leg i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; border: 1.5px solid #2a211c; }
+
+@media (max-width: 860px) {
+  .fw-app { grid-template-columns: 1fr; grid-template-rows: auto auto; height: auto; min-height: 0; }
+  .fw-mapcol { order: 2; height: 52vh; min-height: 280px; border-block: 2px solid var(--fw-ink); }
+  .fw-panel { display: contents; }
+  .fw-top { order: 0; padding: 12px 14px 10px; background: var(--fw-paper); }
+  .fw-prompt { order: 1; padding: 0 14px 12px; min-height: 0; background: var(--fw-paper); }
+  .fw-cluetext { font-size: 21px; }
+  .fw-dist { font-size: 32px; }
+  .fw-intro { order: 1; padding: 0 14px 14px; }
+  .fw-status { order: 3; padding: 10px 14px 0; }
+  .fw-factcard { order: 3; margin: 12px 14px 0; }
+  .fw-route { order: 4; margin: 12px 14px 0; }
+  .fw-actions { order: 5; padding: 10px 14px 14px; z-index: 5; }
+  .fw-intro .fw-actions { padding: 10px 0 0; }
+  .fw-keys, .fw-target, .fw-facthead { display: none !important; }
+  .fw-stampcard { min-width: 0; width: calc(100% - 24px); bottom: 10px; padding: 8px 12px 10px; }
+  .fw-country { font-size: 22px; }
+  .fw-campgrid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { .fw-cluetext, .fw-factcard, .fw-stampcard, .fw-pin { animation: none; } .fw-atlas path { transition: none; } }
