@@ -98,11 +98,14 @@ export default function Home({ lang }: { lang: Lang }) {
         <Link
           href="/gipfelsturm"
           className="chunk relative flex items-center justify-between gap-3 overflow-hidden px-5 py-4 text-white sm:px-8 lg:col-start-1"
-          style={{ background: "linear-gradient(165deg, #ffb36b 0%, #c98a7a 38%, #5b6b8c 72%, #43506d 100%)", ["--edge" as string]: "#2e3852" }}
+          style={{ background: "linear-gradient(165deg, #1d1640 0%, #4a2a6a 45%, #b8486a 78%, #f6935a 100%)", ["--edge" as string]: "#120c1c" }}
         >
-          <svg viewBox="0 0 160 70" className="pointer-events-none absolute bottom-0 right-20 hidden h-[70px] w-40 sm:block" aria-hidden="true">
-            <path d="M0 70l38-34 14 8 34-42 22 26 14-8 38 50z" fill="#fff" opacity=".16" />
-            <path d="M86 2l12 14-6-2-6 6-6-6-6 4z" fill="#fff" opacity=".7" />
+          <svg viewBox="0 0 200 90" className="pointer-events-none absolute bottom-0 right-24 hidden h-[90px] w-[200px] sm:block" aria-hidden="true">
+            <ellipse cx="100" cy="22" rx="34" ry="16" fill="#ff8a2a" opacity=".45" />
+            <path d="M10 90l50-40c12-16 22-30 28-48h24c6 18 16 32 28 48l50 40z" fill="#2e2340" />
+            <path d="M88 2q12 6 24 0" stroke="#ffb43a" strokeWidth="4" fill="none" strokeLinecap="round" />
+            <path d="M106 6c4 14 10 24 18 36s14 26 22 40" stroke="#ffb43a" strokeWidth="4" fill="none" strokeLinecap="round" />
+            <circle cx="96" cy="-6" r="9" fill="#7a6a8e" opacity=".8" /><circle cx="108" cy="-14" r="7" fill="#7a6a8e" opacity=".6" />
           </svg>
           <span className="relative">
             <span className="flex flex-wrap items-center gap-x-3 gap-y-1 font-display text-2xl font-semibold sm:text-3xl">
@@ -110,7 +113,7 @@ export default function Home({ lang }: { lang: Lang }) {
               <span className="hidden rounded-full bg-white px-2.5 py-0.5 text-sm text-ink sm:inline">{t("Neu", "New")}</span>
             </span>
             <span className="mt-1 hidden max-w-md text-base font-semibold text-white/90 sm:block sm:text-lg">
-              {t("7 Fragen, 7 Lager bis zum Gipfel – und jede Antwort zählt nur einmal. Heb dir die Berühmten für oben auf.", "7 questions, 7 camps to the summit – and every answer counts only once. Save the famous ones for the top.")}
+              {t("7 Fragen, 7 Lager bis zum Krater – und jede Antwort zählt nur einmal. Heb dir die Berühmten für oben auf, bevor der Vulkan ausbricht.", "7 questions, 7 camps up to the crater – and every answer counts only once. Save the famous ones for the top before the volcano blows.")}
             </span>
           </span>
           <span className="relative btn-primary shrink-0 bg-white px-4 text-ink max-sm:min-h-0 max-sm:py-2 max-sm:text-sm shadow-[0_4px_0_#9aa6c2] hover:bg-[#eef1f8]"><span className="sm:hidden">{t("Los", "Go")}</span><span className="hidden sm:inline">{t("Aufsteigen", "Start climbing")}</span></span>

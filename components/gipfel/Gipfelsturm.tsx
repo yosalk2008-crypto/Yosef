@@ -245,7 +245,7 @@ export function Gipfelsturm({ mode }: { mode: "daily" | "endlos" }) {
     const go = () =>
       w.ktOutcome?.({
         win: used.length >= 7,
-        title: used.length >= 7 ? t("Gipfel erreicht!", "Summit reached!") : giveUp ? t("Abgestiegen", "You turned back") : t("Lawine!", "Avalanche!"),
+        title: used.length >= 7 ? t("Gipfel erreicht!", "Summit reached!") : giveUp ? t("Abgestiegen", "You turned back") : t("Ausbruch!", "Eruption!"),
         sub: used.length >= 7 ? t("Alle 7 Lager geschafft", "All 7 camps cleared") : t(`Lager ${used.length} von 7`, `Camp ${used.length} of 7`),
       });
     if (w.ktOutcome) setTimeout(go, 900);
@@ -309,7 +309,7 @@ export function Gipfelsturm({ mode }: { mode: "daily" | "endlos" }) {
         <section className="card mt-4 p-5 sm:p-6">
           <h2 className="text-2xl font-semibold">{mode === "daily" ? t(`Heute: ${tn}`, `Today: ${tn}`) : t("Wähle dein Gebirge", "Choose your mountain")}</h2>
           <ul className="mt-3 space-y-1.5 text-[16px] leading-snug">
-            <li>{t("7 Fragen, 7 Lager bis zum Gipfel. Jede richtige Antwort bringt dich ein Lager höher.", "7 questions, 7 camps to the summit. Every right answer takes you one camp higher.")}</li>
+            <li>{t("7 Fragen, 7 Lager bis zum Krater. Jede richtige Antwort bringt dich ein Lager höher – läuft die Uhr ab, bricht der Vulkan aus.", "7 questions, 7 camps up the volcano. Every right answer takes you one camp higher.")}</li>
             <li><strong>{t("Jede Antwort zählt nur einmal.", "Every answer counts only once.")}</strong> {t("Die ersten Fragen haben viele Lösungen, die letzten nur noch ein, zwei – oft genau die berühmte, die du am Anfang verbraucht hast.", "The first questions have many answers, the last ones only one or two – often the famous one you spent early on.")}</li>
             <li>{isTimed ? t("25 Sekunden pro Frage, die Uhr startet nach 2 Sekunden Lesezeit. Falsche Antworten kosten nichts – nur die Zeit läuft weiter.", "25 seconds per question; the clock starts after 2 seconds of reading. Wrong answers cost nothing – the clock just keeps running.") : t("Ohne Zeitlimit – nimm dir Zeit.", "No time limit – take your time.")}</li>
             {mode === "daily" && <li>{t("Ein Versuch pro Tag. Länder und Fußball wechseln sich ab.", "One try per day. Countries and football take turns.")}</li>}

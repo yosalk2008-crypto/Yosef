@@ -451,63 +451,94 @@ h3,
    =================================================================== */
 .gs-scene {
   position: relative;
-  height: clamp(210px, 38vh, 330px);
+  height: clamp(220px, 40vh, 360px);
   border-radius: 1.75rem;
   overflow: hidden;
-  box-shadow: 0 5px 0 #c9a77e;
-  background: linear-gradient(180deg, #ffc98a 0%, #ffe2b8 35%, #bfe0f6 100%);
+  box-shadow: 0 5px 0 #120c1c;
+  background: #1d1640;
   transition: height 0.25s ease;
   isolation: isolate;
 }
-.gs-scene::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, #5c6c87 0%, #8b9bb8 60%, #c9d4e6 100%);
-  opacity: 0;
-  transition: opacity 1.2s ease;
-  z-index: -1;
-}
-.gs-tense::before { opacity: 0.55; }
-.gs-storm::before, .gs-lost::before { opacity: 1; }
-.gs-won { background: linear-gradient(180deg, #8fd0ff 0%, #c9ecff 55%, #f1fbff 100%); }
-@media (max-width: 640px) { .gs-compact { height: 132px; } }
+@media (max-width: 640px) { .gs-scene { height: 250px; } .gs-compact { height: 150px; } }
+.gs-shakebox { position: absolute; inset: 0; }
 .gs-svg { width: 100%; height: 100%; display: block; overflow: visible; }
-.gs-sun { transition: transform 1.2s ease, opacity 1.2s ease; transform-origin: 330px 52px; }
-.gs-storm .gs-sun, .gs-lost .gs-sun { opacity: 0.15; transform: translateY(14px); }
-.gs-clouds { animation: gs-drift 26s linear infinite alternate; }
-@keyframes gs-drift { to { transform: translateX(26px); } }
-.gs-trail { opacity: 0.8; }
-.gs-camp .gs-dot { fill: #fff; stroke: #2c2a35; stroke-width: 1.8; }
-.gs-camp .gs-flag { fill: #fff; stroke: #2c2a35; stroke-width: 1.4; stroke-linejoin: round; }
-.gs-camp .gs-num { font: 700 9px var(--font-display); fill: #2c2a35; }
+/* resting state – same motion as the Figma frame "1 · Aufstieg" */
+.gs-stars circle { animation: gs-twinkle 3s ease-in-out infinite; }
+@keyframes gs-twinkle { 50% { opacity: 0.35; } }
+.gs-puff { animation: gs-rise 4.5s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+.gs-p2 { animation-delay: -1.5s; }
+.gs-p3 { animation-delay: -3s; }
+@keyframes gs-rise { 0% { transform: translate(0, 18px) scale(0.75); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(22px, -50px) scale(1.25); opacity: 0; } }
+.gs-craterglow { transform-box: fill-box; transform-origin: center; animation: gs-pulse 3s ease-in-out infinite; }
+@keyframes gs-pulse { 50% { transform: scale(1.12); opacity: 0.75; } }
+.gs-flowglow { opacity: 0.6; animation: gs-glowflow 3s ease-in-out infinite; }
+@keyframes gs-glowflow { 50% { opacity: 0.95; } }
+.gs-flowpulse { animation: gs-flowdash 2.4s linear infinite; opacity: 0.85; }
+@keyframes gs-flowdash { to { stroke-dashoffset: -60; } }
+.gs-cracks { animation: gs-glowflow 2.2s ease-in-out infinite; opacity: 0.7; }
+.gs-lavalake { opacity: 0.7; animation: gs-glowflow 3s ease-in-out infinite; }
+.gs-embers circle { opacity: 0; animation: gs-ember 2.8s ease-out infinite; }
+@keyframes gs-ember { 0% { transform: translate(0, 0); opacity: 0; } 10% { opacity: 1; } 100% { transform: translate(var(--dx, 0), -70px); opacity: 0; } }
+.gs-redsky { opacity: 0; transition: opacity 1s ease; }
+.gs-moon { transition: opacity 1s ease; }
+.gs-camp .gs-dot { fill: #f4ecff; stroke: #120c1c; stroke-width: 2; }
+.gs-camp .gs-flag { fill: #f4ecff; stroke: #120c1c; stroke-width: 1.6; stroke-linejoin: round; }
+.gs-camp .gs-num { font: 700 10px var(--font-display); fill: #120c1c; }
 .gs-camp.done .gs-dot { fill: #9fd06f; }
 .gs-camp.done .gs-flag { fill: #ee8a2f; }
 .gs-camp.cur .gs-dot { fill: #f3d272; }
-.gs-ring { fill: none; stroke: #fff; stroke-width: 2.5; transform-box: fill-box; transform-origin: center; animation: gs-ring 1.4s ease-out infinite; }
-@keyframes gs-ring { from { transform: scale(0.6); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
+.gs-ring { fill: none; stroke: #ffe27a; stroke-width: 2.5; transform-box: fill-box; transform-origin: center; animation: gs-ring 1.4s ease-out infinite; }
+@keyframes gs-ring { from { transform: scale(0.6); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
 .gs-climber { transition: transform 0.9s cubic-bezier(0.35, 0.1, 0.25, 1.2); }
-.gs-body { transform-box: fill-box; transform-origin: 50% 100%; animation: gs-bob 1.1s ease-in-out infinite; }
-@keyframes gs-bob { 50% { transform: translateY(-1.5px); } }
+.gs-body { transform-box: fill-box; transform-origin: 50% 100%; transform: scale(1.35); animation: gs-bob 1s ease-in-out infinite; }
+@keyframes gs-bob { 50% { transform: scale(1.35) translateY(-2px); } }
+/* danger – frame "2 · Gefahr": red sky, the volcano rumbles, faster smoke, ash */
+.gs-tense .gs-redsky { opacity: 0.45; }
+.gs-storm .gs-redsky, .gs-lost .gs-redsky { opacity: 0.85; }
+.gs-tense .gs-moon, .gs-storm .gs-moon, .gs-lost .gs-moon { opacity: 0.35; }
+.gs-tense .gs-shakebox { animation: gs-rumble 0.5s linear infinite; }
+.gs-storm .gs-shakebox { animation: gs-rumble 0.18s linear infinite; }
+@keyframes gs-rumble { 25% { transform: translate(-1.5px, 0.5px); } 50% { transform: translate(1px, -0.5px); } 75% { transform: translate(1.5px, 0.5px); } }
+.gs-tense .gs-puff, .gs-storm .gs-puff { animation-duration: 2.2s; }
+.gs-tense .gs-craterglow, .gs-storm .gs-craterglow { animation-duration: 0.9s; }
+.gs-storm .gs-craterglow { transform: scale(1.3); }
+.gs-tense .gs-embers circle, .gs-storm .gs-embers circle { animation-duration: 1.2s; }
 .gs-tense .gs-body { animation: gs-shiver 0.25s linear infinite; }
 .gs-storm .gs-body { animation: gs-shiver 0.12s linear infinite; }
-@keyframes gs-shiver { 25% { transform: translateX(-0.8px); } 75% { transform: translateX(0.8px); } }
-.gs-tense .gs-mouth, .gs-storm .gs-mouth, .gs-lost .gs-mouth { d: path("M.2 -5.6q1.6 -1.3 3.2 0"); }
-.gs-lost .gs-body { animation: gs-tumble 1.4s 0.5s ease-in forwards; }
-@keyframes gs-tumble { to { transform: translate(-40px, 70px) rotate(-260deg); opacity: 0; } }
-.gs-summit { opacity: 0; transform-box: fill-box; transform-origin: 0 100%; transform: scaleY(0); }
-.gs-won .gs-summit { opacity: 1; transform: scaleY(1); transition: transform 0.6s 0.6s cubic-bezier(0.2, 1.6, 0.4, 1), opacity 0.2s 0.6s; }
+@keyframes gs-shiver { 0%, 100% { transform: scale(1.35); } 25% { transform: scale(1.35) translateX(-0.8px); } 75% { transform: scale(1.35) translateX(0.8px); } }
+.gs-tense .gs-mouth, .gs-storm .gs-mouth, .gs-lost .gs-mouth { d: path("M.6 -6q1.8 -1.4 3.6 0"); }
+.gs-ash { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.8s; }
+.gs-tense .gs-ash { opacity: 0.5; }
+.gs-storm .gs-ash, .gs-lost .gs-ash { opacity: 1; }
+.gs-ash i { position: absolute; top: -8px; width: 4px; height: 4px; border-radius: 50%; background: #c9b8c8; animation: gs-flake 1.8s linear infinite; }
+.gs-ash i:nth-child(3n) { width: 3px; height: 3px; background: #ff9a4a; }
+@keyframes gs-flake { to { transform: translate(-30px, 380px); } }
+/* eruption – frame "3 · Ausbruch" */
+.gs-eruption { pointer-events: none; }
+.gs-eruption > * { opacity: 0; }
+.gs-fountain { transform-box: fill-box; transform-origin: 50% 100%; }
+.gs-flood { transform: translateY(-300px); }
+.gs-lost .gs-shakebox { animation: gs-rumble 0.12s linear 10; }
+.gs-lost .gs-flash { animation: gs-flash 1.4s ease-out forwards; }
+@keyframes gs-flash { 0% { opacity: 0; } 18% { opacity: 1; } 100% { opacity: 0.55; } }
+.gs-lost .gs-fountain { animation: gs-fountain 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) forwards, gs-gush 0.9s 0.6s ease-in-out infinite; }
+@keyframes gs-fountain { 0% { opacity: 0; transform: scaleY(0.1); } 30% { opacity: 1; } 100% { opacity: 1; transform: scaleY(1); } }
+@keyframes gs-gush { 0%, 100% { opacity: 1; transform: scaleY(1); } 50% { opacity: 1; transform: scaleY(1.12) scaleX(0.94); } }
+.gs-lost .gs-bombs { opacity: 1; }
+.gs-bombs circle { opacity: 0; }
+.gs-lost .gs-bombs circle { animation: gs-bomb 1.6s ease-in infinite; }
+@keyframes gs-bomb { 0% { transform: translateY(90px); opacity: 0; } 15% { opacity: 1; } 45% { transform: translateY(-24px); } 100% { transform: translateY(120px); opacity: 0; } }
+.gs-lost .gs-flood { animation: gs-flood 1.8s 0.35s cubic-bezier(0.55, 0, 0.8, 0.5) forwards; }
+@keyframes gs-flood { 0% { opacity: 0; transform: translateY(-300px); } 15% { opacity: 0.95; } 100% { opacity: 0.95; transform: translateY(0); } }
+.gs-lost .gs-body { animation: gs-tumble 1.3s 0.6s ease-in forwards; }
+@keyframes gs-tumble { 0% { transform: scale(1.35); } 100% { transform: scale(1.35) translate(-60px, 110px) rotate(-300deg); opacity: 0; } }
+/* summit – frame "4 · Gipfel" */
+.gs-summit { opacity: 0; transform-box: fill-box; transform-origin: 0 100%; }
+.gs-won .gs-summit { opacity: 1; animation: gs-plant 0.7s 0.7s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+@keyframes gs-plant { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 .gs-wave { transform-box: fill-box; transform-origin: 0 50%; animation: gs-wave 1.2s ease-in-out infinite; }
 @keyframes gs-wave { 50% { transform: skewY(-6deg) scaleX(0.92); } }
-.gs-avalanche { opacity: 0; transform: translate(-30px, -260px); }
-.gs-lost .gs-avalanche { animation: gs-aval 1.6s 0.2s cubic-bezier(0.5, 0, 0.75, 0.6) forwards; }
-@keyframes gs-aval { 0% { opacity: 0.2; transform: translate(-30px, -260px); } 30% { opacity: 1; } 100% { opacity: 0.92; transform: translate(0, 40px); } }
-.gs-snow { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.8s; }
-.gs-tense .gs-snow { opacity: 0.6; }
-.gs-storm .gs-snow, .gs-lost .gs-snow { opacity: 1; }
-.gs-snow i { position: absolute; top: -8px; width: 5px; height: 5px; border-radius: 50%; background: #fff; animation: gs-flake 1.6s linear infinite; }
-.gs-snow i:nth-child(3n) { width: 3px; height: 3px; }
-@keyframes gs-flake { to { transform: translate(-40px, 360px); } }
+.gs-won .gs-embers circle { fill: #fff3c0; animation-duration: 1.6s; }
 .gs-hud { position: absolute; left: 12px; right: 12px; top: 12px; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; }
 .gs-pill { background: rgb(255 255 255 / 0.92); border-radius: 999px; padding: 4px 12px; font: 600 15px var(--font-display); box-shadow: 0 2px 0 rgb(0 0 0 / 0.12); }
 .gs-time { font-variant-numeric: tabular-nums; min-width: 72px; text-align: center; }
@@ -536,5 +567,7 @@ h3,
 .gs-trap { color: #c4620f; font-weight: 800; }
 @media (prefers-reduced-motion: reduce) {
   .gs-scene *, .gs-qtext, .gs-shake { animation: none !important; transition: none !important; }
-  .gs-snow { display: none; }
+  .gs-ash, .gs-embers { display: none; }
+  .gs-lost .gs-eruption > * { opacity: 1; transform: none; }
+  .gs-won .gs-summit { opacity: 1; }
 }

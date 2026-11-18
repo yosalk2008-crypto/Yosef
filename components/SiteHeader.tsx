@@ -82,7 +82,7 @@ export function SiteHeader() {
               {t("Tiefgang", "Deep Dive")}
               <span className="rounded-full bg-[#f3d272] px-2.5 py-0.5 text-sm text-ink">{t("Neu", "New")}</span>
             </Link>
-            <Link href="/gipfelsturm" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #ffb36b, #5b6b8c 70%, #43506d)", ["--edge" as string]: "#2e3852" }}>
+            <Link href="/gipfelsturm" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #4a2a6a, #b8486a 70%, #f6935a)", ["--edge" as string]: "#120c1c" }}>
               {t("Gipfelsturm", "Summit Rush")}
               <span className="rounded-full bg-white px-2.5 py-0.5 text-sm text-ink">{t("Neu", "New")}</span>
             </Link>
