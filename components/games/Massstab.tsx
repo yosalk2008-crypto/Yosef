@@ -5,6 +5,7 @@ import { geoArea, geoAzimuthalEqualArea, geoCentroid, geoPath } from "d3-geo";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import { dayNumber } from "@/lib/daily";
 import { useShapes, type ShapeSet } from "@/lib/geo";
+import { mainland } from "@/lib/mainland";
 import { useDaily } from "@/lib/useDaily";
 import { GameShell, ResultCard } from "../GameShell";
 import { SolutionRow, Solutions } from "../Solutions";
@@ -52,11 +53,17 @@ function useExtra() {
   }, []);
   return x;
 }
+const MAINLAND = new Map<string, Feature<Geometry>>();
+const land = (id: string, f: Feature<Geometry>) => {
+  if (!MAINLAND.has(id)) MAINLAND.set(id, mainland(f));
+  return MAINLAND.get(id)!;
+};
 function geoOf(item: Item, world: ShapeSet, extra: Record<string, Feature<Geometry>>): Geo {
   const features: Feature<Geometry>[] = [];
-  for (const id of item.countries ?? []) if (world.byId[id]) features.push(world.byId[id]);
+  // countries: mainland only (no far-away islands like the Azores or French Guiana that distort the outline)
+  for (const id of item.countries ?? []) if (world.byId[id]) features.push(land(id, world.byId[id]));
   for (const id of item.geo ?? []) {
-    const f = extra[id] ?? world.byId[id];
+    const f = extra[id] ?? (world.byId[id] && land(id, world.byId[id]));
     if (f) features.push(f);
   }
   return { type: "FeatureCollection", features };
