@@ -13,8 +13,8 @@ import { pointsFor } from "./leaderboard";
 
 // ---------- games ----------
 
-/** Daily games that can be played in a room (Spurensuche is left out: every round costs Street View loads). */
-export type DailyId = Exclude<GameKey, "tiefgang" | "spurensuche">;
+/** Daily games that can be played in a room. Spurensuche only in a 1v1: every round costs Street View loads. */
+export type DailyId = Exclude<GameKey, "tiefgang">;
 export type GameId = "koscher" | "halal" | "flaggen" | "hauptstaedte" | "tiefgang" | DailyId;
 export const isDaily = (g: GameId): g is DailyId => GAMES.some((x) => x.key === g);
 
@@ -27,7 +27,7 @@ export const MP_GAMES: MpGame[] = [
   { id: "hauptstaedte", title: "Hauptstädte", desc: "Vier Städte, eine ist die Hauptstadt", titleEn: "Capitals", descEn: "Four cities, one is the capital", bg: "#f3d272", edge: "#c9a43c", light: false },
 ];
 /** The daily games, each round a random puzzle from the archive. */
-export const MP_DAILY = GAMES.filter((g) => g.key !== "spurensuche" && g.key !== "tiefgang").map((g) => ({
+export const MP_DAILY = GAMES.filter((g) => g.key !== "tiefgang").map((g) => ({
   id: g.key as DailyId,
   title: g.title,
   desc: g.tagline,
@@ -36,6 +36,7 @@ export const MP_DAILY = GAMES.filter((g) => g.key !== "spurensuche" && g.key !==
   bg: g.bg,
   edge: g.edge,
   light: false,
+  duelOnly: g.key === "spurensuche",
 }));
 export const gameOf = (id: GameId) => [...MP_GAMES, ...MP_DAILY].find((g) => g.id === id) ?? MP_GAMES[0];
 export const gameTitle = (id: GameId, lang: "de" | "en") => (lang === "en" ? gameOf(id).titleEn : gameOf(id).title);
@@ -98,7 +99,9 @@ export const TIMES = [0, 15, 30, 60];
 /** Daily games: how many puzzles, and minutes rather than seconds. */
 export const DAILY_COUNTS = [1, 3, 5, 10];
 export const DAILY_TIMES = [0, 120, 300, 600];
-export const countsFor = (g: GameId) => (isDaily(g) ? DAILY_COUNTS : COUNTS);
+/** Spurensuche: each round is a whole game of 5 Street View places, so at most 3. */
+export const SPUREN_COUNTS = [1, 2, 3];
+export const countsFor = (g: GameId) => (g === "spurensuche" ? SPUREN_COUNTS : isDaily(g) ? DAILY_COUNTS : COUNTS);
 export const timesFor = (g: GameId) => (isDaily(g) ? DAILY_TIMES : TIMES);
 export const TIEFGANG_DEFAULT_SECS = 30;
 

@@ -410,6 +410,14 @@ window.mountKosher = function (app) {
     document.getElementById("share")?.addEventListener("click", () => share(shareText(right, n, gold, max, marks)));
     if (fresh) {
       FX.count(document.getElementById("bignum"), 0, gold, 1400);
+      // winner / loser animation (public/fx/outcome.js): won from 60 % of the gold
+      const won = ratio >= 0.6;
+      setTimeout(() => window.ktOutcome && window.ktOutcome({
+        win: won,
+        coins: true,
+        title: won ? T("Gewonnen!", "You win!") : T("Verloren", "You lose"),
+        sub: won ? `Mazel tov! ${right}/${n} ${T("richtig", "right")} · ${gold} ${T("Gold", "gold")}` : `Oy vey – ${right}/${n} ${T("richtig", "right")}. ${T("Nochmal?", "Again?")}`,
+      }), 1500);
       if (rich) {
         FX.sound.win();
         FX.rain(Math.round(14 + 26 * ratio), "coin");

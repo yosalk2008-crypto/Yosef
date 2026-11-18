@@ -444,6 +444,13 @@ window.mountHalal = function (app) {
     if (fresh) {
       FX.count(document.getElementById("bignum"), 0, km, 1600);
       driveTo(from, km, 2, () => {
+        // winner / loser animation (public/fx/outcome.js): won from 60 % of the way
+        const won = ratio >= 0.6;
+        window.ktOutcome && window.ktOutcome({
+          win: won,
+          title: won ? T("Gewonnen!", "You win!") : T("Verloren", "You lose"),
+          sub: won ? `Mashallah! ${right}/${n} ${T("richtig", "right")} · ${km} km` : `${right}/${n} ${T("richtig", "right")} – ${T("nächstes Mal klappt’s.", "next time you’ll make it.")}`,
+        });
         if (ratio >= 0.7) FX.sound.win();
         if (ratio >= 0.95) FX.sound.honk();
         if (ratio >= 0.7) FX.rain(Math.round(30 + 50 * ratio), "paper");

@@ -8,6 +8,8 @@ import { distanceKm } from "@/lib/geo";
 import { loadGoogleMaps } from "@/lib/gmaps";
 import { makeRng } from "@/lib/rng";
 import { useDaily } from "@/lib/useDaily";
+import { useMpDaily } from "@/lib/mpDaily";
+import Link from "@/components/Link";
 import { GameShell, ResultCard } from "../GameShell";
 import { SolutionRow, Solutions } from "../Solutions";
 import { useLang, useT } from "@/lib/i18n";
@@ -50,6 +52,7 @@ export function Spurensuche() {
   const lang = useLang();
   const t = useT();
   const { day, isToday, loaded, saved, persist } = useDaily<S>("spurensuche");
+  const mp = useMpDaily(); // 1v1 in a multiplayer room: any archive day may be played
   const { order, headings } = useMemo(() => plan(day), [day]);
   const [targets, setTargets] = useState<Target[] | null>(null);
   const [local, setLocal] = useState<[number, number][] | null>(null);
@@ -86,7 +89,7 @@ export function Spurensuche() {
     let alive = true;
     (async () => {
       try {
-        if (!spurensucheInArchive(day)) {
+        if (!mp && !spurensucheInArchive(day)) {
           if (alive) setBlocked("archiv");
           return;
         }
@@ -452,6 +455,13 @@ export function Spurensuche() {
                 ))}
               </Solutions>
               <ResultCard title={t("Dein Ergebnis", "Your result")} score={`${total} / ${ROUNDS * MAX}`} share={saved?.share || ""} isToday={isToday} current="spurensuche" />
+              {!mp && (
+                <p className="mt-4 text-center">
+                  <Link href="/multiplayer" className="btn-ghost">
+                    {t("Spurensuche 1v1 gegen einen Freund", "Where Am I? 1v1 against a friend")}
+                  </Link>
+                </p>
+              )}
             </>
           )}
         </>

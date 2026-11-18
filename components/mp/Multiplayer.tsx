@@ -16,6 +16,7 @@ import {
   MP_GAMES,
   TIEFGANG_DEFAULT_SECS,
   buildQuestions,
+  loadScript,
   cleanCode,
   colorFor,
   gameOf,
@@ -80,7 +81,7 @@ export function Multiplayer() {
   const urlCode = cleanCode(params.get("code") || "");
   const [me, setMe] = useState("");
   const [name, setName] = useState("");
-  const [joined, setJoined] = useState<{ code: string; host: boolean; duel?: boolean } | null>(null);
+  const [joined, setJoined] = useState<{ code: string; host: boolean; duel?: boolean; game?: GameId } | null>(null);
 
   useEffect(() => {
     setMe(tabId());
@@ -96,12 +97,12 @@ export function Multiplayer() {
     else if (n && sessionStorage.getItem("kt:mp:in") === urlCode) setJoined({ code: urlCode, host: false });
   }, [me, urlCode, joined]);
 
-  const enter = (code: string, host: boolean, duel = false) => {
+  const enter = (code: string, host: boolean, duel = false, game?: GameId) => {
     storeName(name.trim());
     try {
       sessionStorage.setItem("kt:mp:in", code);
     } catch {}
-    setJoined({ code, host, duel });
+    setJoined({ code, host, duel, game });
     router.replace(localHref(lang, `/multiplayer?code=${code}`), { scroll: false });
   };
   const leave = () => {
@@ -114,7 +115,7 @@ export function Multiplayer() {
   };
 
   if (!me) return <div className="min-h-[60vh]" aria-busy="true" />;
-  if (joined) return <Room key={joined.code} code={joined.code} me={me} name={name.trim()} host={joined.host} duel={!!joined.duel} onLeave={leave} />;
+  if (joined) return <Room key={joined.code} code={joined.code} me={me} name={name.trim()} host={joined.host} duel={!!joined.duel} game={joined.game} onLeave={leave} />;
   return <Start name={name} setName={setName} initialCode={urlCode} onEnter={enter} />;
 }
 
@@ -122,7 +123,7 @@ export function Multiplayer() {
 // Start screen
 // ======================================================================
 
-function Start({ name, setName, initialCode, onEnter }: { name: string; setName: (s: string) => void; initialCode: string; onEnter: (code: string, host: boolean, duel?: boolean) => void }) {
+function Start({ name, setName, initialCode, onEnter }: { name: string; setName: (s: string) => void; initialCode: string; onEnter: (code: string, host: boolean, duel?: boolean, game?: GameId) => void }) {
   const lang = useLang();
   const t = useT();
   const [code, setCode] = useState(initialCode);
@@ -130,11 +131,11 @@ function Start({ name, setName, initialCode, onEnter }: { name: string; setName:
   const invited = validCode(initialCode);
   const problem = name.trim() ? nameProblem(name, lang) : t("Gib zuerst deinen Namen ein.", "Enter your name first.");
 
-  const go = (c: string, host: boolean, duel = false) => {
+  const go = (c: string, host: boolean, duel = false, game?: GameId) => {
     if (problem) return setErr(problem);
     if (!host && !validCode(c)) return setErr(t("Der Code hat 5 Zeichen, zum Beispiel K7QXM.", "The code has 5 characters, e.g. K7QXM."));
     setErr("");
-    onEnter(c, host, duel);
+    onEnter(c, host, duel, game);
   };
 
   return (
@@ -191,9 +192,15 @@ function Start({ name, setName, initialCode, onEnter }: { name: string; setName:
           <div className="card flex flex-col p-5">
             <h2 className="text-2xl font-semibold">{t("1v1 gegen einen Freund", "1v1 against a friend")}</h2>
             <p className="mt-1 flex-1 text-muted">{t("Nur ihr zwei. Du wählst das Spiel, schickst deinem Freund den Code und ihr spielt gegeneinander.", "Just the two of you. You pick the game, send your friend the code and play head to head.")}</p>
-            <button type="button" className="btn-primary mt-4" onClick={() => go(newCode(), true, true)}>
-              {t("1v1 starten", "Start a 1v1")}
-            </button>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button type="button" className="btn-primary" onClick={() => go(newCode(), true, true)}>
+                {t("1v1 starten", "Start a 1v1")}
+              </button>
+              <button type="button" className="btn-ghost" onClick={() => go(newCode(), true, true, "spurensuche")}>
+                {t("Spurensuche 1v1", "Where Am I? 1v1")}
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-muted">{t("Spurensuche gibt es nur im 1v1: gleiche Orte in Street View, wer näher tippt, gewinnt.", "Where Am I? is 1v1 only: the same Street View places, whoever guesses closer wins.")}</p>
           </div>
         </div>
       )}
@@ -293,7 +300,7 @@ function OpenServers({ onJoin }: { onJoin: (code: string) => void }) {
 
 type Conn = "verbinde" | "ok" | "fehlt" | "weg" | "zu" | "fehler";
 
-function freshState(code: string, me: string, name: string, duel = false): RoomState {
+function freshState(code: string, me: string, name: string, duel = false, game: GameId = "koscher"): RoomState {
   return {
     seq: 0,
     round: 0,
@@ -303,8 +310,8 @@ function freshState(code: string, me: string, name: string, duel = false): RoomS
     pub: !duel,
     duel,
     rival: "",
-    game: "koscher",
-    n: 10,
+    game,
+    n: isDaily(game) ? 1 : 10,
     secs: 0,
     phase: "lobby",
     i: 0,
@@ -326,7 +333,7 @@ function onlyPlayers(s: RoomState, m: Record<string, Member>) {
   return Object.fromEntries(Object.entries(m).filter(([id]) => plays(s, id)));
 }
 
-function Room({ code, me, name, host, duel, onLeave }: { code: string; me: string; name: string; host: boolean; duel: boolean; onLeave: () => void }) {
+function Room({ code, me, name, host, duel, game, onLeave }: { code: string; me: string; name: string; host: boolean; duel: boolean; game?: GameId; onLeave: () => void }) {
   const lang = useLang();
   const t = useT();
   const [st, setSt] = useState<RoomState | null>(null);
@@ -487,7 +494,7 @@ function Room({ code, me, name, host, duel, onLeave }: { code: string; me: strin
 
   useEffect(() => {
     if (host) {
-      H.current = loadHost(code) ?? { st: freshState(code, me, name, duel), qs: [], answers: {} };
+      H.current = loadHost(code) ?? { st: freshState(code, me, name, duel, game), qs: [], answers: {} };
       setSt(H.current.st);
     }
     const c = realtime().channel(`kt:room:${code}`, { config: { broadcast: { self: false }, presence: { key: me } } });
@@ -525,7 +532,7 @@ function Room({ code, me, name, host, duel, onLeave }: { code: string; me: strin
       ch.current = null;
       realtime().removeChannel(c);
     };
-  }, [code, me, name, host, duel, joinedAt, checkAll, onAnswer, rebroadcast, seat]);
+  }, [code, me, name, host, duel, game, joinedAt, checkAll, onAnswer, rebroadcast, seat]);
 
   // players: ask for the state until it arrives
   useEffect(() => {
@@ -825,7 +832,7 @@ function LobbyView({
           <h3 className="mt-6 text-xl font-semibold">{t("Tägliche Spiele", "Daily games")}</h3>
           <p className="text-[15px] text-muted">{t("Jede Runde ist ein zufälliges Rätsel aus dem Archiv. Wenn alle fertig sind, vergleicht ihr eure Ergebnisse.", "Each round is a random puzzle from the archive. Once everyone is done, you compare your results.")}</p>
           <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            {MP_DAILY.map((x) => {
+            {MP_DAILY.filter((x) => !x.duelOnly || st.duel).map((x) => {
               const on = x.id === st.game;
               return (
                 <button
@@ -1475,6 +1482,44 @@ function EndView({ st, me, host, onLobby }: { st: RoomState; me: string; host: b
   const winners = Object.entries(st.scores)
     .filter(([, p]) => p === best)
     .map(([id]) => st.names[id] ?? "?");
+
+  // winner / loser animation (public/fx/outcome.js), once per game for everyone who played
+  useEffect(() => {
+    const mine = st.scores[me];
+    if (mine == null) return;
+    const key = `kt-mp-outcome:${st.code}:${st.round}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {}
+    const place = 1 + Object.values(st.scores).filter((p) => p > mine).length;
+    const tie = mine === best && winners.length > 1;
+    const win = mine === best;
+    const n = Object.keys(st.scores).length;
+    loadScript("/fx/outcome.js?v=1")
+      .then(() => {
+        const w = window as unknown as { ktOutcome?: (o: object) => void };
+        w.ktOutcome?.({
+          win,
+          coins: st.game === "koscher",
+          place: n > 2 ? String(place) : undefined,
+          title: tie ? t("Unentschieden!", "It’s a draw!") : win ? t("Du hast gewonnen!", "You win!") : t("Verloren", "You lose"),
+          sub: tie
+            ? t(`Gleichstand mit ${best} Punkten`, `Level on ${best} points`)
+            : win
+              ? st.duel
+                ? t(`Du schlägst ${Object.keys(st.scores).filter((id) => id !== me).map((id) => st.names[id] ?? "?")[0] ?? ""} mit ${mine} Punkten`, `You beat ${Object.keys(st.scores).filter((id) => id !== me).map((id) => st.names[id] ?? "?")[0] ?? ""} with ${mine} points`)
+                : t(`Platz 1 von ${n} – ${mine} Punkte`, `1st of ${n} – ${mine} points`)
+              : n > 2
+                ? t(`Platz ${place} von ${n} – ${mine} Punkte. ${winners[0]} gewinnt.`, `${place}${place === 2 ? "nd" : place === 3 ? "rd" : "th"} of ${n} – ${mine} points. ${winners[0]} wins.`)
+                : t(`${winners[0]} gewinnt mit ${best} zu ${mine}`, `${winners[0]} wins ${best} to ${mine}`),
+          close: t("Tippen zum Schließen", "Tap to close"),
+        });
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [st.code, st.round]);
+
   return (
     <div className="mt-6">
       <div className="chunk px-5 py-7 text-center" style={{ background: "#f3d272", ["--edge" as string]: "#c9a43c" }}>
@@ -1530,7 +1575,7 @@ const serverName = (title: string, lang: Lang) => {
 function switchTo(st: RoomState, game: GameId): Partial<RoomState> {
   const counts = countsFor(game);
   const times = timesFor(game);
-  const n = counts.includes(st.n) ? st.n : isDaily(game) ? 3 : 10;
+  const n = counts.includes(st.n) ? st.n : game === "spurensuche" ? 1 : isDaily(game) ? 3 : 10;
   let secs = times.includes(st.secs) ? st.secs : 0;
   if (game === "tiefgang" && !secs) secs = TIEFGANG_DEFAULT_SECS;
   return { game, n, secs };
