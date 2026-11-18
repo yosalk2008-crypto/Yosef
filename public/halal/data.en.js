@@ -824,5 +824,55 @@ window.HALAL_EN = {
 "Looking left and right during the prayer",
 "Aisha asked the Prophet ﷺ about looking around during prayer. He answered that it is a theft by which Satan snatches away part of a person’s prayer. One should concentrate on the prayer.",
 "Sahih al-Bukhari 751"
+],
+"Einem Mitschüler helfen, der beim Lernen nicht mitkommt": [
+"Helping a classmate who is struggling to keep up with learning",
+"The Prophet ﷺ said: Allah helps His servant as long as the servant helps his brother. And whoever takes a path in search of knowledge, Allah makes the path to Paradise easy for him.",
+"Sahih Muslim 2699"
+],
+"Auf Instagram mit teuren Sachen angeben, die man gar nicht besitzt": [
+"Showing off on Instagram with expensive things you do not even own",
+"The Prophet ﷺ said: whoever pretends to have been given what he has not been given is like someone wearing two garments of falsehood. Creating a false impression is deception.",
+"Sahih al-Bukhari 5219 · Sahih Muslim 2130"
+],
+"Mit Freunden am Straßenrand abhängen": [
+"Hanging out with friends at the roadside",
+"The Prophet ﷺ advised against sitting on the roads. When the companions said they needed these meeting places, he allowed it – as long as you give the road its rights: lowering your gaze, not bothering anyone, returning greetings and encouraging what is good.",
+"Sahih al-Bukhari 2465 · Sahih Muslim 2121"
+],
+"Kuhmilch trinken": [
+"Drinking cow's milk",
+"The Quran calls the milk of livestock a sign of Allah: pure and pleasant for those who drink it.",
+"Quran 16:66 with Tafsir Ibn Kathir"
+],
+"Fleisch essen, das bei der Schlachtung einem Götzen geweiht wurde": [
+"Eating meat that was dedicated to an idol when the animal was slaughtered",
+"The Quran explicitly forbids meat over which a name other than Allah's was invoked, and what was slaughtered on stone altars for idols.",
+"Quran 2:173 with Tafsir Ibn Kathir · Quran 5:3 with Tafsir Ibn Kathir"
+],
+"Fleisch essen, das Juden oder Christen geschlachtet haben": [
+"Eating meat slaughtered by Jews or Christians",
+"The Quran permits the food of the People of the Book. Scholars disagree, however, whether today's slaughter meets these conditions – some permit the meat, others require that the animal was slaughtered properly and Allah's name was mentioned.",
+"Quran 5:5 with Tafsir Ibn Kathir"
+],
+"Einem Tier ins Gesicht schlagen": [
+"Hitting an animal in the face",
+"Jabir reported that the Prophet ﷺ forbade hitting animals in the face or branding them on the face.",
+"Sahih Muslim 2116"
+],
+"Einen Obstbaum im Garten pflanzen": [
+"Planting a fruit tree in the garden",
+"The Prophet ﷺ said: if a Muslim plants a tree and then a bird, a person or an animal eats from it, it counts as charity (sadaqa) for him.",
+"Sahih al-Bukhari 2320 · Sahih Muslim 1553"
+],
+"Ohne Wudu beten": [
+"Praying without wudu",
+"The Quran prescribes the ritual washing before prayer. The Prophet ﷺ said: the prayer of someone who has become impure is not accepted until he performs wudu.",
+"Quran 5:6 with Tafsir Ibn Kathir · Sahih al-Bukhari 135 · Sahih Muslim 225"
+],
+"Im Ramadan das Fastenbrechen absichtlich hinauszögern, obwohl die Sonne schon untergegangen ist": [
+"Deliberately delaying breaking the fast in Ramadan even though the sun has already set",
+"The Prophet ﷺ said: people will remain in good as long as they hasten to break the fast. It is Sunnah to break the fast right after sunset.",
+"Sahih al-Bukhari 1957 · Sahih Muslim 1098"
 ]
 };

@@ -824,5 +824,55 @@ window.QUESTIONS_EN = {
 "Dipping an apple in honey and eating it on Rosh Hashanah",
 "Many communities eat a sweet apple with honey on Rosh Hashanah – as a sign for a good, sweet new year. It is a widespread custom, not a commandment from the Torah.",
 "Rema on Orach Chayim 583:1"
+],
+"Einem Freund versprechen, ihm beim Lernen zu helfen, und es dann ohne Grund nicht tun": [
+"Promising a friend to help them study and then not doing it for no reason",
+"The Talmud derives from the Torah: your yes should be an honest yes and your no an honest no. You should not promise something you do not really mean.",
+"Talmud, Bava Metzia 49a"
+],
+"Für ein cooles Video auf einen fahrenden Zug klettern": [
+"Climbing onto a moving train for a cool video",
+"Protecting your own life is an obligation in halacha. The Talmud even says that danger is more serious than a prohibition – so dangerous dares are not allowed.",
+"Talmud, Chullin 10a"
+],
+"Einem Mitschüler, der sich gebessert hat, ständig seine alten Fehler vorhalten": [
+"Constantly reminding a classmate who has changed for the better of their old mistakes",
+"The Mishnah counts this as hurtful speech (ona'at devarim): you may not say to someone who has repented and changed, “Remember what you used to do.”",
+"Talmud, Bava Metzia 58b"
+],
+"Forelle essen": [
+"Eating trout",
+"Trout has fins and scales – the two signs the Torah requires for fish. That is why it is kosher.",
+"Leviticus 11:9"
+],
+"Blut aus dem eigenen Zahnfleisch herunterschlucken": [
+"Swallowing blood from your own gums",
+"Animal blood is forbidden, and the rabbis forbade human blood once it has left the body (for example on a piece of bread). According to the Talmud, however, blood from your gums that is still in your mouth may simply be swallowed.",
+"Talmud, Ketubot 60a"
+],
+"Einen großen Brotteig backen, ohne ein Stück Teig (Challa) abzutrennen": [
+"Baking a large batch of bread dough without separating a piece of dough (challah)",
+"The Torah commands giving away a portion of the dough. From a certain amount of dough, a small piece is therefore separated before baking – only then may the bread be eaten.",
+"Numbers 15:20"
+],
+"Ein paar verstreute Münzen auf dem Gehweg finden und behalten": [
+"Finding a few scattered coins on the sidewalk and keeping them",
+"The Mishnah lists scattered coins among the finds you may keep: they have no identifying mark, and the owner has long given them up. It is different if you know who something belongs to.",
+"Talmud, Bava Metzia 21a"
+],
+"Im Laden nach dem Preis fragen, obwohl man gar nicht vorhat, etwas zu kaufen": [
+"Asking about the price in a shop even though you have no intention of buying anything",
+"The Mishnah forbids asking a seller for the price if you do not want to buy. It raises false hopes – this too counts as hurtful speech.",
+"Talmud, Bava Metzia 58b"
+],
+"Am Schabbat Wäsche in der Waschmaschine waschen": [
+"Doing laundry in the washing machine on Shabbat",
+"Washing and cleaning fabric (melaben) is one of the 39 kinds of work forbidden on Shabbat. On top of that, you would have to switch the machine on.",
+"Talmud, Shabbat 73a"
+],
+"Am Sederabend vier Becher Wein trinken": [
+"Drinking four cups of wine at the Seder",
+"The Mishnah says that at the Seder everyone, even the poorest, should drink at least four cups of wine – as a sign of freedom. Today many also use grape juice.",
+"Talmud, Pesachim 99b"
 ]
 };
