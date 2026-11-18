@@ -86,7 +86,8 @@ export function Gipfelsturm({ mode }: { mode: "daily" | "endlos" }) {
   useEffect(() => {
     if (mode !== "daily" || !daily.loaded || !puzzle) return;
     const s = daily.saved?.state;
-    if (!s) return;
+    // a climb saved for another theme (until 18.11. football days) no longer fits the puzzle – start fresh
+    if (!s || s.used.some((id) => !th.theme.byId.has(id))) return;
     setUsed(s.used);
     setSecs(s.secs ?? []);
     setGiveUp(!!s.giveUp);
@@ -312,7 +313,7 @@ export function Gipfelsturm({ mode }: { mode: "daily" | "endlos" }) {
             <li>{t("7 Fragen, 7 Lager bis zum Krater. Jede richtige Antwort bringt dich ein Lager höher – läuft die Uhr ab, bricht der Vulkan aus.", "7 questions, 7 camps up the volcano. Every right answer takes you one camp higher.")}</li>
             <li><strong>{t("Jede Antwort zählt nur einmal.", "Every answer counts only once.")}</strong> {t("Die ersten Fragen haben viele Lösungen, die letzten nur noch ein, zwei – oft genau die berühmte, die du am Anfang verbraucht hast.", "The first questions have many answers, the last ones only one or two – often the famous one you spent early on.")}</li>
             <li>{isTimed ? t("25 Sekunden pro Frage, die Uhr startet nach 2 Sekunden Lesezeit. Falsche Antworten kosten nichts – nur die Zeit läuft weiter.", "25 seconds per question; the clock starts after 2 seconds of reading. Wrong answers cost nothing – the clock just keeps running.") : t("Ohne Zeitlimit – nimm dir Zeit.", "No time limit – take your time.")}</li>
-            {mode === "daily" && <li>{t("Ein Versuch pro Tag. Länder und Fußball wechseln sich ab.", "One try per day. Countries and football take turns.")}</li>}
+            {mode === "daily" && <li>{t("Ein Versuch pro Tag, immer zu Ländern. Fußball gibt es im Endlos-Modus.", "One try per day, always about countries. Football is in the endless mode.")}</li>}
           </ul>
           {mode === "endlos" && (
             <div className="mt-4 flex flex-wrap items-center gap-2">

@@ -1,4 +1,3 @@
-import { dayNumber } from "@/lib/daily";
 import { buildIndex, buildPuzzle, type Index, type Puzzle, type Theme, type ThemeKey } from "./core";
 import { fussballTheme } from "./fussball";
 import { laenderTheme } from "./laender";
@@ -18,7 +17,7 @@ export function theme(k: ThemeKey) {
   return c;
 }
 
-/** Daily theme: countries and football take turns. */
-export const dailyTheme = (day: string): ThemeKey => (dayNumber(day) % 2 === 0 ? "laender" : "fussball");
+/** Daily theme: always countries (football only in the endless mode). */
+export const dailyTheme = (_day: string): ThemeKey => "laender";
 export const dailyPuzzle = (day: string): Puzzle => buildPuzzle(theme(dailyTheme(day)).theme, `tag:${day}`);
 export const randomPuzzle = (k: ThemeKey, seed = Math.random().toString(36).slice(2)): Puzzle => buildPuzzle(theme(k).theme, `frei:${seed}`);
