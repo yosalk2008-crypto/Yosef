@@ -1,0 +1,182 @@
+{
+ "2026-11-18": {
+  "qs": [
+   "area>1000000",
+   "kont-Asien+cap>5e6",
+   "kont-Asien+area>500000",
+   "kont-Asien+grenze-TUR",
+   "sub-Southern Asia+pop>50000000",
+   "sub-Southern Asia+grenze-AFG",
+   "sub-Southern Asia+grenze-TUR"
+  ],
+  "path": [
+   "EGY",
+   "AFG",
+   "CHN",
+   "ARM",
+   "BGD",
+   "PAK",
+   "IRN"
+  ]
+ },
+ "2026-11-19": {
+  "qs": [
+   "pop>30000000",
+   "pop>50000000",
+   "top-life",
+   "top-gdp",
+   "top-airports",
+   "kont-Europa+top-rail",
+   "sub-Western Europe+grenze-ESP"
+  ],
+  "path": [
+   "AFG",
+   "EGY",
+   "MCO",
+   "CHN",
+   "USA",
+   "DEU",
+   "FRA"
+  ]
+ },
+ "2026-11-20": {
+  "qs": [
+   "insel",
+   "area<1e3",
+   "top-tour",
+   "kont-Asien+area<3e4",
+   "sub-South-Eastern Asia+cap>5e6",
+   "kont-Asien+top-gdppc",
+   "sub-South-Eastern Asia+top-life"
+  ],
+  "path": [
+   "ATG",
+   "AND",
+   "FRA",
+   "ARM",
+   "IDN",
+   "QAT",
+   "SGP"
+  ]
+ },
+ "2026-11-21": {
+  "qs": [
+   "cap>5e6",
+   "kont-Asien+pop>30000000",
+   "nachbarn7",
+   "kont-Asien+pop>50000000",
+   "kont-Asien+top-pop",
+   "sub-Eastern Asia+pop>100000000",
+   "sub-Eastern Asia+insel"
+  ],
+  "path": [
+   "EGY",
+   "AFG",
+   "BRA",
+   "BGD",
+   "IND",
+   "CHN",
+   "JPN"
+  ]
+ },
+ "2026-11-22": {
+  "qs": [
+   "area>500000",
+   "pop>100000000",
+   "grenze-CHN",
+   "grenze-IRN",
+   "kont-Asien+top-tour",
+   "sub-Southern Asia+area>1000000",
+   "sub-Southern Asia+top-rail"
+  ],
+  "path": [
+   "EGY",
+   "ETH",
+   "BTN",
+   "AFG",
+   "CHN",
+   "IRN",
+   "IND"
+  ]
+ },
+ "2026-11-23": {
+  "qs": [
+   "kont-Europa",
+   "binnen",
+   "kont-Nordamerika",
+   "top-age",
+   "grenze-POL",
+   "sub-Central Europe+grenze-DEU",
+   "sub-Central Europe+grenze-HUN"
+  ],
+  "path": [
+   "ALB",
+   "AFG",
+   "ATG",
+   "MCO",
+   "BLR",
+   "POL",
+   "AUT"
+  ]
+ },
+ "2026-11-24": {
+  "qs": [
+   "kont-Asien",
+   "grenze-RUS",
+   "kont-Ozeanien+insel",
+   "top-elev",
+   "top-rail",
+   "grenze-MMR",
+   "sub-Eastern Asia+pop>50000000"
+  ],
+  "path": [
+   "AFG",
+   "AZE",
+   "AUS",
+   "NPL",
+   "USA",
+   "BGD",
+   "CHN"
+  ]
+ },
+ "2026-11-25": {
+  "qs": [
+   "area<3e4",
+   "pop<1e6",
+   "sub-Western Asia",
+   "top-coast",
+   "sub-Southern Asia",
+   "kont-Asien+top-life",
+   "kont-Asien+area<1e3"
+  ],
+  "path": [
+   "ALB",
+   "AND",
+   "ARM",
+   "CAN",
+   "AFG",
+   "JPN",
+   "BHR"
+  ]
+ },
+ "2026-11-26": {
+  "qs": [
+   "age>40",
+   "net>90",
+   "kont-Asien+grenze-CHN",
+   "sub-Western Africa+life<65",
+   "top-pop",
+   "grenze-KAZ",
+   "kont-Europa+pop>100000000"
+  ],
+  "path": [
+   "BRB",
+   "AND",
+   "AFG",
+   "BEN",
+   "IND",
+   "CHN",
+   "RUS"
+  ]
+ }
+}

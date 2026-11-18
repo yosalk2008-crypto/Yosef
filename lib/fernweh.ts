@@ -9,6 +9,7 @@ import { BY_ID, CONTINENT_EN, SUBREGION_DE, type Country } from "@/lib/data/coun
 import { rng } from "@/lib/gipfel/core";
 import { LAND, LEFT_OUT, clauses, join, type Clause } from "@/lib/gipfel/laender";
 import { KREATIV } from "@/lib/fernweh-kreativ";
+import plan from "@/lib/data/tagesplan/fernweh.json";
 
 export const CLUES_PER_DAY = 5;
 export const KM = [40, 55, 70, 85, 100] as const;
@@ -78,29 +79,29 @@ export function tierOf(clue: Clue, id: string): number {
 }
 export const kmOf = (clue: Clue, id: string | null) => (id && clue.ids.includes(id) ? KM[tierOf(clue, id)] : 0);
 
+/** The day plan (lib/data/tagesplan/fernweh.json): five clue keys per day, no clue twice. */
+export const PLAN = plan as Record<string, string[]>;
+export function usedKeys(except?: string) {
+  const s = new Set<string>();
+  for (const [d, keys] of Object.entries(PLAN)) if (d !== except) keys.forEach((k) => s.add(k));
+  return s;
+}
+
 /**
- * Five different creative clues for a day (or an endless round). Daily expeditions walk through a fixed
- * shuffle of the pool, so a clue only comes back after every other one has been played.
+ * Five creative clues: the planned ones for a day ("tag:YYYY-MM-DD"), otherwise five random ones
+ * (endless). An unplanned day (the plan task did not run) takes clues no other day has used.
  */
 export function expedition(seed: string): Clue[] {
   const pool = creativePool();
   const m = /^tag:(\d{4}-\d{2}-\d{2})$/.exec(seed);
-  if (m) {
-    const day = Math.floor(Date.parse(m[1]) / 86400000);
-    const per = CLUES_PER_DAY;
-    const cycleLen = Math.floor(pool.length / per);
-    const cycle = Math.floor(day / cycleLen);
-    const r = rng(`fernweh:zyklus:${cycle}`);
-    const order = pool.map((_, i) => i);
-    for (let i = order.length - 1; i > 0; i--) {
-      const j = Math.floor(r() * (i + 1));
-      [order[i], order[j]] = [order[j], order[i]];
-    }
-    const at = (day % cycleLen) * per;
-    return order.slice(at, at + per).map((i) => pool[i]);
+  const byKey = new Map(pool.map((c) => [c.key, c]));
+  if (m && PLAN[m[1]]) {
+    const qs = PLAN[m[1]].map((k) => byKey.get(k));
+    if (qs.every(Boolean)) return qs as Clue[];
   }
   const r = rng(`fernweh:${seed}`);
-  const left = [...pool];
+  let left = m ? pool.filter((c) => !usedKeys(m[1]).has(c.key)) : [...pool];
+  if (left.length < CLUES_PER_DAY) left = [...pool];
   const picked: Clue[] = [];
   while (picked.length < CLUES_PER_DAY && left.length) picked.push(left.splice(Math.floor(r() * left.length), 1)[0]);
   return picked;

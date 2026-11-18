@@ -6,6 +6,7 @@ import { BY_ID, COUNTRIES, CONTINENT_EN, CONTINENTS, SUBREGION_DE, type Country 
 import { BEKANNTHEIT } from "@/lib/data/bekanntheit";
 import { KENNZAHLEN, type Kennzahl } from "@/lib/data/kennzahlen";
 import type { Entity, Pred, Theme } from "./core";
+import { GIPFEL_EXTRA } from "./laender-extra";
 
 /** Never an answer here (no Middle East conflict in the quizzes); typing them just says "doesn't count". */
 export const LEFT_OUT = new Set(["ISR", "PSE"]);
@@ -49,6 +50,29 @@ export function clauses(): Clause[] {
     const s = c.borders.filter((b) => !LEFT_OUT.has(b));
     if (s.length >= 3) out.push({ key: `grenze-${y}`, de: `mit einer Landgrenze zu ${c.n}`, en: `bordering ${c.nEn}`, ids: s });
   }
+  // more single facts from the same data (added 18.11. so the daily climbs never repeat a question)
+  const n = (v: number | null | undefined) => (v == null || Number.isNaN(v) ? null : v);
+  const more: [string, string, string, (c: Country) => boolean, string?][] = [
+    ["gdppc>30000", "mit mehr als 30.000 US-$ Wirtschaftsleistung pro Kopf", "with a GDP per person above US$30,000", (c) => (n(c.gdppc) ?? 0) > 30000, "Weltbank"],
+    ["gdppc<2000", "mit weniger als 2.000 US-$ Wirtschaftsleistung pro Kopf", "with a GDP per person below US$2,000", (c) => n(c.gdppc) != null && c.gdppc! < 2000, "Weltbank"],
+    ["life>80", "mit einer Lebenserwartung von über 80 Jahren", "with a life expectancy above 80 years", (c) => (n(c.life) ?? 0) > 80, "Weltbank"],
+    ["life<65", "mit einer Lebenserwartung von unter 65 Jahren", "with a life expectancy below 65 years", (c) => n(c.life) != null && c.life! < 65, "Weltbank"],
+    ["forest>50", "das zu mehr als der Hälfte bewaldet ist", "that is more than half covered by forest", (c) => (n(c.forest) ?? 0) > 50, "Weltbank"],
+    ["forest<10", "mit weniger als 10 % Wald", "with less than 10 % forest", (c) => n(c.forest) != null && c.forest! < 10, "Weltbank"],
+    ["urban>80", "in dem mehr als 80 % der Menschen in Städten leben", "where more than 80 % of people live in cities", (c) => (n(c.urban) ?? 0) > 80, "Weltbank"],
+    ["urban<40", "in dem weniger als 40 % der Menschen in Städten leben", "where less than 40 % of people live in cities", (c) => n(c.urban) != null && c.urban! < 40, "Weltbank"],
+    ["nachbarn5", "mit mindestens fünf Nachbarländern", "with at least five neighbouring countries", (c) => c.borders.length >= 5],
+    ["pop>20000000", "mit mehr als 20 Millionen Einwohnern", "with more than 20 million people", (c) => (c.pop ?? 0) > 20e6, "Weltbank"],
+    ["cap<500000", "dessen Hauptstadt weniger als 500.000 Einwohner hat", "whose capital has fewer than 500,000 people", (c) => c.capPop != null && c.capPop < 5e5],
+    ["age>40", "mit einem Durchschnittsalter von über 40 Jahren", "with a median age above 40", (c) => (KENNZAHLEN[c.id]?.age ?? 0) > 40, "CIA World Factbook"],
+    ["birth>30", "mit mehr als 30 Geburten pro 1.000 Einwohner im Jahr", "with more than 30 births per 1,000 people a year", (c) => (KENNZAHLEN[c.id]?.birth ?? 0) > 30, "CIA World Factbook"],
+    ["elev>3000", "dessen höchster Berg über 3.000 m hoch ist", "whose highest mountain is over 3,000 m", (c) => (KENNZAHLEN[c.id]?.elev ?? 0) > 3000, "CIA World Factbook"],
+    ["elev<1000", "dessen höchster Punkt unter 1.000 m liegt", "whose highest point is below 1,000 m", (c) => KENNZAHLEN[c.id]?.elev != null && KENNZAHLEN[c.id]!.elev! < 1000, "CIA World Factbook"],
+    ["net>90", "in dem mehr als 90 % der Menschen das Internet nutzen", "where more than 90 % of people use the internet", (c) => (KENNZAHLEN[c.id]?.net ?? 0) > 90, "CIA World Factbook"],
+    ["net<40", "in dem weniger als 40 % der Menschen das Internet nutzen", "where less than 40 % of people use the internet", (c) => KENNZAHLEN[c.id]?.net != null && KENNZAHLEN[c.id]!.net! < 40, "CIA World Factbook"],
+    ["coast>3000", "mit mehr als 3.000 km Küste", "with more than 3,000 km of coastline", (c) => (KENNZAHLEN[c.id]?.coast ?? 0) > 3000, "CIA World Factbook"],
+  ];
+  for (const [key, de, en, f, src] of more) out.push({ key, de, en, ids: ids(f), src });
   // world rankings (all countries ranked, then only the allowed ones kept)
   const top = (key: string, n: number, val: (c: Country) => number | null | undefined, de: string, en: string, src: string) => {
     const ranked = ALL.filter((c) => val(c) != null && !Number.isNaN(val(c))).sort((a, b) => (val(b) as number) - (val(a) as number));
@@ -96,6 +120,7 @@ export function laenderTheme(): Theme {
       if (!both.length || both.length === a.ids.length || both.length === b.ids.length) continue;
       preds.push({ key: `${a.key}+${b.key}`, de: `Nenne ein Land ${join(a, b, "de")}.`, en: `Name a country ${join(a, b, "en")}.`, ids: both, parts: [a.key, b.key], src: b.src });
     }
+  for (const x of GIPFEL_EXTRA) preds.push({ key: x.key, de: x.de, en: x.en, ids: x.ids.filter((id) => !LEFT_OUT.has(id)), parts: [x.key], src: x.src });
   preds.sort((a, b) => (a.key < b.key ? -1 : 1));
   return {
     key: "laender",

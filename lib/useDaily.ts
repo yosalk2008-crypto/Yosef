@@ -11,7 +11,7 @@ import { mpLoad, mpSave, useMpDaily } from "./mpDaily";
  */
 export function useDaily<S>(game: GameKey) {
   const mp = useMpDaily();
-  const real = useDay();
+  const real = useDay(game);
   const day = mp ? mp.day : real.day;
   const isToday = mp ? false : real.isToday;
   const ready = mp ? true : real.ready;

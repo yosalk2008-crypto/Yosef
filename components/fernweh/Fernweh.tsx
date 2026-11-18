@@ -8,7 +8,7 @@
  */
 import Link from "@/components/Link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { allResults, dayNumber, msUntilNextDay, utcDate } from "@/lib/daily";
+import { allResults, dayNumber, msUntilNextDay, startFor, todayFor } from "@/lib/daily";
 import { useDaily } from "@/lib/useDaily";
 import { useLang, useT } from "@/lib/i18n";
 import { BY_ID_ALL, cName } from "@/lib/data/countries";
@@ -668,7 +668,7 @@ function Logbook() {
         .slice(0, 14)
     );
   }, []);
-  const today = utcDate();
+  const today = todayFor("fernweh");
   return (
     <section className="mt-8">
       <h2 className="fw-title !text-[26px]">{t("Logbuch", "Logbook")}</h2>
@@ -682,7 +682,7 @@ function Logbook() {
         ))}
         {[1, 2, 3].map((k) => {
           const d = new Date(Date.parse(today) - k * 86400000).toISOString().slice(0, 10);
-          return rows.some((r) => r.day === d) ? null : (
+          return rows.some((r) => r.day === d) || d < startFor("fernweh") ? null : (
             <Link key={d} href={`/fernweh?tag=${d}`} className="fw-opt opacity-80">
               Nr. {dayNumber(d)} · {t("nachholen", "catch up")}
             </Link>
@@ -698,7 +698,7 @@ function NextExpedition() {
   const [left, setLeft] = useState("");
   useEffect(() => {
     const tick = () => {
-      const ms = msUntilNextDay();
+      const ms = msUntilNextDay("fernweh");
       setLeft(`${Math.floor(ms / 3600000)}:${String(Math.floor((ms % 3600000) / 60000)).padStart(2, "0")}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`);
     };
     tick();

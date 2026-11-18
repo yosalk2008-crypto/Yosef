@@ -3,7 +3,7 @@
 import { LeaderboardJoin } from "./LeaderboardJoin";
 import Link from "@/components/Link";
 import { useEffect, useState } from "react";
-import { dayNumber, formatDay, msUntilNextDay, utcDate, type GameKey } from "@/lib/daily";
+import { dayNumber, formatDay, msUntilNextDay, todayFor, type GameKey } from "@/lib/daily";
 import { GAME_BY_KEY, GAMES, gTitle } from "@/lib/games";
 import { useLang, useT } from "@/lib/i18n";
 import { Icon } from "./Icon";
@@ -139,7 +139,7 @@ export function ResultCard({
   const [left, setLeft] = useState("");
   useEffect(() => {
     const tick = () => {
-      const ms = msUntilNextDay();
+      const ms = msUntilNextDay(current);
       const h = Math.floor(ms / 3600000);
       const m = Math.floor((ms % 3600000) / 60000);
       const s = Math.floor((ms % 60000) / 1000);
@@ -183,7 +183,7 @@ export function ResultCard({
         </Link>
       </div>
       {isToday && <p className="mt-4 text-sm text-muted">{t("Nächstes Rätsel in", "Next puzzle in")} {left}</p>}
-      <LeaderboardJoin day={utcDate()} game={current} isToday={isToday} />
+      <LeaderboardJoin day={todayFor(current)} game={current} isToday={isToday} />
       <div className="mt-5 border-t-2 border-line pt-4">
         <p className="mb-2 text-sm font-semibold">{t("Weiterspielen", "Keep playing")}</p>
         <div className="flex flex-wrap gap-2">

@@ -44,9 +44,36 @@ export function addDays(date: string, n: number): string {
   return new Date(t).toISOString().slice(0, 10);
 }
 
-export function isValidDay(date: string | null | undefined): date is string {
+/**
+ * Fernweh and Gipfelsturm switch to the next puzzle at 07:50 German time (not at midnight UTC) and
+ * start on their launch day: every day has its own puzzle from the day plan, no question twice.
+ */
+export const SWITCH_0750: Partial<Record<GameKey, string>> = { fernweh: "2026-11-18", gipfelsturm: "2026-11-18" };
+const SWITCH_MIN = 7 * 60 + 50;
+
+function berlinParts(now: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).formatToParts(now);
+  const g = (t: string) => parts.find((p) => p.type === t)?.value ?? "0";
+  return { date: `${g("year")}-${g("month")}-${g("day")}`, h: +g("hour"), m: +g("minute"), s: +g("second") };
+}
+
+/** The puzzle day that is live at `now` for a game that switches at 07:50 German time. */
+export function day0750(now = new Date()): string {
+  const b = berlinParts(now);
+  return b.h * 60 + b.m < SWITCH_MIN ? addDays(b.date, -1) : b.date;
+}
+
+/** Today's puzzle day for a game (07:50 German time for Fernweh/Gipfelsturm, midnight UTC otherwise). */
+export function todayFor(game?: GameKey, now = new Date()): string {
+  return game && SWITCH_0750[game] ? day0750(now) : utcDate(now);
+}
+
+/** First playable day of a game. */
+export const startFor = (game?: GameKey) => (game && SWITCH_0750[game]) || LAUNCH;
+
+export function isValidDay(date: string | null | undefined, game?: GameKey): date is string {
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
-  return date >= LAUNCH && date <= utcDate();
+  return date >= startFor(game) && date <= todayFor(game);
 }
 
 export function formatDay(date: string, lang: "de" | "en" = "de") {
@@ -133,19 +160,28 @@ export function useStoreVersion() {
 }
 
 /** Today's date (UTC), or ?tag=YYYY-MM-DD from the archive. Updates at midnight UTC. */
-export function useDay(): { day: string; isToday: boolean; ready: boolean } {
+export function useDay(game?: GameKey): { day: string; isToday: boolean; ready: boolean } {
   const [state, setState] = useState<{ day: string; isToday: boolean; ready: boolean }>({ day: LAUNCH, isToday: true, ready: false });
   useEffect(() => {
     const p = new URLSearchParams(window.location.search).get("tag");
-    const today = utcDate();
-    const day = isValidDay(p) ? p : today;
+    const today = todayFor(game);
+    const day = isValidDay(p, game) ? p : today;
     setState({ day, isToday: day === today, ready: true });
-  }, []);
+  }, [game]);
   return state;
 }
 
-export function msUntilNextDay() {
+/** Milliseconds until the next puzzle (midnight UTC, or 07:50 German time for Fernweh/Gipfelsturm). */
+export function msUntilNextDay(game?: GameKey) {
   const now = new Date();
+  if (game && SWITCH_0750[game]) {
+    const b = berlinParts(now);
+    const wallNow = Date.UTC(+b.date.slice(0, 4), +b.date.slice(5, 7) - 1, +b.date.slice(8, 10), b.h, b.m, b.s);
+    const offset = wallNow - Math.floor(now.getTime() / 1000) * 1000; // Berlin wall clock minus UTC
+    const next = addDays(day0750(now), 1);
+    const target = Date.parse(`${next}T07:50:00Z`) - offset;
+    return Math.max(0, target - now.getTime());
+  }
   const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
   return next - now.getTime();
 }

@@ -517,7 +517,7 @@ function NextClimb() {
   const [left, setLeft] = useState("");
   useEffect(() => {
     const tick = () => {
-      const ms = msUntilNextDay();
+      const ms = msUntilNextDay("gipfelsturm");
       setLeft(`${Math.floor(ms / 3600000)}:${String(Math.floor((ms % 3600000) / 60000)).padStart(2, "0")}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`);
     };
     tick();
