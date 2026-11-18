@@ -8,6 +8,7 @@ import { BEKANNTHEIT } from "@/lib/data/bekanntheit";
 import { BY_ID, CONTINENT_EN, SUBREGION_DE, type Country } from "@/lib/data/countries";
 import { rng } from "@/lib/gipfel/core";
 import { LAND, LEFT_OUT, clauses, join, type Clause } from "@/lib/gipfel/laender";
+import { KREATIV } from "@/lib/fernweh-kreativ";
 
 export const CLUES_PER_DAY = 5;
 export const KM = [40, 55, 70, 85, 100] as const;
@@ -25,7 +26,22 @@ export const TERRITORY_OWNER: Record<string, string> = { GRL: "DNK", FLK: "GBR",
 /** Can be tapped on the map but never locked in (no Middle East conflict in the quizzes; Western Sahara is disputed). */
 export const NOT_PINNABLE = new Set([...LEFT_OUT, "ESH"]);
 
-export type Clue = { key: string; de: string; en: string; ids: string[]; src?: string; parts: string[] };
+export type Clue = {
+  key: string;
+  de: string;
+  en: string;
+  ids: string[];
+  src?: string;
+  parts: string[];
+  /** Creative clues: what the clue is about, shown after the pin, plus a line for single countries. */
+  note?: [string, string];
+  extra?: Record<string, [string, string]>;
+};
+
+/** The creative clues (animals, flags, sport, rivers, languages, names …) – these make up the expeditions. */
+export function creativePool(): Clue[] {
+  return KREATIV.map((k) => ({ ...k, ids: k.ids.filter((id) => !NOT_PINNABLE.has(id)), parts: [k.key] }));
+}
 
 const fame = (id: string) => BEKANNTHEIT[id] ?? 30;
 
@@ -62,24 +78,31 @@ export function tierOf(clue: Clue, id: string): number {
 }
 export const kmOf = (clue: Clue, id: string | null) => (id && clue.ids.includes(id) ? KM[tierOf(clue, id)] : 0);
 
-/** Five different clues for a day (or an endless round): mixed sizes, no two built from the same fact. */
+/**
+ * Five different creative clues for a day (or an endless round). Daily expeditions walk through a fixed
+ * shuffle of the pool, so a clue only comes back after every other one has been played.
+ */
 export function expedition(seed: string): Clue[] {
+  const pool = creativePool();
+  const m = /^tag:(\d{4}-\d{2}-\d{2})$/.exec(seed);
+  if (m) {
+    const day = Math.floor(Date.parse(m[1]) / 86400000);
+    const per = CLUES_PER_DAY;
+    const cycleLen = Math.floor(pool.length / per);
+    const cycle = Math.floor(day / cycleLen);
+    const r = rng(`fernweh:zyklus:${cycle}`);
+    const order = pool.map((_, i) => i);
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(r() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
+    const at = (day % cycleLen) * per;
+    return order.slice(at, at + per).map((i) => pool[i]);
+  }
   const r = rng(`fernweh:${seed}`);
-  const pool = cluePool();
+  const left = [...pool];
   const picked: Clue[] = [];
-  const parts = new Set<string>();
-  const bands: [number, number][] = [[12, 30], [6, 18], [3, 12], [8, 25], [3, 9]];
-  for (const [lo, hi] of bands) {
-    const cands = pool.filter((c) => c.ids.length >= lo && c.ids.length <= hi && !c.key.split("+").some((k) => parts.has(k)));
-    const c = cands[Math.floor(r() * cands.length)] ?? pool[Math.floor(r() * pool.length)];
-    picked.push(c);
-    c.key.split("+").forEach((k) => parts.add(k));
-  }
-  // shuffle the order so the hard ones are not always last
-  for (let i = picked.length - 1; i > 0; i--) {
-    const j = Math.floor(r() * (i + 1));
-    [picked[i], picked[j]] = [picked[j], picked[i]];
-  }
+  while (picked.length < CLUES_PER_DAY && left.length) picked.push(left.splice(Math.floor(r() * left.length), 1)[0]);
   return picked;
 }
 
@@ -133,6 +156,12 @@ export function why(clue: Clue, id: string, lang: "de" | "en"): string[] {
   const f = nf(lang);
   const en = lang === "en";
   const name = en ? c.nEn : c.n;
+  if (clue.note) {
+    const hit = clue.ids.includes(id);
+    const ex = clue.extra?.[id];
+    const head = hit ? (ex ? `${name}: ${ex[en ? 1 : 0]}` : en ? `${name} fits.` : `${name} passt.`) : en ? `${name} doesn’t fit.` : `${name} passt nicht.`;
+    return [head, clue.note[en ? 1 : 0]];
+  }
   const people = (n: number | null) => (n == null ? "?" : n >= 1e6 ? `${f.format(n / 1e6)} ${en ? "million" : "Mio."}` : f.format(n));
   return clue.parts.map((k) => {
     const cl = clauseMap().get(k);

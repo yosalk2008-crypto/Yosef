@@ -5,12 +5,18 @@
  */
 import { addDays, utcDate } from "../../lib/daily";
 import { BY_ID } from "../../lib/data/countries";
-import { cluePool, expedition, kmOf, NOT_PINNABLE, TERRITORY_OWNER, tierOf } from "../../lib/fernweh";
+import { cluePool, creativePool, expedition, kmOf, NOT_PINNABLE, TERRITORY_OWNER, tierOf } from "../../lib/fernweh";
 
 let bad = 0;
 const fail = (m: string) => (bad++, console.log("FEHLER", m));
-const pool = cluePool();
-for (const c of pool) {
+const pool = creativePool();
+const seen = new Set<string>();
+for (const c of [...pool, ...cluePool()]) {
+  if (seen.has(c.key)) fail(`${c.key}: doppelt`);
+  seen.add(c.key);
+  if (c.ids.some((id) => !BY_ID[id])) fail(`${c.key}: unbekannte ID ${c.ids.filter((id) => !BY_ID[id])}`);
+  if (new Set(c.ids).size !== c.ids.length) fail(`${c.key}: Land doppelt`);
+  for (const id of Object.keys(c.extra ?? {})) if (!c.ids.includes(id)) fail(`${c.key}: Zusatz für ${id}, das nicht passt`);
   if (c.ids.length < 3 || c.ids.length > 30) fail(`${c.key}: ${c.ids.length} Länder`);
   if (c.ids.some((id) => NOT_PINNABLE.has(id))) fail(`${c.key}: nicht erlaubtes Land`);
   if (c.ids.filter((id) => tierOf(c, id) === 4).length !== 1) fail(`${c.key}: nicht genau eine Perle`);
@@ -32,5 +38,12 @@ ex.forEach((c, k) => {
   const ranked = [...c.ids].sort((a, b) => tierOf(c, b) - tierOf(c, a));
   console.log(`${k + 1}. [${c.ids.length}] ${c.de}  Perle: ${BY_ID[ranked[0]].n} (${kmOf(c, ranked[0])} km), naheliegend: ${c.ids.filter((id) => tierOf(c, id) === 0).map((id) => BY_ID[id].n).join(", ")}`);
 });
+// creative clues that can be compared with the country data
+const one = pool.find((c) => c.key === "k-ein-nachbar");
+if (one) {
+  const ids = one.ids;
+  const data = Object.values(BY_ID).filter((c) => c.borders.length === 1).map((c) => c.id);
+  console.log("genau ein Nachbar – nur in der Liste:", ids.filter((id) => !data.includes(id)).join(" ") || "–", "| nur in den Daten:", data.filter((id) => !ids.includes(id)).join(" ") || "–");
+}
 console.log(bad ? `${bad} Fehler` : "Alles in Ordnung.");
 process.exit(bad ? 1 : 0);

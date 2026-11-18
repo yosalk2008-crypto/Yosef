@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { FernwehLoader } from "@/app/(de)/fernweh/FernwehLoader";
-import { fwFonts } from "@/app/(de)/fernweh/fonts";
 import type { Lang } from "@/lib/i18n";
 import { tr } from "@/lib/tr";
 
@@ -11,8 +10,6 @@ export const meta = (lang: Lang): Metadata => {
 
 export default function Page() {
   return (
-    <div className={fwFonts}>
-      <FernwehLoader mode="daily" />
-    </div>
+    <FernwehLoader mode="daily" />
   );
 }

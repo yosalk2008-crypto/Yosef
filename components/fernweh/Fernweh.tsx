@@ -17,7 +17,8 @@ import { MapView } from "../MapView";
 import { Picker } from "../Picker";
 import { ResultCard } from "../GameShell";
 import { CLUES_PER_DAY, KM, MISS, NOT_PINNABLE, TERRITORY_OWNER, TIERS, cluePool, expedition, factLine, kmOf, rankFor, tierOf, why, type Clue } from "@/lib/fernweh";
-import { RouteMap } from "./RouteMap";
+import { Badge, VEHICLE } from "./Badge";
+import { Tacho } from "./Tacho";
 
 type Pick = { id: string | null; km: number; via?: string };
 type Saved = { picks: Pick[]; qStart: number | null; stars: number; late?: boolean };
@@ -28,6 +29,7 @@ const BORDER = "#3a2f28";
 const GRID = "rgba(58,47,40,0.22)";
 const PICK = "#c9302c";
 const NOWHERE = { x: -9999, y: -9999 };
+const VEHICLE_DE = ["zu Fuß im Wanderschuh", "mit dem Fahrrad", "mit dem Zug", "mit dem Schiff", "im Heißluftballon"];
 
 /** World shapes plus the overseas parts that count as their country (Greenland → Denmark …). */
 function useAtlas() {
@@ -291,6 +293,7 @@ export function Fernweh({ mode }: { mode: "daily" | "endlos" | "uebung" }) {
     );
   };
   const kmSoFar = picks.reduce((s, x) => s + x.km, 0);
+  const segs = picks.map((p, k) => ({ km: p.km, tier: p.id && p.km ? tierOf(clues[k], p.id) : -1 }));
   const shownSel = sel ? cNameOf(owner(sel.id)) + (VIA[sel.id] ? ` (${t("über", "via")} ${VIA[sel.id][lang === "en" ? 1 : 0]})` : "") : "";
   const lastShape = last?.id ? (last.via ?? last.id) : null;
   const hit = !!(reveal && last?.id && reveal.ids.includes(last.id));
@@ -321,13 +324,23 @@ export function Fernweh({ mode }: { mode: "daily" | "endlos" | "uebung" }) {
           label={t("Weltkarte ohne Beschriftung", "Unlabelled world map")}
         />
         {reveal && (
-          <div className="fw-stampcard" aria-live="polite">
+          <div className="fw-ticket" aria-live="polite" style={{ ["--tier" as string]: hit ? TIERS[tierOf(reveal, last.id!)].color : MISS.color }}>
             {firstTime && hit && <span className="fw-newtag">{t("Neues Land", "New place")}</span>}
-            <p className="fw-small">{t(`Pin ${n} von ${total}`, `Pin ${n} of ${total}`)}</p>
-            <p className="fw-country">{last?.id ? cNameOf(last.id) : t("Kein Land", "No country")}</p>
-            <div className="fw-stamprow">
-              <Stamp tier={hit ? tierOf(reveal, last.id!) : -1} />
-              <span className="fw-dots" aria-hidden="true" />
+            <div className="fw-ticket-main">
+              <p className="fw-small" style={{ color: "var(--tier)" }}>
+                {t(`Pin ${n} von ${total}`, `Pin ${n} of ${total}`)} · {hit ? TIERS[tierOf(reveal, last.id!)][lang === "en" ? "en" : "de"] : MISS[lang === "en" ? "en" : "de"]}
+              </p>
+              <p className="fw-country">{last?.id ? cNameOf(last.id) : t("Kein Land", "No country")}</p>
+              <p className="fw-ticket-why">
+                {hit
+                  ? (reveal.extra?.[last.id!]?.[lang === "en" ? 1 : 0] ?? t(`Weiter geht’s – ${VEHICLE_DE[tierOf(reveal, last.id!)]}`, `Onwards – ${VEHICLE[tierOf(reveal, last.id!)][1].toLowerCase()} ride`))
+                  : last?.id
+                    ? t("Passt nicht – der Kompass dreht sich.", "Doesn’t fit – the compass is spinning.")
+                    : t("Die Zeit ist abgelaufen.", "Time ran out.")}
+              </p>
+            </div>
+            <div className="fw-ticket-stub">
+              <Badge tier={hit ? tierOf(reveal, last.id!) : -1} size={58} className="fw-pop" />
               <span className="fw-plus">{hit ? `+${last.km} km` : "0 km"}</span>
             </div>
           </div>
@@ -337,23 +350,21 @@ export function Fernweh({ mode }: { mode: "daily" | "endlos" | "uebung" }) {
 
       <aside className="fw-panel">
         <div className="fw-top">
-          <div>
-            <p className="fw-small">{t("Strecke", "Distance")}</p>
-            <p className="fw-dist">
-              {kmSoFar} <span>km</span>
-            </p>
-          </div>
-          <div className="text-right">
+          <div className="flex items-center gap-2">
             <span className="fw-badge">{mode === "daily" ? `Nr. ${dayNumber(daily.day)}` : mode === "endlos" ? t("Endlos", "Endless") : t("Übung", "Practice")}</span>
-            <div className="fw-cells" aria-label={t(`Hinweis ${Math.min(n, total)} von ${total}`, `Clue ${Math.min(n, total)} of ${total}`)}>
-              {Array.from({ length: total }, (_, k) => {
-                const p = picks[k];
-                const c = p ? (p.id && p.km ? TIERS[tierOf(clues[k], p.id)].color : MISS.color) : undefined;
-                return <i key={k} style={c ? { background: c } : undefined} className={k === picks.length && phase === "play" ? "cur" : ""} />;
-              })}
-            </div>
             {stars > 0 && <span className="fw-stars">{"★".repeat(stars)}</span>}
+            <span className="fw-kmsmall">{kmSoFar} km</span>
           </div>
+          <div className="fw-cells" aria-label={t(`Hinweis ${Math.min(n, total)} von ${total}`, `Clue ${Math.min(n, total)} of ${total}`)}>
+            {Array.from({ length: total }, (_, k) => {
+              const p = picks[k];
+              const c = p ? (p.id && p.km ? TIERS[tierOf(clues[k], p.id)].color : MISS.color) : undefined;
+              return <i key={k} style={c ? { background: c } : undefined} className={k === picks.length && phase === "play" ? "cur" : ""} />;
+            })}
+          </div>
+        </div>
+        <div className="fw-tachobox">
+          <Tacho segs={segs} max={total * 100} />
         </div>
 
         {phase === "intro" ? (
@@ -367,12 +378,19 @@ export function Fernweh({ mode }: { mode: "daily" | "endlos" | "uebung" }) {
             </div>
             {phase === "reveal" && reveal && last && (
               <div className="fw-factcard">
-                <div className="fw-facthead flex items-center justify-between gap-2">
-                  <Stamp tier={hit ? tierOf(reveal, last.id!) : -1} small />
-                  <span className="fw-plus">{hit ? `+${last.km} km` : "0 km"}</span>
+                <div className="flex items-center gap-3">
+                  <Badge tier={hit ? tierOf(reveal, last.id!) : -1} size={46} />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-display text-[19px] font-semibold leading-tight">{last.id ? cNameOf(last.id) : "—"}</p>
+                    <p className="text-[14px] font-bold" style={{ color: hit ? TIERS[tierOf(reveal, last.id!)].color : MISS.color }}>
+                      {hit ? `${TIERS[tierOf(reveal, last.id!)][lang === "en" ? "en" : "de"]} · ${VEHICLE[tierOf(reveal, last.id!)][lang === "en" ? 1 : 0]}` : MISS[lang === "en" ? "en" : "de"]}
+                    </p>
+                  </div>
+                  <span className="fw-plus">{hit ? `+${last.km}` : "0"} km</span>
                 </div>
-                <p className="mt-2 font-bold">{last.id ? cNameOf(last.id) : "—"}</p>
-                <p className="fw-fact">{last.id ? why(reveal, last.id, lang).join(" ") : t("Die Zeit ist abgelaufen, ohne dass ein Pin auf einem Land lag.", "Time ran out without a pin on a country.")}</p>
+                {last.id && why(reveal, last.id, lang).slice(1).map((line, k) => (
+                  <p key={k} className="fw-fact">{line}</p>
+                ))}
                 <p className="fw-fact">{t(`${reveal.ids.length} Länder hätten gepasst – auf der Karte nach Seltenheit gefärbt.`, `${reveal.ids.length} countries would have fitted – coloured by rarity on the map.`)}</p>
                 <Legend />
               </div>
@@ -387,9 +405,6 @@ export function Fernweh({ mode }: { mode: "daily" | "endlos" | "uebung" }) {
                 )}
               </div>
             )}
-            <div className="fw-route">
-              <RouteMap km={kmSoFar} />
-            </div>
             <div className="fw-actions">
               <p className="fw-keys" aria-hidden="true">
                 {phase === "play" ? (
@@ -449,7 +464,7 @@ function Intro({ mode, opts, setOpt, onStart, done, onCamp }: { mode: string; op
         <li>{t("Setz für jeden Hinweis einen Pin auf ein passendes Land – die Karte hat keine Namen.", "Drop one pin per clue on a country that fits – the map has no names.")}</li>
         <li>{t("Je weniger naheliegend dein Land, desto weiter kommst du: 40 · 55 · 70 · 85 · 100 km. Bis 500 km am Tag.", "The less obvious your country, the further you get: 40 · 55 · 70 · 85 · 100 km. Up to 500 km a day.")}</li>
         <li>{t("Ein Versuch pro Hinweis. Länder dürfen mehrmals vorkommen.", "One try per clue. Countries may come up more than once.")}</li>
-        <li>{t("Überseegebiete zählen zu ihrem Land (Grönland = Dänemark). Fakten: Weltbank, CIA World Factbook.", "Overseas territories count as their country (Greenland = Denmark). Facts: World Bank, CIA World Factbook.")}</li>
+        <li>{t("Je seltener, desto schneller dein Fahrzeug: Wanderschuh, Fahrrad, Zug, Schiff, Heißluftballon. Überseegebiete zählen zu ihrem Land (Grönland = Dänemark).", "The rarer, the faster your ride: boot, bike, train, ship, hot-air balloon. Overseas territories count as their country (Greenland = Denmark).")}</li>
       </ul>
       <fieldset className="mt-1">
         <legend className="fw-small">{t("Schwierigkeit – gibt ★ beim Teilen", "Difficulty – earns ★ when sharing")}</legend>
@@ -489,17 +504,6 @@ function Intro({ mode, opts, setOpt, onStart, done, onCamp }: { mode: string; op
   );
 }
 
-function Stamp({ tier, small }: { tier: number; small?: boolean }) {
-  const lang = useLang();
-  const x = tier < 0 ? MISS : TIERS[tier];
-  return (
-    <span className={`fw-stamp${small ? " small" : ""}`} style={{ color: x.color, borderColor: x.color }}>
-      {tier === 4 ? "💎 " : ""}
-      {lang === "en" ? x.en : x.de}
-    </span>
-  );
-}
-
 function TierChip({ tier }: { tier: number }) {
   const lang = useLang();
   const x = tier < 0 ? MISS : TIERS[tier];
@@ -518,7 +522,7 @@ function Legend() {
     <div className="mt-2 flex flex-wrap gap-1.5 text-[12px] font-bold">
       {TIERS.map((x, k) => (
         <span key={k} className="fw-leg">
-          <i style={{ background: x.color }} />
+          <Badge tier={k} size={18} />
           {lang === "en" ? x.en : x.de} {KM[k]}
         </span>
       ))}
@@ -558,9 +562,9 @@ function Camp({ mode, clues, picks, shapes, nameOf, share, isToday, day, onAgain
             </div>
           )}
         </div>
-        {mode !== "uebung" && (
-          <div className="fw-route fw-route-camp">
-            <RouteMap km={km} />
+        {(
+          <div className="fw-tachobox">
+            <Tacho segs={picks.map((p, k) => ({ km: p.km, tier: p.id && p.km ? tierOf(clues[k], p.id) : -1 }))} max={clues.length * 100} />
           </div>
         )}
       </div>
