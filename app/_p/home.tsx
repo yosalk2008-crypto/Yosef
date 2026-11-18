@@ -32,7 +32,11 @@ export default function Home({ lang }: { lang: Lang }) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
-      <section className="mx-auto grid max-w-6xl gap-4 px-4 pt-5 sm:pt-7 lg:grid-cols-[2fr_1fr]">
+      <section className="mx-auto max-w-6xl px-4 pb-2 pt-5 sm:pt-7">
+        <DailyBoard />
+      </section>
+
+      <section className="mx-auto grid max-w-6xl gap-4 px-4 pt-6 sm:pt-8 lg:grid-cols-[2fr_1fr]">
         <Link
           href="/koscher"
           className="chunk relative flex items-center justify-between gap-3 overflow-hidden px-5 py-4 text-white sm:px-8 sm:py-5 lg:col-span-2"
@@ -42,7 +46,6 @@ export default function Home({ lang }: { lang: Lang }) {
           <span className="relative">
             <span className="flex flex-wrap items-center gap-x-3 gap-y-1 font-display text-2xl font-semibold sm:text-4xl">
               {t("Ist das koscher?", "Is it kosher?")}
-              <span className="hidden rounded-full bg-white px-2.5 py-0.5 text-sm text-ink sm:inline">{t("Neu", "New")}</span>
             </span>
             <span className="mt-1 hidden max-w-xl text-base font-semibold text-white/85 sm:block sm:text-lg">
               {t("Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – über 170 Fragen mit Erklärungen.", "Shrimp, giraffe, light switches on Shabbat: guess what Judaism allows – over 170 questions with explanations.")}
@@ -64,7 +67,6 @@ export default function Home({ lang }: { lang: Lang }) {
           <span className="relative">
             <span className="flex flex-wrap items-center gap-x-3 gap-y-1 font-display text-2xl font-semibold sm:text-4xl">
               {t("Ist das halal?", "Is it halal?")}
-              <span className="hidden rounded-full bg-white px-2.5 py-0.5 text-sm text-ink sm:inline">{t("Neu", "New")}</span>
             </span>
             <span className="mt-1 hidden max-w-xl text-base font-semibold text-white/85 sm:block sm:text-lg">
               {t("Vape, Sportwetten, Zinsen, Kredite: Rate, was im Islam erlaubt ist – 175 Fragen mit Quellen aus Quran, Bukhari und Muslim.", "Vaping, sports betting, interest, loans: guess what Islam allows – 175 questions with sources from the Quran, Bukhari and Muslim.")}
@@ -87,7 +89,6 @@ export default function Home({ lang }: { lang: Lang }) {
           <span className="relative">
             <span className="flex flex-wrap items-center gap-x-3 gap-y-1 font-display text-2xl font-semibold sm:text-3xl">
               {t("Tiefgang", "Deep Dive")}
-              <span className="hidden rounded-full bg-[#f3d272] px-2.5 py-0.5 text-sm text-ink sm:inline">{t("Neu", "New")}</span>
             </span>
             <span className="mt-1 hidden max-w-md text-base font-semibold text-white/85 sm:block sm:text-lg">
               {t("Das Quiz der seltenen Antworten: Je unbekannter deine richtige Antwort, desto tiefer tauchst du.", "The quiz of rare answers: the more obscure your correct answer, the deeper you dive.")}
@@ -110,7 +111,6 @@ export default function Home({ lang }: { lang: Lang }) {
           <span className="relative">
             <span className="flex flex-wrap items-center gap-x-3 gap-y-1 font-display text-2xl font-semibold sm:text-3xl">
               {t("Gipfelsturm", "Summit Rush")}
-              <span className="hidden rounded-full bg-white px-2.5 py-0.5 text-sm text-ink sm:inline">{t("Neu", "New")}</span>
             </span>
             <span className="mt-1 hidden max-w-md text-base font-semibold text-white/90 sm:block sm:text-lg">
               {t("7 Fragen, 7 Lager bis zum Krater – und jede Antwort zählt nur einmal. Heb dir die Berühmten für oben auf, bevor der Vulkan ausbricht.", "7 questions, 7 camps up to the crater – and every answer counts only once. Save the famous ones for the top before the volcano blows.")}
@@ -141,7 +141,6 @@ export default function Home({ lang }: { lang: Lang }) {
           <span className="relative">
             <span className="flex flex-wrap items-center gap-x-3 gap-y-1 font-display text-2xl font-semibold sm:text-3xl">
               {t("Mit Freunden spielen", "Play with friends")}
-              <span className="hidden rounded-full bg-white px-2.5 py-0.5 text-sm text-ink sm:inline">{t("Neu", "New")}</span>
             </span>
             <span className="mt-1 hidden max-w-xl text-base font-semibold text-ink/75 sm:block sm:text-lg">
               {t("Server erstellen oder mit Code beitreten – alle beantworten dieselbe Frage, dann vergleicht ihr eure Antworten.", "Create a server or join with a code – everyone answers the same question, then you compare answers.")}
@@ -156,10 +155,6 @@ export default function Home({ lang }: { lang: Lang }) {
             <span className="btn-primary shrink-0 px-4 max-sm:min-h-0 max-sm:py-2 max-sm:text-sm">{t("Server finden", "Find a server")}</span>
           </span>
         </Link>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-4 pb-6 pt-8 sm:pt-10">
-        <DailyBoard />
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-10 sm:py-14">

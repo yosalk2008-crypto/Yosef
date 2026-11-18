@@ -80,11 +80,9 @@ export function SiteHeader() {
             </div>
             <Link href="/tiefgang" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #3f96d6, #0a2656)", ["--edge" as string]: "#061a3d" }}>
               {t("Tiefgang", "Deep Dive")}
-              <span className="rounded-full bg-[#f3d272] px-2.5 py-0.5 text-sm text-ink">{t("Neu", "New")}</span>
             </Link>
             <Link href="/gipfelsturm" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #4a2a6a, #b8486a 70%, #f6935a)", ["--edge" as string]: "#120c1c" }}>
               {t("Gipfelsturm", "Summit Rush")}
-              <span className="rounded-full bg-white px-2.5 py-0.5 text-sm text-ink">{t("Neu", "New")}</span>
             </Link>
             <Link
               href="/koscher"
@@ -92,7 +90,6 @@ export function SiteHeader() {
               style={{ background: "linear-gradient(160deg, #1f4fd1, #0a1630)", ["--edge" as string]: "#050c1f" }}
             >
               {t("Ist das koscher?", "Is it kosher?")}
-              <span className="rounded-full bg-white px-2.5 py-0.5 text-sm text-ink">{t("Neu", "New")}</span>
             </Link>
             <Link
               href="/halal"
@@ -100,11 +97,9 @@ export function SiteHeader() {
               style={{ background: "linear-gradient(160deg, #12a06d, #062a20)", ["--edge" as string]: "#03170f" }}
             >
               {t("Ist das halal?", "Is it halal?")}
-              <span className="rounded-full bg-white px-2.5 py-0.5 text-sm text-ink">{t("Neu", "New")}</span>
             </Link>
             <Link href="/multiplayer" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold" style={{ background: "#ee8a2f", ["--edge" as string]: "#b9621a" }}>
               {t("Mit Freunden spielen", "Play with friends")}
-              <span className="rounded-full bg-white px-2.5 py-0.5 text-sm text-ink">{t("Neu", "New")}</span>
             </Link>
             <h2 className="mb-2 mt-6 text-lg font-semibold">{t("Quiz nach Region", "Quiz by region")}</h2>
             <div className="flex flex-wrap gap-2">
