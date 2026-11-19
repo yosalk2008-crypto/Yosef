@@ -874,5 +874,55 @@ window.HALAL_EN = {
 "Deliberately delaying breaking the fast in Ramadan even though the sun has already set",
 "The Prophet ﷺ said: people will remain in good as long as they hasten to break the fast. It is Sunnah to break the fast right after sunset.",
 "Sahih al-Bukhari 1957 · Sahih Muslim 1098"
+],
+"Einen traurigen Mitschüler einfach freundlich anlächeln": [
+"Simply giving a sad classmate a friendly smile",
+"The Prophet ﷺ said: Do not consider any good deed insignificant – not even meeting your brother with a cheerful face.",
+"Sahih Muslim 2626"
+],
+"Den kleinen Bruder liebevoll in den Arm nehmen und küssen": [
+"Lovingly hugging and kissing your little brother",
+"The Prophet ﷺ kissed his grandson al-Hasan. When a man said he had never kissed any of his ten children, the Prophet ﷺ replied: Whoever is not merciful will not be shown mercy.",
+"Sahih al-Bukhari 5997 · Sahih Muslim 2318"
+],
+"Einen Freund zu einer Einladung mitbringen, zu der nur du eingeladen bist": [
+"Bringing a friend along to an invitation that only you received",
+"When an extra man followed the Prophet ﷺ to an invitation, he told the host: If you wish, let him in, and if you wish, send him away. So it depends on whether the host agrees.",
+"Sahih al-Bukhari 5434 · Sahih Muslim 2036"
+],
+"Kamelfleisch essen": [
+"Eating camel meat",
+"The Quran mentions the sacrificial camels and says: eat of them. The Prophet ﷺ was asked whether one should renew ablution after eating camel meat and said yes – the meat itself was naturally permitted.",
+"Quran 22:36 with Tafsir Ibn Kathir · Sahih Muslim 360"
+],
+"Mit den Fingern statt mit Besteck essen": [
+"Eating with your fingers instead of cutlery",
+"Ka'b ibn Malik reported that the Prophet ﷺ ate with three fingers and licked them afterwards. Eating with your hand is therefore Sunnah – but cutlery is just as permissible.",
+"Sahih Muslim 2032"
+],
+"Fleisch vom Wildesel essen": [
+"Eating the meat of a wild donkey",
+"Unlike the domestic donkey, the wild donkey is permitted. Abu Qatada hunted a wild donkey, and when the Companions were unsure, the Prophet ﷺ said: It is permissible, eat it – and he ate from it himself.",
+"Sahih al-Bukhari 2570 · Sahih Muslim 1196"
+],
+"Sich nach der Toilette mit der rechten Hand sauber machen": [
+"Cleaning yourself with your right hand after using the toilet",
+"The Prophet ﷺ forbade cleaning oneself with the right hand in the toilet – the left hand is used for that. Most scholars consider it makruh if done without a reason.",
+"Sahih al-Bukhari 153 · Sahih Muslim 267"
+],
+"Einen Gast, der bei dir übernachtet, großzügig bewirten": [
+"Generously hosting a guest who stays overnight at your place",
+"The Prophet ﷺ said: Whoever believes in Allah and the Last Day should honor his guest. A guest has a right to three days of hospitality.",
+"Sahih al-Bukhari 6019 · Sahih Muslim 48"
+],
+"Sich vor dem Gebet mit dem Miswak die Zähne putzen": [
+"Brushing your teeth with a miswak before prayer",
+"The Prophet ﷺ said: If it were not too hard on my community, I would have ordered them to use the siwak before every prayer. Brushing your teeth before prayer is therefore a recommended Sunnah.",
+"Sahih al-Bukhari 887 · Sahih Muslim 252"
+],
+"Im Ramadan ohne Grund tagsüber absichtlich essen": [
+"Deliberately eating during the day in Ramadan without a reason",
+"Fasting in Ramadan is obligatory for every healthy adult Muslim. The Quran says: eat and drink until the dawn becomes clear, then complete the fast until night.",
+"Quran 2:183 with Tafsir Ibn Kathir · Quran 2:187 with Tafsir Ibn Kathir"
 ]
 };

@@ -874,5 +874,55 @@ window.QUESTIONS_EN = {
 "Drinking four cups of wine at the Seder",
 "The Mishnah says that at the Seder everyone, even the poorest, should drink at least four cups of wine – as a sign of freedom. Today many also use grape juice.",
 "Talmud, Pesachim 99b"
+],
+"Den geliehenen Controller eines Freundes aus Unachtsamkeit kaputt machen und nicht ersetzen": [
+"Carelessly breaking a friend's borrowed controller and not replacing it",
+"According to the Torah, someone who borrows something is responsible if it breaks or gets lost while with them. All the more so must you replace what you damaged through your own carelessness.",
+"Exodus 22:13"
+],
+"Im Streit die Hand gegen einen Mitschüler erheben, um ihn zu schlagen": [
+"Raising your hand against a classmate during a fight in order to hit him",
+"The Talmud says: whoever raises his hand against another person is already called “wicked” – even if he doesn't actually strike.",
+"Talmud, Sanhedrin 58b"
+],
+"Einem Gerücht über einen Mitschüler einfach glauben": [
+"Simply believing a rumor about a classmate",
+"It is forbidden not only to spread evil gossip (lashon hara) but also to readily believe it. The Talmud criticizes the one who accepts it just as sharply as the one who spreads it.",
+"Talmud, Pesachim 118a"
+],
+"Gans essen": [
+"Eating goose",
+"For birds, the Torah lists only the forbidden species. The Talmud says that birds are eaten based on tradition – and the goose has always been regarded as a kosher bird, provided it was slaughtered properly.",
+"Talmud, Chullin 63b"
+],
+"Fisch essen, der nicht geschächtet wurde": [
+"Eating fish that was not ritually slaughtered",
+"Fish do not require ritual slaughter – the Talmud derives this from the Torah. A fish is kosher if it has fins and scales.",
+"Talmud, Chullin 27b"
+],
+"Für den Hund Rindfleisch in Milch kochen": [
+"Cooking beef in milk for the dog",
+"Meat with milk isn't only forbidden to eat: cooking them together is already forbidden, and you may not derive any benefit from it either – so you can't give it to the dog.",
+"Talmud, Chullin 115b"
+],
+"Sich auf den festen Stammplatz des Vaters setzen": [
+"Sitting in your father's regular seat",
+"According to the Talmud, reverence for parents includes not standing or sitting in your father's fixed place and not contradicting him. If the father explicitly allows it, it's fine.",
+"Talmud, Kiddushin 31b"
+],
+"Einem Tier helfen, das unter seiner schweren Last zusammengebrochen ist": [
+"Helping an animal that has collapsed under its heavy load",
+"The Torah explicitly commands helping a donkey lying under its load back up – even the donkey of someone you are on bad terms with.",
+"Exodus 23:5"
+],
+"Am Schabbat ein Lagerfeuer anzünden": [
+"Lighting a campfire on Shabbat",
+"The Torah says explicitly: you shall not kindle a fire in any of your dwellings on the Shabbat day. Making fire is one of the forbidden kinds of work.",
+"Exodus 35:3"
+],
+"An Sukkot den Feststrauß (Lulav) in die Hand nehmen": [
+"Taking the festive bouquet (lulav) in your hand on Sukkot",
+"The Torah commands taking four plant species on Sukkot: a palm branch, an etrog, myrtle and willow. They are held together and a blessing is said over them.",
+"Leviticus 23:40"
 ]
 };

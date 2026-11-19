@@ -48,7 +48,7 @@ export default function Home({ lang }: { lang: Lang }) {
               {t("Ist das koscher?", "Is it kosher?")}
             </span>
             <span className="mt-1 hidden max-w-xl text-base font-semibold text-white/85 sm:block sm:text-lg">
-              {t("Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – über 170 Fragen mit Erklärungen.", "Shrimp, giraffe, light switches on Shabbat: guess what Judaism allows – over 170 questions with explanations.")}
+              {t("Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – über 180 Fragen mit Erklärungen.", "Shrimp, giraffe, light switches on Shabbat: guess what Judaism allows – over 180 questions with explanations.")}
             </span>
           </span>
           <span className="relative flex items-center gap-4">
@@ -69,7 +69,7 @@ export default function Home({ lang }: { lang: Lang }) {
               {t("Ist das halal?", "Is it halal?")}
             </span>
             <span className="mt-1 hidden max-w-xl text-base font-semibold text-white/85 sm:block sm:text-lg">
-              {t("Vape, Sportwetten, Zinsen, Kredite: Rate, was im Islam erlaubt ist – 175 Fragen mit Quellen aus Quran, Bukhari und Muslim.", "Vaping, sports betting, interest, loans: guess what Islam allows – 175 questions with sources from the Quran, Bukhari and Muslim.")}
+              {t("Vape, Sportwetten, Zinsen, Kredite: Rate, was im Islam erlaubt ist – 185 Fragen mit Quellen aus Quran, Bukhari und Muslim.", "Vaping, sports betting, interest, loans: guess what Islam allows – 185 questions with sources from the Quran, Bukhari and Muslim.")}
             </span>
           </span>
           <span className="relative flex items-center gap-4">
