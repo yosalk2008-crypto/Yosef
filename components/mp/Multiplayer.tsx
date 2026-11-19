@@ -200,7 +200,7 @@ function Start({ name, setName, initialCode, onEnter }: { name: string; setName:
                 {t("Spurensuche 1v1", "Where Am I? 1v1")}
               </button>
             </div>
-            <p className="mt-2 text-sm text-muted">{t("Spurensuche gibt es nur im 1v1: gleiche Orte in Street View, wer näher tippt, gewinnt.", "Where Am I? is 1v1 only: the same Street View places, whoever guesses closer wins.")}</p>
+            <p className="mt-2 text-sm text-muted">{t("Spurensuche gibt es jetzt auch auf Servern: gleiche Orte in Street View, wer näher tippt, gewinnt.", "Where Am I? now works on servers too: the same Street View places, whoever guesses closer wins.")}</p>
           </div>
         </div>
       )}

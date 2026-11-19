@@ -13,7 +13,7 @@ import { pointsFor } from "./leaderboard";
 
 // ---------- games ----------
 
-/** Daily games that can be played in a room. Spurensuche only in a 1v1: every round costs Street View loads. */
+/** Daily games that can be played in a room (Spurensuche too, on servers and in a 1v1; at most 3 rounds, each costs Street View loads). */
 export type DailyId = Exclude<GameKey, "tiefgang" | "gipfelsturm" | "fernweh">;
 export type GameId = "koscher" | "halal" | "flaggen" | "hauptstaedte" | "tiefgang" | DailyId;
 export const isDaily = (g: GameId): g is DailyId => GAMES.some((x) => x.key === g);
@@ -36,7 +36,7 @@ export const MP_DAILY = GAMES.filter((g) => g.key !== "tiefgang").map((g) => ({
   bg: g.bg,
   edge: g.edge,
   light: false,
-  duelOnly: g.key === "spurensuche",
+  duelOnly: false,
 }));
 export const gameOf = (id: GameId) => [...MP_GAMES, ...MP_DAILY].find((g) => g.id === id) ?? MP_GAMES[0];
 export const gameTitle = (id: GameId, lang: "de" | "en") => (lang === "en" ? gameOf(id).titleEn : gameOf(id).title);
