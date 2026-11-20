@@ -6,7 +6,7 @@ import { tr } from "@/lib/tr";
 
 export const meta = (lang: Lang): Metadata => {
   const t = tr(lang);
-  return { title: t("Bestenliste", "Leaderboard"), description: t("Wer hat heute die besten Ergebnisse in allen Koshertrivia-Spielen?", "Who has the best results in all Koshertrivia games today?") };
+  return { title: t("Bestenliste", "Leaderboard"), description: t("Wer hat heute die besten Ergebnisse in allen GeoDuels-Spielen?", "Who has the best results in all GeoDuels games today?") };
 };
 
 export default function Page({ lang }: { lang: Lang }) {

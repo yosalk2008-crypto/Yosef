@@ -418,7 +418,7 @@ qs = [q for _, q, *_ in Q]
 dup = [k for k, v in Counter(qs).items() if v > 1]
 print("dupes", dup)
 if "--write" in sys.argv:
-    out = ["// Inhalte für „Ist das halal?“ auf koshertrivia.de/halal",
+    out = ["// Inhalte für „Ist das halal?“ auf geoduels.de/halal",
            "// Antworten aus sunnitischer Sicht; wo die Gelehrten sich uneinig sind, lautet die Antwort „kommt drauf an“.",
            "// Quellen: Quran mit Tafsir Ibn Kathir, Sahih al-Bukhari (Nummerierung nach Fath al-Bari) und Sahih Muslim (Nummerierung nach Abd al-Baqi).",
            "window.HALAL = ["]

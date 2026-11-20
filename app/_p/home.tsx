@@ -9,25 +9,25 @@ const REGION_BLUE = { background: "#6aa8f0", ["--edge" as string]: "#4b88d1" };
 
 export const meta = (lang: Lang): import("next").Metadata =>
   lang === "en"
-    ? { title: { absolute: "Koshertrivia – daily geography puzzles & country quizzes" }, description: "Eight new geography puzzles every day plus unlimited quizzes on flags, capitals, outlines and maps." }
+    ? { title: { absolute: "GeoDuels – daily geography puzzles & country quizzes" }, description: "Eight new geography puzzles every day plus unlimited quizzes on flags, capitals, outlines and maps." }
     : {};
 
 export default function Home({ lang }: { lang: Lang }) {
   const t = tr(lang);
-  // tells Google the site's name, so a search for "Koshertrivia" shows it as the brand (and as "Kosher Trivia")
+  // tells Google the site's name, so a search for "GeoDuels" shows it as the brand (formerly Koshertrivia)
   const ld = {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "WebSite",
-        "@id": "https://koshertrivia.de/#website",
-        name: "Koshertrivia",
-        alternateName: ["Kosher Trivia", "koshertrivia.de"],
-        url: lang === "en" ? "https://koshertrivia.de/en" : "https://koshertrivia.de/",
+        "@id": "https://geoduels.de/#website",
+        name: "GeoDuels",
+        alternateName: ["Geo Duels", "geoduels.de", "Koshertrivia"],
+        url: lang === "en" ? "https://geoduels.de/en" : "https://geoduels.de/",
         inLanguage: lang,
-        publisher: { "@id": "https://koshertrivia.de/#org" },
+        publisher: { "@id": "https://geoduels.de/#org" },
       },
-      { "@type": "Organization", "@id": "https://koshertrivia.de/#org", name: "Koshertrivia", url: "https://koshertrivia.de/"},
+      { "@type": "Organization", "@id": "https://geoduels.de/#org", name: "GeoDuels", url: "https://geoduels.de/"},
     ],
   };
   return (
@@ -136,8 +136,8 @@ export default function Home({ lang }: { lang: Lang }) {
         <h2 className="text-3xl font-semibold leading-tight sm:text-[40px]">{t("Die Welt kennenlernen, ein Rätsel nach dem anderen", "Get to know the world, one puzzle at a time")}</h2>
         <p className="mt-5 text-lg leading-relaxed text-muted">
           {t(
-            "Koshertrivia ist kostenlos und braucht keine Anmeldung. Jeden Tag gibt es acht neue Rätsel zu Ländern, Grenzen, Flaggen und Zahlen – für alle dieselben, damit du dich mit Freunden vergleichen kannst.",
-            "Koshertrivia is free and needs no sign-up. Every day there are eight new puzzles about countries, borders, flags and numbers – the same for everyone, so you can compare with friends."
+            "GeoDuels ist kostenlos und braucht keine Anmeldung. Jeden Tag gibt es acht neue Rätsel zu Ländern, Grenzen, Flaggen und Zahlen – für alle dieselben, damit du dich mit Freunden vergleichen kannst.",
+            "GeoDuels is free and needs no sign-up. Every day there are eight new puzzles about countries, borders, flags and numbers – the same for everyone, so you can compare with friends."
           )}
         </p>
         <p className="mt-4 text-lg leading-relaxed text-muted">

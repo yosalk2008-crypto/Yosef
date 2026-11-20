@@ -1,4 +1,4 @@
-// Inhalte für „Ist das halal?“ auf koshertrivia.de/halal
+// Inhalte für „Ist das halal?“ auf geoduels.de/halal
 // Antworten aus sunnitischer Sicht; wo die Gelehrten sich uneinig sind, lautet die Antwort „kommt drauf an“.
 // Quellen: Quran mit Tafsir Ibn Kathir, Sahih al-Bukhari (Nummerierung nach Fath al-Bari) und Sahih Muslim (Nummerierung nach Abd al-Baqi).
 window.HALAL = [

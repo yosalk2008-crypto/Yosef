@@ -11,14 +11,14 @@ const fredoka = Fredoka({ subsets: ["latin"], variable: "--font-fredoka", displa
 const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito", display: "swap" });
 
 /**
- * Domain move firmengrafik.de → koshertrivia.de. Local Storage is tied to the domain, so on the old
- * domain we pack every "geografik:" entry (results, streaks, leaderboard name/ID) into the URL hash
- * and the new domain unpacks it once, without overwriting anything that already exists there.
+ * Domain moves firmengrafik.de → koshertrivia.de → geoduels.de. Local Storage is tied to the domain, so
+ * on an old domain we pack every "geografik:" and "kt-" entry (results, streaks, options, leaderboard
+ * name/ID) into the URL hash and geoduels.de unpacks it once, without overwriting anything already there.
  */
-const MOVE_SCRIPT = `(function(){try{var h=location.hostname,P="geografik:";
-if(/(^|\\.)firmengrafik\\.de$/.test(h)){var d={},n=0;try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf(P)===0){d[k]=localStorage.getItem(k);n++}}}catch(e){}
-var u="https://koshertrivia.de"+location.pathname+location.search;if(n)u+="#gfm="+encodeURIComponent(JSON.stringify(d));else if(location.hash)u+=location.hash;location.replace(u);return}
-if(location.hash.indexOf("#gfm=")===0){var m=JSON.parse(decodeURIComponent(location.hash.slice(5)));for(var k2 in m){if(k2.indexOf(P)===0&&localStorage.getItem(k2)===null)localStorage.setItem(k2,m[k2])}
+const MOVE_SCRIPT = `(function(){try{var h=location.hostname,ok=function(k){return k.indexOf("geografik:")===0||k.indexOf("kt-")===0};
+if(/(^|\\.)(firmengrafik|koshertrivia)\\.de$/.test(h)){var d={},n=0;try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&ok(k)){d[k]=localStorage.getItem(k);n++}}}catch(e){}
+var u="https://geoduels.de"+location.pathname+location.search;if(n)u+="#gfm="+encodeURIComponent(JSON.stringify(d));else if(location.hash)u+=location.hash;location.replace(u);return}
+if(location.hash.indexOf("#gfm=")===0){var m=JSON.parse(decodeURIComponent(location.hash.slice(5)));for(var k2 in m){if(ok(k2)&&localStorage.getItem(k2)===null)localStorage.setItem(k2,m[k2])}
 history.replaceState(null,"",location.pathname+location.search)}}catch(e){}})();`;
 
 export function RootShell({ lang, children }: { lang: Lang; children: React.ReactNode }) {

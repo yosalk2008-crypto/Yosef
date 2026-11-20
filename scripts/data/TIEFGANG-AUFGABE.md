@@ -1,6 +1,6 @@
 # Auftrag: Tiefgang-Thema auffüllen (für die geplanten Aufgaben)
 
-Aufgabe: Fülle im Spiel „Tiefgang“ auf koshertrivia.de das Endlos-Thema „<Thema-Name>“ (Datei lib/data/tiefgang-themen/<datei>.ts, Key-Präfix „<präfix>“) auf 150 Fragen auf. Der Nutzer möchte bis 7:50 Uhr Europe/Berlin 150 Fragen in diesem Thema haben; diese Aufgabe läuft alle 3 Stunden.
+Aufgabe: Fülle im Spiel „Tiefgang“ auf geoduels.de das Endlos-Thema „<Thema-Name>“ (Datei lib/data/tiefgang-themen/<datei>.ts, Key-Präfix „<präfix>“) auf 150 Fragen auf. Der Nutzer möchte bis 7:50 Uhr Europe/Berlin 150 Fragen in diesem Thema haben; diese Aufgabe läuft alle 3 Stunden.
 
 Pro Lauf:
 1. Stand prüfen: npx tsx scripts/data/check-tiefgang-themen.ts

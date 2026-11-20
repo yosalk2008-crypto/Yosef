@@ -150,7 +150,7 @@ export function ResultCard({
     return () => clearInterval(id);
   }, []);
   const copy = async () => {
-    const text = share + (lang === "en" ? "\nkoshertrivia.de/en" : "\nkoshertrivia.de");
+    const text = share + (lang === "en" ? "\ngeoduels.de/en" : "\ngeoduels.de");
     try {
       if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) await navigator.share({ text });
       else await navigator.clipboard.writeText(text);

@@ -1,5 +1,5 @@
 /**
- * Winner / loser animation for koshertrivia (Ist das koscher?, Ist das halal?, multiplayer).
+ * Winner / loser animation for GeoDuels (Ist das koscher?, Ist das halal?, multiplayer).
  *   window.ktOutcome({ win: true, title: "Gewonnen!", sub: "8 von 10 richtig", place: 1, close: "Tippen zum Schließen" })
  * Full-screen overlay, closes on tap, Esc or after a few seconds. Only transforms and opacity are animated (GPU),
  * prefers-reduced-motion shows it without movement.

@@ -1,6 +1,6 @@
 export const site = {
-  name: "Koshertrivia",
-  url: "https://koshertrivia.de",
+  name: "GeoDuels",
+  url: "https://geoduels.de",
   email: "yos.alk2008@gmail.com",
   phone: "0176 57998306",
   phoneHref: "+4917657998306",

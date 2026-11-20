@@ -36,7 +36,7 @@ export function SiteHeader() {
               <path d="M4 7h16M4 12h16M4 17h16" />
             </svg>
           </button>
-          <Link href="/" aria-label={t("Koshertrivia – Startseite", "Koshertrivia – home")}>
+          <Link href="/" aria-label={t("GeoDuels – Startseite", "GeoDuels – home")}>
             <Logo />
           </Link>
           <div className="flex items-center justify-end gap-1">
