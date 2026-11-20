@@ -9,6 +9,21 @@ const KEY = "AIzaSyAq4ReUx4PbNMVdsgcY5gecrVRP-SWS-Tk";
 
 let loading: Promise<typeof google> | null = null;
 
+/** Google calls window.gm_authFailure when the key is refused (e.g. this domain is not allowed yet). */
+let authFailed = false;
+const authListeners = new Set<() => void>();
+export function onMapsAuthFailure(fn: () => void): () => void {
+  if (authFailed) fn();
+  authListeners.add(fn);
+  return () => authListeners.delete(fn);
+}
+if (typeof window !== "undefined") {
+  (window as unknown as { gm_authFailure?: () => void }).gm_authFailure = () => {
+    authFailed = true;
+    authListeners.forEach((f) => f());
+  };
+}
+
 export function loadGoogleMaps(lang: "de" | "en" = "de"): Promise<typeof google> {
   if (typeof window === "undefined") return Promise.reject(new Error("no window"));
   if (window.google?.maps?.StreetViewPanorama) return Promise.resolve(window.google);

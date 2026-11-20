@@ -5,7 +5,7 @@ import { SPOTS, type Spot } from "@/lib/data/spurensuche";
 import { SPURENSUCHE_ARCHIVE_DAYS, dayNumber, spurensucheInArchive } from "@/lib/daily";
 import { spurensucheAllowed } from "@/lib/leaderboard";
 import { distanceKm } from "@/lib/geo";
-import { loadGoogleMaps } from "@/lib/gmaps";
+import { loadGoogleMaps, onMapsAuthFailure } from "@/lib/gmaps";
 import { makeRng } from "@/lib/rng";
 import { useDaily } from "@/lib/useDaily";
 import { useMpDaily } from "@/lib/mpDaily";
@@ -57,6 +57,15 @@ export function Spurensuche() {
   const [targets, setTargets] = useState<Target[] | null>(null);
   const [local, setLocal] = useState<[number, number][] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // the Maps key refused this domain: say so instead of showing Google's broken grey box
+  useEffect(
+    () =>
+      onMapsAuthFailure(() =>
+        setError(t("Spurensuche ist gerade kurz nicht verfügbar – wir schalten Street View für die neue Adresse frei. Schau bald wieder vorbei!", "Where Am I? is briefly unavailable while we enable Street View for the new address. Check back soon!"))
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
   const [blocked, setBlocked] = useState<"archiv" | "wartung" | null>(null);
   const [guess, setGuess] = useState<[number, number] | null>(null);
   const [bigMap, setBigMap] = useState(false);
