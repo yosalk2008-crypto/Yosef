@@ -924,5 +924,55 @@ window.HALAL_EN = {
 "Deliberately eating during the day in Ramadan without a reason",
 "Fasting in Ramadan is obligatory for every healthy adult Muslim. The Quran says: eat and drink until the dawn becomes clear, then complete the fast until night.",
 "Quran 2:183 with Tafsir Ibn Kathir · Quran 2:187 with Tafsir Ibn Kathir"
+],
+"Zwischen zwei zerstrittenen Freunden vermitteln, damit sie sich wieder vertragen": [
+"Mediating between two friends who have fallen out so they make up again",
+"The Quran says: The believers are but brothers, so make peace between your brothers. Settling a quarrel is therefore not just allowed but a good deed.",
+"Quran 49:10 with Tafsir Ibn Kathir"
+],
+"Die geliehenen Kopfhörer eines Freundes einfach behalten": [
+"Just keeping a friend's headphones that you borrowed",
+"The Quran commands returning things entrusted to you to their owners. The Prophet ﷺ called it a sign of a hypocrite when something is entrusted to him and he does not return it.",
+"Quran 4:58 with Tafsir Ibn Kathir · Sahih al-Bukhari 33"
+],
+"Auf Social Media zeigen, wie viel man gespendet hat – nur damit alle einen loben": [
+"Showing on social media how much you donated – just so everyone praises you",
+"Whoever gives charity to be seen by people nullifies it, says the Quran. The Prophet ﷺ warned: whoever shows off his good deeds to win praise, Allah will expose his real intention.",
+"Quran 2:264 with Tafsir Ibn Kathir · Sahih al-Bukhari 6499 · Sahih Muslim 2987"
+],
+"Apfelessig im Salat essen": [
+"Eating apple cider vinegar in a salad",
+"Vinegar does not intoxicate and is permitted. The Prophet ﷺ ate bread with vinegar and said: What a good condiment vinegar is.",
+"Sahih Muslim 2051, 2052"
+],
+"Beim gemeinsamen Essen zwei Datteln auf einmal nehmen": [
+"Taking two dates at once when eating together with others",
+"The Prophet ﷺ forbade taking two dates at once when eating together – unless you have asked the others for permission. With permission, or when eating alone, it is fine.",
+"Sahih al-Bukhari 2455 · Sahih Muslim 2045"
+],
+"Beim Trinken in der Runde den Becher zuerst an den rechten Nachbarn weitergeben": [
+"Passing the cup to the person on your right first when drinking in a group",
+"After the Prophet ﷺ had drunk milk, he passed the cup to the man on his right and said: The right first, then the right again. This is a Sunnah when sharing drinks.",
+"Sahih al-Bukhari 5619 · Sahih Muslim 2029"
+],
+"Beim Betreten der eigenen Wohnung „Salam“ sagen": [
+"Saying “Salam” when entering your own home",
+"The Quran says: When you enter houses, greet one another with a greeting from Allah, blessed and good. So whoever comes home also greets with Salam.",
+"Quran 24:61 with Tafsir Ibn Kathir"
+],
+"Sich vor dem Einschlafen auf die rechte Seite legen und ein Dua sprechen": [
+"Lying on your right side and saying a dua before falling asleep",
+"The Prophet ﷺ advised: When you go to bed, perform wudu as for prayer, lie on your right side and say a supplication. This is a recommended Sunnah.",
+"Sahih al-Bukhari 247 · Sahih Muslim 2710"
+],
+"Nach dem Ramadan sechs Tage im Monat Schawwal freiwillig fasten": [
+"Voluntarily fasting six days in the month of Shawwal after Ramadan",
+"The Prophet ﷺ said: Whoever fasts Ramadan and then follows it with six days of Shawwal, it is as if he fasted the whole year. These fasts are voluntary and recommended.",
+"Sahih Muslim 1164"
+],
+"Beten, obwohl das Abendessen schon auf dem Tisch steht und man großen Hunger hat": [
+"Praying even though dinner is already on the table and you are very hungry",
+"The Prophet ﷺ said: When dinner is served and the prayer begins, start with the food. Praying while hungry is distracting – scholars consider it makruh as long as there is still enough time left for the prayer.",
+"Sahih al-Bukhari 671, 672 · Sahih Muslim 557"
 ]
 };

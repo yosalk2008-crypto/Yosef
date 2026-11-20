@@ -924,5 +924,55 @@ window.QUESTIONS_EN = {
 "Taking the festive bouquet (lulav) in your hand on Sukkot",
 "The Torah commands taking four plant species on Sukkot: a palm branch, an etrog, myrtle and willow. They are held together and a blessing is said over them.",
 "Leviticus 23:40"
+],
+"Zwischen zwei zerstrittenen Freunden vermitteln, damit sie sich wieder vertragen": [
+"Mediating between two friends who have fallen out so they make up again",
+"According to the Talmud, bringing peace between people is one of the deeds whose reward one enjoys already in this world. Settling a quarrel is therefore an especially good deed.",
+"Talmud, Shabbat 127a"
+],
+"Einem Freund Geld leihen, wenn er gerade knapp bei Kasse ist": [
+"Lending money to a friend who is short on cash right now",
+"The Torah speaks of lending money to those in need and forbids charging them interest. Helping someone in need with a loan is considered a commandment.",
+"Exodus 22:24"
+],
+"Einem Mitschüler ein gebrauchtes Handy für viel mehr als den üblichen Preis verkaufen, ohne dass er es merkt": [
+"Selling a used phone to a classmate for far more than the usual price without him noticing",
+"The Torah forbids taking advantage of the other person when buying and selling. According to the Talmud, the buyer can even cancel the sale if the price is more than a sixth above market value.",
+"Leviticus 25:14"
+],
+"Sardinen essen": [
+"Eating sardines",
+"Sardines have fins and scales. According to the Torah, any water creature that has both may be eaten.",
+"Leviticus 11:9"
+],
+"Den Ischiasnerv (Gid haNasche) vom Rind essen": [
+"Eating the sciatic nerve (gid hanasheh) of a cow",
+"Because Jacob was injured in the hip while wrestling with the angel, the children of Israel do not eat the sciatic nerve. That is why it must be carefully removed from kosher meat.",
+"Genesis 32:33"
+],
+"Rehfleisch essen, wenn das Reh vorher richtig geschächtet wurde": [
+"Eating venison from a roe deer that was properly slaughtered (shechita)",
+"Deer are ruminants with split hooves and are explicitly named as permitted in the Torah. But they must be ritually slaughtered – an animal shot while hunting is not kosher.",
+"Deuteronomy 14:5"
+],
+"Den alt gewordenen Eltern Essen und Trinken bringen": [
+"Bringing food and drink to your elderly parents",
+"The Talmud explains what honouring your parents means: giving them food and drink, dressing them and helping them come and go.",
+"Talmud, Kiddushin 31b"
+],
+"Einem Ochsen beim Dreschen das Maul zubinden, damit er nichts vom Getreide frisst": [
+"Muzzling an ox while it threshes so it can't eat any of the grain",
+"The Torah says explicitly: you shall not muzzle an ox while it is threshing. A working animal may eat from the food it is working with.",
+"Deuteronomy 25:4"
+],
+"Am Schabbat eine Kerze auspusten": [
+"Blowing out a candle on Shabbat",
+"Extinguishing a fire is one of the 39 forbidden kinds of work on Shabbat. That is why the Shabbat candles are left to burn down on their own.",
+"Talmud, Shabbat 73a"
+],
+"An Schawuot Milchspeisen wie Käsekuchen essen": [
+"Eating dairy dishes like cheesecake on Shavuot",
+"It is a widespread custom to eat dairy foods on the first day of Shavuot. This is mentioned in the Shulchan Aruch in the glosses of Rabbi Moshe Isserles.",
+"Shulchan Aruch, Orach Chayim 494:3"
 ]
 };
