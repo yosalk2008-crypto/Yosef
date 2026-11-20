@@ -178,5 +178,25 @@
    "CHN",
    "RUS"
   ]
+ },
+ "2026-11-27": {
+  "qs": [
+   "forest>50",
+   "coast>3000",
+   "grenze-BRA",
+   "sub-South America+urban>80",
+   "sub-South America+nachbarn5",
+   "kont-Südamerika+top-area",
+   "sub-South America+top-pop"
+  ],
+  "path": [
+   "AGO",
+   "AUS",
+   "COL",
+   "CHL",
+   "BOL",
+   "ARG",
+   "BRA"
+  ]
  }
 }
