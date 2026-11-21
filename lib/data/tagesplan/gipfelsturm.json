@@ -198,5 +198,25 @@
    "ARG",
    "BRA"
   ]
+ },
+ "2026-11-28": {
+  "qs": [
+   "kont-Europa+age>40",
+   "life>80",
+   "top-gdppc",
+   "grenze-DEU",
+   "kont-Europa+pop>30000000",
+   "sub-Western Europe+pop>30000000",
+   "sub-Western Europe+coast>3000"
+  ],
+  "path": [
+   "BLR",
+   "AND",
+   "MCO",
+   "AUT",
+   "GBR",
+   "DEU",
+   "FRA"
+  ]
  }
 }
