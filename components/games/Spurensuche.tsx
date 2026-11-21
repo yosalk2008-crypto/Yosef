@@ -61,7 +61,7 @@ export function Spurensuche() {
   useEffect(
     () =>
       onMapsAuthFailure(() =>
-        setError(t("Spurensuche ist gerade kurz nicht verfügbar – wir schalten Street View für die neue Adresse frei. Schau bald wieder vorbei!", "Where Am I? is briefly unavailable while we enable Street View for the new address. Check back soon!"))
+        setError(t("Spurensuche ist gerade kurz nicht verfügbar – Street View lädt gerade nicht. Schau bald wieder vorbei!", "Where Am I? is briefly unavailable – Street View isn't loading right now. Check back soon!"))
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []

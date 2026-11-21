@@ -1,4 +1,4 @@
-/** Mounts the "Ist das koscher?" quiz into an element on geoduels.de/koscher. Returns a cleanup function. */
+/** Mounts the "Ist das koscher?" quiz into an element on koshertrivia.de/koscher. Returns a cleanup function. */
 window.mountKosher = function (app) {
   "use strict";
   const EN = window.KT_LANG === "en";
@@ -502,8 +502,8 @@ window.mountKosher = function (app) {
   // ---------- Router ----------
   const ROUTES = { "": home, quiz: quizView };
   const TITLES = EN
-    ? { "": "Is it kosher? – GeoDuels", quiz: "Quiz – Is it kosher? – GeoDuels" }
-    : { "": "Ist das koscher? – GeoDuels", quiz: "Quiz – Ist das koscher? – GeoDuels" };
+    ? { "": "Is it kosher? – Koshertrivia", quiz: "Quiz – Is it kosher? – Koshertrivia" }
+    : { "": "Ist das koscher? – Koshertrivia", quiz: "Quiz – Ist das koscher? – Koshertrivia" };
   function route() {
     const r = location.hash.replace(/^#\/?/, "");
     const key = r in ROUTES ? r : "";

@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
 
-/** Name and icon when someone adds GeoDuels to their home screen (Android, Chrome). */
+/** Name and icon when someone adds Koshertrivia to their home screen (Android, Chrome). */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "GeoDuels",
-    short_name: "GeoDuels",
+    name: "Koshertrivia",
+    short_name: "Koshertrivia",
     description: "Tägliche Geografie-Rätsel, Länder-Quizze und Duelle mit Freunden",
     start_url: "/",
     display: "standalone",

@@ -1,4 +1,4 @@
-/** Mounts the "Ist das halal?" quiz into an element on geoduels.de/halal. Returns a cleanup function. */
+/** Mounts the "Ist das halal?" quiz into an element on koshertrivia.de/halal. Returns a cleanup function. */
 window.mountHalal = function (app) {
   "use strict";
   const EN = window.KT_LANG === "en";
@@ -535,8 +535,8 @@ window.mountHalal = function (app) {
   // ---------- Router ----------
   const ROUTES = { "": home, quiz: quizView };
   const TITLES = EN
-    ? { "": "Is it halal? – GeoDuels", quiz: "Quiz – Is it halal? – GeoDuels" }
-    : { "": "Ist das halal? – GeoDuels", quiz: "Quiz – Ist das halal? – GeoDuels" };
+    ? { "": "Is it halal? – Koshertrivia", quiz: "Quiz – Is it halal? – Koshertrivia" }
+    : { "": "Ist das halal? – Koshertrivia", quiz: "Quiz – Ist das halal? – Koshertrivia" };
   function route() {
     const r = location.hash.replace(/^#\/?/, "");
     const key = r in ROUTES ? r : "";

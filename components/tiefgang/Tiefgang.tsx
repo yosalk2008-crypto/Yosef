@@ -468,7 +468,7 @@ function Done({ results, questions, mode, isToday, share, onRestart, totalM }: {
   const text = share || `${t_("Tiefgang", "Deep Dive")} · ${nf.format(totalM)} m\n${results.map((r) => emojiFor(r.pts, r.perle)).join("")}`;
   const copy = async () => {
     try {
-      const t = text + (lang === "en" ? "\ngeoduels.de/en/tiefgang" : "\ngeoduels.de/tiefgang");
+      const t = text + (lang === "en" ? "\nkoshertrivia.de/en/tiefgang" : "\nkoshertrivia.de/tiefgang");
       if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) await navigator.share({ text: t });
       else await navigator.clipboard.writeText(t);
       setCopied(true);

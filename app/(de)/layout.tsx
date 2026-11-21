@@ -5,15 +5,15 @@ import { RootShell } from "@/components/RootShell";
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: "GeoDuels – tägliche Geografie-Rätsel & Länder-Quizze",
-    template: "%s · GeoDuels",
+    default: "Koshertrivia – tägliche Geografie-Rätsel & Länder-Quizze",
+    template: "%s · Koshertrivia",
   },
   description:
     "Acht neue Geografie-Rätsel jeden Tag und unbegrenzte Quizze zu Flaggen, Hauptstädten, Umrissen und Karten – Welt, Kontinente, Naher Osten, Bundesländer, Kantone, US-Staaten, syrische Gouvernements, marokkanische Regionen und türkische Provinzen.",
   openGraph: {
-    title: "GeoDuels – tägliche Geografie-Rätsel",
+    title: "Koshertrivia – tägliche Geografie-Rätsel",
     description: "Acht neue Rätsel jeden Tag plus unbegrenzte Länder-Quizze. Kostenlos und ohne Anmeldung.",
-    siteName: "GeoDuels",
+    siteName: "Koshertrivia",
     locale: "de_DE",
     type: "website",
   },

@@ -2,7 +2,7 @@
 
 /**
  * Google Maps JavaScript API (Street View + map) for "Spurensuche".
- * Browser key – it is visible to every visitor, so it must be restricted to geoduels.de (plus koshertrivia.de and firmengrafik.de, which forward here)
+ * Browser key – it is visible to every visitor, so it must be restricted to koshertrivia.de (plus geoduels.de and firmengrafik.de, which forward here)
  * (HTTP referrer) and to the Maps JavaScript API in the Google Cloud Console.
  */
 const KEY = "AIzaSyAq4ReUx4PbNMVdsgcY5gecrVRP-SWS-Tk";

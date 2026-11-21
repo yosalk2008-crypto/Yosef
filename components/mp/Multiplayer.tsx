@@ -718,10 +718,10 @@ function RoomBar({ st, members, me }: { st: RoomState; members: Record<string, M
   const share = async () => {
     const url = `${location.origin}${lang === "en" ? "/en" : ""}/multiplayer?code=${st.code}`;
     const text = st.duel
-      ? t(`Ich fordere dich zum 1v1 auf GeoDuels heraus – Code ${st.code}`, `I challenge you to a 1v1 on GeoDuels – code ${st.code}`)
-      : t(`Spiel mit mir auf GeoDuels – Server-Code ${st.code}`, `Play with me on GeoDuels – server code ${st.code}`);
+      ? t(`Ich fordere dich zum 1v1 auf Koshertrivia heraus – Code ${st.code}`, `I challenge you to a 1v1 on Koshertrivia – code ${st.code}`)
+      : t(`Spiel mit mir auf Koshertrivia – Server-Code ${st.code}`, `Play with me on Koshertrivia – server code ${st.code}`);
     try {
-      if (navigator.share && matchMedia("(pointer: coarse)").matches) return await navigator.share({ title: "GeoDuels", text, url });
+      if (navigator.share && matchMedia("(pointer: coarse)").matches) return await navigator.share({ title: "Koshertrivia", text, url });
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);

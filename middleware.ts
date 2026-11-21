@@ -1,12 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Old domains (koshertrivia.de, firmengrafik.de) forward to geoduels.de.
+ * Other domains (geoduels.de, firmengrafik.de) forward to koshertrivia.de.
  * Search engines and other bots get a permanent server redirect (301) so the index moves over.
  * People get the page for a moment: the move script in RootShell packs their saved results and streaks
- * (Local Storage is tied to the domain) into the URL and forwards them, geoduels.de unpacks it.
+ * (Local Storage is tied to the domain) into the URL and forwards them, koshertrivia.de unpacks it.
  */
-const OLD = /(^|\.)(koshertrivia|firmengrafik)\.de$/i;
+const OLD = /(^|\.)(geoduels|firmengrafik)\.de$/i;
 const BOT = /bot|crawl|spider|slurp|bingpreview|facebookexternalhit|whatsapp|telegram|discord|embedly|preview|lighthouse|curl|wget|python|headless/i;
 
 export function middleware(req: NextRequest) {
@@ -14,7 +14,7 @@ export function middleware(req: NextRequest) {
   if (!OLD.test(host)) return NextResponse.next();
   const ua = req.headers.get("user-agent") ?? "";
   if (!BOT.test(ua)) return NextResponse.next();
-  const url = new URL(req.nextUrl.pathname + req.nextUrl.search, "https://geoduels.de");
+  const url = new URL(req.nextUrl.pathname + req.nextUrl.search, "https://koshertrivia.de");
   return NextResponse.redirect(url, 301);
 }
 

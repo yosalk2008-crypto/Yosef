@@ -11,14 +11,14 @@ const fredoka = Fredoka({ subsets: ["latin"], variable: "--font-fredoka", displa
 const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito", display: "swap" });
 
 /**
- * Domain moves firmengrafik.de → koshertrivia.de → geoduels.de. Local Storage is tied to the domain, so
+ * Domain moves: firmengrafik.de → koshertrivia.de, and geoduels.de (used 20.–21.11.2026) back to koshertrivia.de. Local Storage is tied to the domain, so
  * on an old domain we pack every "geografik:" and "kt-" entry (results, streaks, options, leaderboard
- * name/ID) into the URL hash and geoduels.de unpacks it once, without overwriting anything already there.
+ * name/ID) into the URL hash and koshertrivia.de unpacks it once, without overwriting anything already there (daily results of both domains are merged day by day).
  */
 const MOVE_SCRIPT = `(function(){try{var h=location.hostname,ok=function(k){return k.indexOf("geografik:")===0||k.indexOf("kt-")===0};
-if(/(^|\\.)(firmengrafik|koshertrivia)\\.de$/.test(h)){var d={},n=0;try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&ok(k)){d[k]=localStorage.getItem(k);n++}}}catch(e){}
-var u="https://geoduels.de"+location.pathname+location.search;if(n)u+="#gfm="+encodeURIComponent(JSON.stringify(d));else if(location.hash)u+=location.hash;location.replace(u);return}
-if(location.hash.indexOf("#gfm=")===0){var m=JSON.parse(decodeURIComponent(location.hash.slice(5)));for(var k2 in m){if(ok(k2)&&localStorage.getItem(k2)===null)localStorage.setItem(k2,m[k2])}
+if(/(^|\\.)(firmengrafik|geoduels)\\.de$/.test(h)){var d={},n=0;try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&ok(k)){d[k]=localStorage.getItem(k);n++}}}catch(e){}
+var u="https://koshertrivia.de"+location.pathname+location.search;if(n)u+="#gfm="+encodeURIComponent(JSON.stringify(d));else if(location.hash)u+=location.hash;location.replace(u);return}
+if(location.hash.indexOf("#gfm=")===0){var m=JSON.parse(decodeURIComponent(location.hash.slice(5)));for(var k2 in m){if(!ok(k2))continue;var cur=localStorage.getItem(k2);if(cur===null){localStorage.setItem(k2,m[k2])}else if(k2==="geografik:v1"){try{var a=JSON.parse(cur),b=JSON.parse(m[k2]);a.daily=a.daily||{};for(var dd in (b.daily||{})){a.daily[dd]=a.daily[dd]||{};for(var gg in b.daily[dd]){if(!a.daily[dd][gg])a.daily[dd][gg]=b.daily[dd][gg]}}localStorage.setItem(k2,JSON.stringify(a))}catch(e){}}}
 history.replaceState(null,"",location.pathname+location.search)}}catch(e){}})();`;
 
 export function RootShell({ lang, children }: { lang: Lang; children: React.ReactNode }) {
