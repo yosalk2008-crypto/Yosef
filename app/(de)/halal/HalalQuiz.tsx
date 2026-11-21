@@ -42,8 +42,8 @@ export function HalalQuiz() {
     (async () => {
       try {
         (window as unknown as { KT_LANG?: string }).KT_LANG = lang;
-        if (!window.HALAL) await load("/halal/data.js?v=10");
-        if (lang === "en" && !(window as unknown as { HALAL_EN?: unknown }).HALAL_EN) await load("/halal/data.en.js?v=10");
+        if (!window.HALAL) await load("/halal/data.js?v=11");
+        if (lang === "en" && !(window as unknown as { HALAL_EN?: unknown }).HALAL_EN) await load("/halal/data.en.js?v=11");
         const w = window as unknown as { KTFX?: unknown; KT_ART?: unknown };
         if (!w.KTFX) await load("/koscher/fx.js?v=3");
         if (!w.KT_ART) await load("/koscher/art.js?v=1");

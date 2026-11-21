@@ -974,5 +974,45 @@ window.HALAL_EN = {
 "Praying even though dinner is already on the table and you are very hungry",
 "The Prophet ﷺ said: When dinner is served and the prayer begins, start with the food. Praying while hungry is distracting – scholars consider it makruh as long as there is still enough time left for the prayer.",
 "Sahih al-Bukhari 671, 672 · Sahih Muslim 557"
+],
+"Einen Mitschüler, der dich beleidigt, nicht zurückbeleidigen, sondern ruhig bleiben": [
+"The Prophet ﷺ said: When two people insult each other, the sin lies with the one who started – as long as the other does not go too far. The Quran even advises: Repel evil with what is better. Staying calm is therefore not only allowed but especially good.",
+"Quran 41:34 with Tafsir Ibn Kathir · Sahih Muslim 2587"
+],
+"Mit Freunden ein sportliches Wettrennen veranstalten": [
+"The Prophet ﷺ himself arranged horse races with fixed start and finish points. Sporting competitions are therefore allowed – as long as no gambling with money is involved.",
+"Sahih al-Bukhari 2868 · Sahih Muslim 1870"
+],
+"Einen Freund vor allen anderen übertrieben loben": [
+"When someone praised another man excessively in his presence, the Prophet ﷺ said: You have broken your friend’s neck. Whoever praises should stay moderate and say “I think he is such and such” – because excessive praise can make a person conceited.",
+"Sahih al-Bukhari 2662, 2663 · Sahih Muslim 3000"
+],
+"Kürbis essen": [
+"Pumpkin is an ordinary, permitted vegetable. Anas even reports that at a meal the Prophet ﷺ specifically picked out the pieces of gourd from the dish – and from that day on Anas liked to eat it himself.",
+"Sahih al-Bukhari 5379 · Sahih Muslim 2041"
+],
+"Nach dem Milchtrinken den Mund mit Wasser ausspülen": [
+"The Prophet ﷺ drank milk, then rinsed his mouth and said: It has fat. Rinsing is therefore a nice sunnah, especially before prayer.",
+"Sahih al-Bukhari 211 · Sahih Muslim 358"
+],
+"Fleisch essen, bei dem der Schlachter absichtlich nicht „Bismillah“ gesagt hat": [
+"The Quran says: Do not eat of that over which the name of Allah has not been mentioned. The Hanafis, Malikis and Hanbalis therefore consider such meat haram if the name was deliberately omitted. The Shafi’is regard saying it only as a sunnah and permit the meat.",
+"Quran 6:121 with Tafsir Ibn Kathir"
+],
+"Beim Betreten der Toilette ein Dua sprechen": [
+"Whenever the Prophet ﷺ went to the toilet, he said: O Allah, I seek refuge with You from all evil and evil beings. This short supplication before entering is a recommended sunnah.",
+"Sahih al-Bukhari 142 · Sahih Muslim 375"
+],
+"Mehr Wasser in die Suppe geben, um den Nachbarn etwas davon abzugeben": [
+"The Prophet ﷺ said to Abu Dharr: When you cook broth, add more water and remember your neighbors. Sharing food with your neighbors is therefore a good deed.",
+"Sahih Muslim 2625"
+],
+"Den Gebetsruf (Adhan) leise mitsprechen, wenn man ihn hört": [
+"The Prophet ﷺ said: When you hear the adhan, say what the muezzin says. Repeating it is a recommended sunnah.",
+"Sahih al-Bukhari 611 · Sahih Muslim 383"
+],
+"Ein Pflichtgebet so hastig beten, dass man bei Verbeugung und Niederwerfung nicht kurz zur Ruhe kommt": [
+"A man prayed hastily, and the Prophet ﷺ told him three times: Go back and pray, for you have not prayed. Then he taught him to come to rest in every position. Scholars regard this calm as obligatory; without it the prayer is deficient or invalid.",
+"Sahih al-Bukhari 757 · Sahih Muslim 397"
 ]
 };

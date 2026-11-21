@@ -42,8 +42,8 @@ export function KosherQuiz() {
     (async () => {
       try {
         (window as unknown as { KT_LANG?: string }).KT_LANG = lang;
-        if (!window.QUESTIONS) await load("/koscher/data.js?v=14");
-        if (lang === "en" && !(window as unknown as { QUESTIONS_EN?: unknown }).QUESTIONS_EN) await load("/koscher/data.en.js?v=14");
+        if (!window.QUESTIONS) await load("/koscher/data.js?v=15");
+        if (lang === "en" && !(window as unknown as { QUESTIONS_EN?: unknown }).QUESTIONS_EN) await load("/koscher/data.en.js?v=15");
         const w = window as unknown as { KTFX?: unknown; KT_ART?: unknown };
         if (!w.KTFX) await load("/koscher/fx.js?v=3");
         if (!w.KT_ART) await load("/koscher/art.js?v=1");

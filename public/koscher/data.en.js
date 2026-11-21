@@ -974,5 +974,55 @@ window.QUESTIONS_EN = {
 "Eating dairy dishes like cheesecake on Shavuot",
 "It is a widespread custom to eat dairy foods on the first day of Shavuot. This is mentioned in the Shulchan Aruch in the glosses of Rabbi Moshe Isserles.",
 "Shulchan Aruch, Orach Chayim 494:3"
+],
+"Mit einem Fake-Profil im Internet andere Leute täuschen": [
+"Deceiving people online with a fake profile",
+"The Talmud forbids deceiving people or creating a false impression (“genevat da’at”) – whether they are Jews or non-Jews. Pretending to be someone else online to fool others falls right under this.",
+"Talmud, Chullin 94a"
+],
+"Tatenlos zusehen, wie ein Mitschüler auf dem Schulhof verprügelt wird": [
+"Standing by and watching as a classmate gets beaten up in the schoolyard",
+"The Torah says: Do not stand idly by the blood of your neighbor. The Talmud derives from this that you must help someone in danger – for example by stepping in if it is safe, or by fetching a teacher or other help right away.",
+"Leviticus 19:16; Talmud, Sanhedrin 73a"
+],
+"Von seinem Taschengeld ein Zehntel spenden": [
+"Giving a tenth of your pocket money to charity",
+"According to the Shulchan Aruch, a tenth of one’s income is the average measure for tzedakah (charity), and a fifth is the best. That is why many also give a tenth (“ma’aser”) of their pocket money or holiday-job earnings.",
+"Shulchan Aruch, Yoreh De’ah 249:1"
+],
+"Lammkoteletts vom koscheren Metzger essen": [
+"Eating lamb chops from a kosher butcher",
+"Sheep chew the cud and have split hooves, and the Torah explicitly lists them among the permitted animals. At a kosher butcher the meat has been properly slaughtered and prepared.",
+"Deuteronomy 14:4"
+],
+"Kuhmilch aus dem Supermarkt trinken, bei deren Melken kein Jude dabei war": [
+"Drinking cow’s milk from the supermarket that was milked without a Jew present",
+"The Shulchan Aruch forbids milk that a non-Jew milked without Jewish supervision – out of concern that milk from non-kosher animals was mixed in. Many rabbis, such as Rabbi Moshe Feinstein, permit regular milk when government inspections rule this out; others drink only “chalav Yisrael”.",
+"Shulchan Aruch, Yoreh De’ah 115:1"
+],
+"Lachskaviar (Ketakaviar) essen": [
+"Eating salmon caviar (red caviar)",
+"The Mishnah teaches: whatever comes from a kosher animal is kosher. Salmon is a kosher fish, so its eggs are permitted too – unlike caviar from sturgeon. People still look for a kosher seal so that nothing non-kosher has been added.",
+"Mishnah, Bechorot 1:2"
+],
+"Nach einer Mahlzeit mit Brot das Tischgebet sprechen": [
+"Saying grace after a meal with bread",
+"The Torah says: When you have eaten and are satisfied, you shall bless the Eternal, your God. This is the source of the grace after meals, “Birkat HaMazon”, said after a meal with bread.",
+"Deuteronomy 8:10"
+],
+"Einen Gast beim Abschied noch ein Stück vor die Tür begleiten": [
+"Walking a guest a little way out the door when they leave",
+"The Talmud praises escorting guests a short way when they leave (“levayah”) and sees it as an important part of hospitality. Even a few steps out the door show the guest respect.",
+"Talmud, Sotah 46b"
+],
+"Am Sederabend den Kindern vom Auszug aus Ägypten erzählen": [
+"Telling the children about the Exodus from Egypt on Seder night",
+"The Torah commands: You shall tell your son on that day what the Eternal did for you when you left Egypt. That is why the Haggadah is read on Seder night and the children ask questions.",
+"Exodus 13:8"
+],
+"An Sukkot bei starkem Regen aus der Laubhütte ins Haus zum Essen gehen": [
+"Going inside the house to eat during heavy rain on Sukkot instead of staying in the sukkah",
+"The Mishnah allows you to leave the sukkah when it rains so hard that the food would be spoiled. The mitzvah is meant to bring joy – anyone suffering because of the rain is exempt from it.",
+"Mishnah, Sukkah 2:9"
 ]
 };
