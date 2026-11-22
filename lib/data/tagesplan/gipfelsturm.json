@@ -218,5 +218,25 @@
    "DEU",
    "FRA"
   ]
+ },
+ "2026-11-29": {
+  "qs": [
+   "kont-Asien+elev>3000",
+   "kont-Asien+pop>20000000",
+   "kont-Asien+urban>80",
+   "kont-Asien+life>80",
+   "kont-Asien+top-elev",
+   "sub-Eastern Asia+top-gdp",
+   "sub-Eastern Asia+top-area"
+  ],
+  "path": [
+   "ARM",
+   "BGD",
+   "BHR",
+   "QAT",
+   "AFG",
+   "JPN",
+   "CHN"
+  ]
  }
 }
