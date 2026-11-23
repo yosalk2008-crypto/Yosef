@@ -238,5 +238,25 @@
    "JPN",
    "CHN"
   ]
+ },
+ "2026-11-30": {
+  "qs": [
+   "gdppc>30000",
+   "nachbar1",
+   "kont-Nordamerika+forest>50",
+   "kont-Nordamerika+elev>3000",
+   "kont-Nordamerika+coast>3000",
+   "kont-Nordamerika+urban>80",
+   "kont-Nordamerika+area>500000"
+  ],
+  "path": [
+   "AND",
+   "BRN",
+   "BLZ",
+   "CRI",
+   "BHS",
+   "MEX",
+   "CAN"
+  ]
  }
 }
