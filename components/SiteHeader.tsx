@@ -89,7 +89,6 @@ export function SiteHeader() {
             </Link>
             <Link href="/sunstate" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #ff3b6b, #2a0f3a 75%)", ["--edge" as string]: "#12061a" }}>
               Sunstate Hustle
-              <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide">{t("Neu", "New")}</span>
             </Link>
             <Link
               href="/koscher"
