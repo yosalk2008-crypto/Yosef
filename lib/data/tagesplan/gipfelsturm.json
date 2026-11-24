@@ -258,5 +258,25 @@
    "MEX",
    "CAN"
   ]
+ },
+ "2026-12-01": {
+  "qs": [
+   "urban<40",
+   "net<40",
+   "kont-Asien+forest<10",
+   "kont-Asien+nachbarn5",
+   "kont-Asien+binnen",
+   "sub-Southern Asia+gdppc<2000",
+   "kont-Asien+birth>30"
+  ],
+  "path": [
+   "ATG",
+   "ETH",
+   "BHR",
+   "AZE",
+   "ARM",
+   "NPL",
+   "AFG"
+  ]
  }
 }
