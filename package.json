@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/data/southbeach-osm.mjs && next build",
     "start": "next start",
     "lint": "tsc --noEmit"
   },
@@ -15,6 +15,7 @@
     "next": "15.5.28",
     "react": "19.1.10",
     "react-dom": "19.1.10",
+    "three": "0.187.0",
     "topojson-client": "3.1.0"
   },
   "devDependencies": {
@@ -25,6 +26,7 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "^0.187.0",
     "@types/topojson-client": "^3.1.5",
     "tailwindcss": "4.3.3",
     "typescript": "^5"

@@ -18,7 +18,7 @@ const TILES: Tile[] = [
   { key: "tiefgang", href: "/tiefgang", de: "Tiefgang", en: "Deep Dive", subDe: "Je seltener, desto tiefer", subEn: "The rarer, the deeper", bg: "linear-gradient(160deg, #46a4e4 0%, #1a5aa0 100%)", edge: "#0b2f5e", dark: true },
   { key: "gipfelsturm", href: "/gipfelsturm", de: "Gipfelsturm", en: "Summit Rush", subDe: "Jede Antwort nur einmal", subEn: "Every answer only once", bg: "linear-gradient(165deg, #3a2466 0%, #a8466e 60%, #f08a56 100%)", edge: "#1c1030", daily: "gipfelsturm", dark: true },
   { key: "fernweh", href: "/fernweh", de: "Fernweh", en: "Wanderlust", subDe: "5 Pins, bis 500 km", subEn: "5 pins, up to 500 km", bg: "linear-gradient(160deg, #3fa0b4 0%, #1f6475 100%)", edge: "#0f3a45", daily: "fernweh", dark: true },
-  { key: "sunstate", href: "/sunstate", de: "Sunstate", en: "Sunstate", subDe: "Driften & hacken", subEn: "Drift & hack", bg: "linear-gradient(160deg, #ff3b6b 0%, #5a1748 55%, #1a0c2e 100%)", edge: "#12061a", dark: true },
+  { key: "sunstate", href: "/southbeach", de: "South Beach", en: "South Beach", subDe: "3D-Open-World", subEn: "3D open world", bg: "linear-gradient(160deg, #ff3b6b 0%, #5a1748 55%, #1a0c2e 100%)", edge: "#12061a", dark: true },
 ];
 
 export function MoreBoard() {

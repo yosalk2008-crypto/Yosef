@@ -87,8 +87,8 @@ export function SiteHeader() {
             <Link href="/fernweh" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold" style={{ background: "#a9d3dc", ["--edge" as string]: "#7fb0bc" }}>
               {t("Fernweh", "Wanderlust")}
             </Link>
-            <Link href="/sunstate" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #ff3b6b, #2a0f3a 75%)", ["--edge" as string]: "#12061a" }}>
-              Sunstate Hustle
+            <Link href="/southbeach" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #ff3b6b, #2a0f3a 75%)", ["--edge" as string]: "#12061a" }}>
+              South Beach
             </Link>
             <Link
               href="/koscher"

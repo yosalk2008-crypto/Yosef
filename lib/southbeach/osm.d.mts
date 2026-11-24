@@ -1,0 +1,20 @@
+export type SBBuilding = { p: number[]; h: number; id: number; n?: string; c?: string; k?: string };
+export type SBRoad = { p: number[]; w: number; t: "car" | "ped" | "foot"; n?: string; o?: 1 };
+export type SBArea = { p: number[]; k: "beach" | "water" | "pitch" | "parking" | "park"; n?: string };
+export type SBMap = {
+  v: number;
+  src: string;
+  origin: { lat: number; lon: number };
+  bounds: { x0: number; x1: number; z0: number; z1: number };
+  buildings: SBBuilding[];
+  roads: SBRoad[];
+  areas: SBArea[];
+  coast: number[][];
+  synthetic?: boolean;
+};
+export declare const ORIGIN: { lat: number; lon: number };
+export declare const BBOX: { s: number; w: number; n: number; e: number };
+export declare const OVERPASS: string[];
+export declare function overpassQuery(): string;
+export declare function project(lat: number, lon: number): [number, number];
+export declare function processOverpass(json: { elements: unknown[] }): SBMap;

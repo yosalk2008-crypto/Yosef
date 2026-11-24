@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/musterwebsite/:path*", destination: "/", permanent: true },
       { source: "/taeglich/zeitreise", destination: "/", permanent: true },
+      { source: "/sunstate", destination: "/southbeach", permanent: true },
+      { source: "/en/sunstate", destination: "/en/southbeach", permanent: true },
       social("/tiktok", "tiktok"),
       social("/tt", "tiktok"),
       social("/tt/halal", "tiktok", "/halal"),
