@@ -1,7 +1,7 @@
 /** Sticker-style illustrations for the other games (same style as GameArt: ink outline, soft shadow). */
 const S = { stroke: "#2c2a35", strokeWidth: 3, strokeLinejoin: "round" as const, strokeLinecap: "round" as const };
 
-export type MoreKey = "koscher" | "halal" | "tiefgang" | "gipfelsturm" | "fernweh";
+export type MoreKey = "koscher" | "halal" | "tiefgang" | "gipfelsturm" | "fernweh" | "sunstate";
 
 export function MoreArt({ game, className = "h-24 w-32" }: { game: MoreKey; className?: string }) {
   return (
@@ -77,6 +77,19 @@ function Art({ game, shadow = false }: { game: MoreKey; shadow?: boolean }) {
           <path d="M20 58c8-12 18-14 26-8s16 2 22-8" fill="none" strokeDasharray="3 6" stroke={shadow ? "#000" : "#d6453d"} />
           <path d="M84 50c-6-8-14-14-14-22a14 14 0 0128 0c0 8-8 14-14 22z" fill={f("#d6453d")} />
           <circle cx="84" cy="28" r="5" fill={f("#fff")} />
+        </g>
+      );
+    case "sunstate": // neon sunset, a palm and a sports car
+      return (
+        <g {...s}>
+          <path d="M22 50a38 38 0 0176 0z" fill={f("#ffb800")} />
+          <path d="M26 40h68M24 46h72" stroke={shadow ? "#000" : "#ff3b6b"} strokeWidth={3} />
+          <path d="M20 22c4 8 4 26 0 50" fill="none" strokeWidth={4} />
+          <path d="M20 22c-8-6-16-4-18 2M20 22c-2-8-10-12-16-10M20 22c4-8 14-10 20-6M20 22c8-2 16 2 18 8" fill="none" stroke={shadow ? "#000" : "#2a7a4a"} strokeWidth={5} />
+          <path d="M34 74v-8l10-8h30l14 8h14c3 0 4 2 4 4v4z" fill={f("#ff3b6b")} />
+          <path d="M48 60h12v6H43zM64 60h9l10 6H64z" fill={f("#9ff3ff")} />
+          <circle cx="50" cy="75" r="6" fill={f("#2c2a35")} />
+          <circle cx="92" cy="75" r="6" fill={f("#2c2a35")} />
         </g>
       );
   }

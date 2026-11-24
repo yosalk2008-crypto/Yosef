@@ -18,6 +18,7 @@ const TILES: Tile[] = [
   { key: "tiefgang", href: "/tiefgang", de: "Tiefgang", en: "Deep Dive", subDe: "Je seltener, desto tiefer", subEn: "The rarer, the deeper", bg: "linear-gradient(160deg, #46a4e4 0%, #1a5aa0 100%)", edge: "#0b2f5e", dark: true },
   { key: "gipfelsturm", href: "/gipfelsturm", de: "Gipfelsturm", en: "Summit Rush", subDe: "Jede Antwort nur einmal", subEn: "Every answer only once", bg: "linear-gradient(165deg, #3a2466 0%, #a8466e 60%, #f08a56 100%)", edge: "#1c1030", daily: "gipfelsturm", dark: true },
   { key: "fernweh", href: "/fernweh", de: "Fernweh", en: "Wanderlust", subDe: "5 Pins, bis 500 km", subEn: "5 pins, up to 500 km", bg: "linear-gradient(160deg, #3fa0b4 0%, #1f6475 100%)", edge: "#0f3a45", daily: "fernweh", dark: true },
+  { key: "sunstate", href: "/sunstate", de: "Sunstate", en: "Sunstate", subDe: "Driften & hacken", subEn: "Drift & hack", bg: "linear-gradient(160deg, #ff3b6b 0%, #5a1748 55%, #1a0c2e 100%)", edge: "#12061a", dark: true },
 ];
 
 export function MoreBoard() {
@@ -37,14 +38,14 @@ export function MoreBoard() {
   return (
     <>
       <h2 className="text-[28px] font-semibold leading-none sm:text-4xl">{t("Weitere Spiele", "More games")}</h2>
-      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-5">
+      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 lg:grid-cols-6">
         {TILES.map((g, k) => {
           const r = g.daily ? res[g.daily] : undefined;
           return (
             <Link
               key={g.key}
               href={g.href}
-              className={`chunk relative flex aspect-[1.15] flex-col items-center justify-center gap-1.5 px-2 pt-7 text-center text-white ${k === TILES.length - 1 ? "max-sm:col-span-2 max-sm:aspect-[2.3]" : ""}`}
+              className={`chunk relative flex aspect-[1.15] flex-col items-center justify-center gap-1.5 px-2 pt-7 text-center text-white ${k === TILES.length - 1 && TILES.length % 2 === 1 ? "max-sm:col-span-2 max-sm:aspect-[2.3]" : ""}`}
               style={{ background: g.bg, ["--edge" as string]: g.edge }}
             >
               {r?.done && <span className="absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 font-display text-xs font-semibold text-ink sm:text-sm">✓ {r.label}</span>}
