@@ -6,7 +6,7 @@ import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { createClient, type RealtimeChannel } from "@supabase/supabase-js";
 import { SUPA_KEY, SUPA_URL, getName } from "@/lib/leaderboard";
-import { N, RW, CURB, WALL, TRACKS, buildTrack, themeOf, type Track } from "./track";
+import { N, RW, CURB, WALL, TRACKS, buildTrack, themeOf, type Track, type Sc, type Fx } from "./track";
 import { CHARS, ITEM_ICON, ITEM_NAME, makeBanana, makeKart, makeRocket, type ItemKey, type KartMesh } from "./kart";
 import { CSS } from "./ui";
 
@@ -18,10 +18,10 @@ type Kart = {
   driftDir: number; driftT: number; hop: boolean; hopDir: number; mtT: number; mtStage: number; boostT: number; spinT: number; spinA: number; shieldT: number; airT: number; ramp: boolean; trick: number; trickOk: boolean;
   item: ItemKey | null; itemN: number; rollT: number; rollItem: ItemKey | null; holdT: number; wrongT: number; off: boolean; prevH: number; onRamp: boolean;
   mesh: KartMesh; inp: Inp; prevDrift: boolean; prevItem: boolean; prevGas: boolean; gasAt: number; vis: number; pitch: number; steerV: number;
-  lane: number; laneT: number; skill: number; rubber: number; botDrift: number; stuck: number; pts: number;
+  lane: number; laneT: number; skill: number; rubber: number; botDrift: number; stuck: number; pts: number; sc: number; scj: number; botSc: number;
   tgt?: { p: THREE.Vector3; yaw: number; speed: number; t: number };
 };
-type Proj = { id: string; homing: boolean; owner: string; target: string; p: THREE.Vector3; v: THREE.Vector3; idx: number; life: number; bounces: number; mesh: THREE.Object3D; immune: number };
+type Proj = { id: string; homing: boolean; owner: string; target: string; p: THREE.Vector3; v: THREE.Vector3; idx: number; sc: number; scj: number; life: number; bounces: number; mesh: THREE.Object3D; immune: number };
 type Nana = { id: string; owner: string; p: THREE.Vector3; idx: number; mesh: THREE.Object3D; immune: number };
 
 const LAPS = 3, BASE = 31, G = 32, CLS = [0.86, 1, 1.13], PTS = [15, 12, 10, 8, 6, 4, 2, 1];
@@ -102,7 +102,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
   function loadTrack(i: number) {
     if (track && track.def === TRACKS[i]) return;
     if (track) { scene.remove(track.group); track.group.traverse((o) => { const m = o as THREE.Mesh; if (m.geometry) m.geometry.dispose(); const mat = m.material as THREE.Material | THREE.Material[] | undefined; if (mat) (Array.isArray(mat) ? mat : [mat]).forEach((x) => { const mm = x as THREE.MeshStandardMaterial; mm.map?.dispose(); mm.emissiveMap?.dispose(); x.dispose(); }); }); }
-    track = buildTrack(TRACKS[i], scene, quality);
+    track = buildTrack(TRACKS[i], scene, quality, fxApi);
     const th = themeOf(TRACKS[i].key);
     sun.color.set(th.sun); sun.intensity = th.sunI; hemi.color.set(th.hemi[0]); hemi.groundColor.set(th.hemi[1]); hemi.intensity = th.hemi[2]; renderer.toneMappingExposure = th.exp;
     const key = TRACKS[i].key;
@@ -133,6 +133,32 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     }
     return L;
   }
+  // where on the course is p? main road or one of the shortcuts
+  const SF = { idx: 0, s: 0, y: 0, ramp: false, off: false, sc: -1, scj: 0, nx: 0, nz: 0, over: 0 };
+  function locSc(c: Sc, p: THREE.Vector3, hint: number) {
+    let best = 0, bd = Infinity;
+    const a = hint >= 0 ? Math.max(0, hint - 20) : 0, b = hint >= 0 ? Math.min(c.M - 1, hint + 30) : c.M - 1;
+    for (let j = a; j <= b; j++) { const q = c.P[j]; const d = (q.x - p.x) ** 2 + (q.z - p.z) ** 2; if (d < bd) { bd = d; best = j; } }
+    const q = c.P[best], r = c.R[best];
+    return { j: best, s: (p.x - q.x) * r.x + (p.z - q.z) * r.z, y: q.y };
+  }
+  function surface(p: THREE.Vector3, hint: number, scHint: number, scjHint: number, margin = 0.95) {
+    const l = locate(p, hint), lim = WALL - margin, tr = track!;
+    SF.sc = -1; SF.ramp = l.ramp; SF.over = 0;
+    if (Math.abs(l.s) > lim) for (let ci = 0; ci < tr.sc.length; ci++) {
+      const c = tr.sc[ci], q = locSc(c, p, ci === scHint ? scjHint : -1);
+      if (q.j >= 1 && q.j <= c.M - 2 && Math.abs(q.s) < c.w + 1.6) {
+        SF.sc = ci; SF.scj = q.j; SF.s = q.s; SF.y = q.y; SF.ramp = false; SF.off = c.kind === "off";
+        SF.idx = (c.a + Math.round(((c.b - c.a) * q.j) / (c.M - 1))) % N;
+        const wl = c.w - margin + 0.1;
+        if (Math.abs(q.s) > wl) { const sg = Math.sign(q.s); SF.over = Math.abs(q.s) - wl; SF.nx = c.R[q.j].x * sg; SF.nz = c.R[q.j].z * sg; }
+        return SF;
+      }
+    }
+    SF.idx = l.i; SF.s = l.s; SF.y = l.y; SF.off = Math.abs(l.s) > RW + CURB * 0.6;
+    if (Math.abs(l.s) > lim) { const sg = Math.sign(l.s), r = tr.R[l.i0]; SF.over = Math.abs(l.s) - lim; SF.nx = r.x * sg; SF.nz = r.z * sg; }
+    return SF;
+  }
   const wrapA = (a: number) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
 
   // ── karts ────────────────────────────────────────────────────────
@@ -143,7 +169,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
       driftDir: 0, driftT: 0, hop: false, hopDir: 0, mtT: 0, mtStage: 0, boostT: 0, spinT: 0, spinA: 0, shieldT: 0, airT: 0, ramp: false, trick: 0, trickOk: false,
       item: null, itemN: 0, rollT: 0, rollItem: null, holdT: 0, wrongT: 0, off: false, prevH: 0, onRamp: false,
       mesh, inp: { gas: false, brake: false, steer: 0, drift: false, item: false, back: false }, prevDrift: false, prevItem: false, prevGas: false, gasAt: -1, vis: 0, pitch: 0, steerV: 0,
-      lane: 0, laneT: 0, skill: 1, rubber: 1, botDrift: 0, stuck: 0, pts: 0,
+      lane: 0, laneT: 0, skill: 1, rubber: 1, botDrift: 0, stuck: 0, pts: 0, sc: -1, scj: 0, botSc: -1,
     };
     if (id !== myId) mesh.group.add(nameTag(name));
     karts.push(k); return k;
@@ -177,7 +203,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
   const newPid = () => `${myId}-${pid++}`;
   function spawnProj(id: string, homing: boolean, owner: string, target: string, p: THREE.Vector3, v: THREE.Vector3, idx: number) {
     const mesh = makeRocket(homing); mesh.position.copy(p); scene.add(mesh);
-    projs.push({ id, homing, owner, target, p: p.clone(), v: v.clone(), idx, life: homing ? 12 : 7, bounces: 0, mesh, immune: 0.4 });
+    projs.push({ id, homing, owner, target, p: p.clone(), v: v.clone(), idx, sc: -1, scj: 0, life: homing ? 12 : 7, bounces: 0, mesh, immune: 0.4 });
   }
   function spawnNana(id: string, owner: string, p: THREE.Vector3, idx: number) {
     const mesh = makeBanana(); mesh.position.copy(p); mesh.rotation.y = Math.random() * 6; scene.add(mesh);
@@ -225,12 +251,12 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
         const na = cur + Math.max(-4 * dt, Math.min(4 * dt, da)); q.v.set(Math.sin(na) * sp, 0, Math.cos(na) * sp);
       }
       q.p.x += q.v.x * dt; q.p.z += q.v.z * dt;
-      const l = locate(q.p, q.idx); q.idx = l.i; q.p.y += (l.y + 0.7 - q.p.y) * Math.min(1, dt * 12);
-      if (Math.abs(l.s) > WALL - 0.6) {
+      const l = surface(q.p, q.idx, q.sc, q.scj, 0.6); q.idx = l.idx; q.sc = l.sc; q.scj = l.scj; q.p.y += (l.y + 0.7 - q.p.y) * Math.min(1, dt * 12);
+      if (l.over > 0) {
         if (q.homing || q.bounces >= 6) { q.life = 0; } else {
-          const r = R[l.i0], sg = Math.sign(l.s), vn = q.v.x * r.x * sg + q.v.z * r.z * sg;
-          if (vn > 0) { q.v.x -= 2 * vn * r.x * sg; q.v.z -= 2 * vn * r.z * sg; q.bounces++; }
-          q.p.x -= r.x * sg * (Math.abs(l.s) - (WALL - 0.6)); q.p.z -= r.z * sg * (Math.abs(l.s) - (WALL - 0.6));
+          const vn = q.v.x * l.nx + q.v.z * l.nz;
+          if (vn > 0) { q.v.x -= 2 * vn * l.nx; q.v.z -= 2 * vn * l.nz; q.bounces++; }
+          q.p.x -= l.nx * l.over; q.p.z -= l.nz * l.over;
         }
       }
       q.mesh.position.copy(q.p); q.mesh.rotation.set(0, Math.atan2(q.v.x, q.v.z), q.homing ? S.t * 8 : 0);
@@ -306,15 +332,16 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     k.p.x += (fx * k.speed - fz * slide) * dt;
     k.p.z += (fz * k.speed + fx * slide) * dt;
     k.vy -= G * dt; k.p.y += k.vy * dt;
-    const l = locate(k.p, k.idx);
+    const l = surface(k.p, k.idx, k.sc, k.scj);
+    k.sc = l.sc; k.scj = l.scj;
     // laps
-    const prev = k.idx; k.idx = l.i;
+    const prev = k.idx; k.idx = l.idx;
     const di = k.idx - prev;
     if (di < -N / 2) { if (k.cp) { k.lap++; k.cp = false; onLap(k); } }
     else if (di > N / 2) { k.lap--; k.cp = true; }
     if (k.idx > N * 0.4 && k.idx < N * 0.6) k.cp = true;
     k.prog = k.lap + k.idx / N; k.s = l.s;
-    k.off = Math.abs(l.s) > RW + CURB * 0.6;
+    k.off = l.off;
     // ground
     const h = l.y;
     if (k.p.y <= h + 0.02) {
@@ -332,19 +359,18 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     k.prevH = h; k.onRamp = l.ramp;
     if (k.vy > 0 && k.p.y > h + 0.05) k.ground = false;
     // walls
-    const lim = WALL - 0.95;
-    if (Math.abs(l.s) > lim) {
-      const sg = Math.sign(l.s), r = R[l.i0], over = Math.abs(l.s) - lim;
-      k.p.x -= r.x * sg * over; k.p.z -= r.z * sg * over;
-      const vx = fx * k.speed, vz = fz * k.speed, vn = vx * r.x * sg + vz * r.z * sg;
+    if (l.over > 0) {
+      const nx = l.nx, nz = l.nz;
+      k.p.x -= nx * l.over; k.p.z -= nz * l.over;
+      const vx = fx * k.speed, vz = fz * k.speed, vn = vx * nx + vz * nz;
       if (vn > 0) {
-        const nvx = vx - r.x * sg * vn * 1.5, nvz = vz - r.z * sg * vn * 1.5, ns = Math.hypot(nvx, nvz);
+        const nvx = vx - nx * vn * 1.5, nvz = vz - nz * vn * 1.5, ns = Math.hypot(nvx, nvz);
         if (k.speed > 3) { k.yaw = Math.atan2(nvx, nvz); k.speed = ns * 0.9; } else k.speed *= 0.3;
-        if (vn > 6) { burst(k.p.x + r.x * sg, k.p.y + 0.5, k.p.z + r.z * sg, "#ffd27a", 10, 5); if (k.id === myId) { tone(140, 0.15, Math.min(0.35, vn / 40), "square", 60); S.shake = Math.min(0.4, vn / 50); } }
+        if (vn > 6) { burst(k.p.x + nx, k.p.y + 0.5, k.p.z + nz, "#ffd27a", 10, 5); if (k.id === myId) { tone(140, 0.15, Math.min(0.35, vn / 40), "square", 60); S.shake = Math.min(0.4, vn / 50); } }
       }
     }
     // pads & boxes
-    if (k.ground) for (const pd of tr.pads) { let d = k.idx - pd.i; if (d > N / 2) d -= N; if (d < -N / 2) d += N; if (d > -3 && d < 3 && Math.abs(l.s - pd.s) < 2.3) { if (k.boostT < 0.5 && k.id === myId) tone(350, 0.4, 0.2, "sawtooth", 900); k.boostT = Math.max(k.boostT, 1.0); } }
+    if (k.ground) for (const pd of tr.pads) { if ((pd.p.x - k.p.x) ** 2 + (pd.p.z - k.p.z) ** 2 < 2.4 * 2.4 + 4 && Math.abs(pd.p.y - k.p.y) < 1.5) { if (k.boostT < 0.5 && k.id === myId) tone(350, 0.4, 0.2, "sawtooth", 900); k.boostT = Math.max(k.boostT, 1.0); } }
     for (let bi = 0; bi < tr.boxes.length; bi++) {
       const b = tr.boxes[bi]; if (b.t > 0) continue;
       if ((b.p.x - k.p.x) ** 2 + (b.p.z - k.p.z) ** 2 < 2.4 * 2.4 && Math.abs(b.p.y - k.p.y - 1) < 2.5) {
@@ -366,7 +392,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
   function onLap(k: Kart) {
     if (k.lap >= LAPS && !k.finish) {
       k.finish = Math.max(0.01, S.raceT);
-      if (k.id === myId) { S.myFinished = true; banner(`${k.place + 1}.`, tt("ZIEL!", "FINISH!"), true); tone(523, 0.2, 0.25, "square"); setTimeout(() => tone(659, 0.2, 0.25, "square"), 180); setTimeout(() => tone(784, 0.5, 0.25, "square"), 360); }
+      if (k.id === myId) { if (track) confetti(track.P[0]); S.myFinished = true; banner(`${k.place + 1}.`, tt("ZIEL!", "FINISH!"), true); tone(523, 0.2, 0.25, "square"); setTimeout(() => tone(659, 0.2, 0.25, "square"), 180); setTimeout(() => tone(784, 0.5, 0.25, "square"), 360); }
       return;
     }
     if (k.id === myId && k.lap > 0 && k.lap < LAPS) {
@@ -392,6 +418,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
   // ── bots ─────────────────────────────────────────────────────────
   function botThink(k: Kart, dt: number) {
     const tr = track!, P = tr.P, T = tr.T, R = tr.R, I = k.inp, sp = Math.abs(k.speed);
+    I.item = false;
     k.laneT -= dt;
     if (k.laneT <= 0) { k.laneT = 2 + Math.random() * 3; k.lane = (Math.random() - 0.5) * (RW * 1.1); }
     let lane = k.lane;
@@ -401,7 +428,24 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     for (const n of nanas) { let d = n.idx - k.idx; if (d < 0) d += N; if (d > 0 && d < 30) { const ns = (n.p.x - P[n.idx].x) * R[n.idx].x + (n.p.z - P[n.idx].z) * R[n.idx].z; if (Math.abs(ns - lane) < 2.6) lane = ns + (ns > 0 ? -4 : 4); } }
     lane = Math.max(-RW + 1.8, Math.min(RW - 1.8, lane));
     const look = 9 + Math.floor(sp * 0.55), j = (k.idx + look) % N;
-    const tx = P[j].x + R[j].x * lane, tz = P[j].z + R[j].z * lane;
+    let tx = P[j].x + R[j].x * lane, tz = P[j].z + R[j].z * lane;
+    // shortcuts: decide on approach, then follow the path
+    if (k.botSc === -1) tr.sc.forEach((c, ci) => {
+      let d = c.a - k.idx; if (d < -N / 2) d += N;
+      if (k.botSc === -1 && d > 0 && d < 70) {
+        const turbo = k.item === "turbo" || k.item === "turbo3" || k.boostT > 0.5;
+        const take = c.kind === "road" ? Math.random() < 0.3 + S.cls * 0.2 : turbo && Math.random() < 0.85;
+        k.botSc = take ? ci : -2 - ci;
+      }
+    });
+    if (k.botSc >= 0) {
+      const c = tr.sc[k.botSc], q = locSc(c, k.p, k.sc === k.botSc ? k.scj : -1), jj = Math.min(c.M - 1, q.j + Math.max(6, Math.floor(look * 0.8)));
+      if (q.j < c.M - 8) { tx = c.P[jj].x; tz = c.P[jj].z; }
+      // fire the turbo right where the sand / gravel starts
+      if (c.kind === "off" && (k.item === "turbo" || k.item === "turbo3") && q.j >= c.j0 - 6 && k.boostT <= 0.15 && k.rollT <= 0) { I.item = !k.prevItem; }
+      if (c.kind === "off" && !k.item && k.boostT <= 0 && k.sc !== k.botSc && q.j < c.j0) k.botSc = -2 - k.botSc; // lost the turbo: stay on the road
+    }
+    if (k.botSc !== -1 && k.sc === -1) { const c = tr.sc[k.botSc >= 0 ? k.botSc : -2 - k.botSc]; let d = k.idx - c.b; if (d < -N / 2) d += N; let e = c.a - k.idx; if (e < -N / 2) e += N; if ((d > 5 && d < N / 2) || e > 90) k.botSc = -1; }
     const da = wrapA(Math.atan2(tx - k.p.x, tz - k.p.z) - k.yaw);
     I.steer = Math.max(-1, Math.min(1, -da * 2.6));
     I.gas = true; I.brake = false;
@@ -417,8 +461,10 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     k.stuck = sp < 2 && S.phase === "race" ? k.stuck + dt : 0;
     if (k.stuck > 1.5) { I.gas = false; I.brake = true; I.steer = -I.steer; if (k.stuck > 2.6) k.stuck = 0; }
     // items
-    I.item = false; I.back = false;
-    if (k.item && k.rollT <= 0 && k.holdT > 0.6 + (k.ci % 3) * 0.4) {
+    const scTurbo = I.item; I.item = false; I.back = false;
+    if (scTurbo) I.item = true;
+    else if (k.botSc >= 0 && tr.sc[k.botSc].kind === "off" && (k.item === "turbo" || k.item === "turbo3")) { /* save it for the shortcut */ }
+    else if (k.item && k.rollT <= 0 && k.holdT > 0.6 + (k.ci % 3) * 0.4) {
       const it = k.item;
       const ahead = karts.find((o) => o !== k && o.place === k.place - 1), behind = karts.find((o) => o !== k && o.place === k.place + 1);
       if (it === "turbo" || it === "turbo3") I.item = Math.abs(turnA) < 0.3 || k.off;
@@ -457,6 +503,26 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     tmpCol.set(col).multiplyScalar(2.2); pCol[i * 3] = tmpCol.r; pCol[i * 3 + 1] = tmpCol.g; pCol[i * 3 + 2] = tmpCol.b;
     pLife[i] = pMax[i] = life;
   }
+  const BN = 1600, bPos = new Float32Array(BN * 3), bCol = new Float32Array(BN * 3), bVel = new Float32Array(BN * 3), bLife = new Float32Array(BN), bMax = new Float32Array(BN);
+  const bGeo = new THREE.BufferGeometry(); bGeo.setAttribute("position", new THREE.BufferAttribute(bPos, 3)); bGeo.setAttribute("color", new THREE.BufferAttribute(bCol, 3));
+  const bPts = new THREE.Points(bGeo, new THREE.PointsMaterial({ size: 2.6, map: dotTex, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+  bPts.frustumCulled = false; scene.add(bPts);
+  let bNext = 0;
+  function emitBig(x: number, y: number, z: number, col: string, life: number, spd: number, vy = 0) {
+    const i = bNext; bNext = (bNext + 1) % BN;
+    bPos[i * 3] = x; bPos[i * 3 + 1] = y; bPos[i * 3 + 2] = z;
+    const a = Math.random() * 6.283, e = Math.random() * 2 - 1, r = Math.sqrt(1 - e * e);
+    bVel[i * 3] = Math.cos(a) * r * spd * 2; bVel[i * 3 + 1] = e * spd * 2 + vy; bVel[i * 3 + 2] = Math.sin(a) * r * spd * 2;
+    tmpCol.set(col).multiplyScalar(2.4); bCol[i * 3] = tmpCol.r; bCol[i * 3 + 1] = tmpCol.g; bCol[i * 3 + 2] = tmpCol.b;
+    bLife[i] = bMax[i] = life;
+  }
+  const fxApi: Fx = {
+    emit: (x, y, z, c, l, s, vy) => emit(x, y, z, c, l, s, vy),
+    big: (x, y, z, c, l, s, vy) => emitBig(x, y, z, c, l, s, vy),
+    boom: (v, at) => { const d = at.distanceTo(camera.position); if (d < 420) boom(v * Math.max(0.15, 1 - d / 420)); },
+    shake: (v, at) => { const m = me(); if (m && at.distanceTo(m.p) < 130) S.shake = Math.max(S.shake, v * (1 - at.distanceTo(m.p) / 130)); },
+  };
+  function confetti(p: THREE.Vector3) { const cs = ["#ff3d7f", "#ffd23f", "#00c2ff", "#2ecc71", "#ff8a00", "#9b5de5", "#ffffff"]; for (let k = 0; k < 140; k++) emitBig(p.x + (Math.random() - 0.5) * 18, p.y + 9, p.z + (Math.random() - 0.5) * 4, cs[k % cs.length], 1.6 + Math.random(), 4, 6); }
   function burst(x: number, y: number, z: number, col: string, n: number, spd: number) { for (let i = 0; i < n; i++) emit(x, y, z, col, 0.4 + Math.random() * 0.5, spd * 0.5); }
   function stepFx(dt: number) {
     for (let i = 0; i < PN; i++) {
@@ -467,6 +533,14 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
       if (k < 0.3) { pCol[i * 3] *= 0.9; pCol[i * 3 + 1] *= 0.9; pCol[i * 3 + 2] *= 0.9; }
     }
     pGeo.attributes.position.needsUpdate = true; pGeo.attributes.color.needsUpdate = true;
+    for (let i = 0; i < BN; i++) {
+      if (bLife[i] <= 0) { bPos[i * 3 + 1] = -999; continue; }
+      bLife[i] -= dt; const k = Math.max(0, bLife[i] / bMax[i]);
+      bVel[i * 3 + 1] -= 7 * dt; bVel[i * 3] *= 0.985; bVel[i * 3 + 2] *= 0.985;
+      bPos[i * 3] += bVel[i * 3] * dt; bPos[i * 3 + 1] += bVel[i * 3 + 1] * dt; bPos[i * 3 + 2] += bVel[i * 3 + 2] * dt;
+      if (k < 0.4) { bCol[i * 3] *= 0.93; bCol[i * 3 + 1] *= 0.93; bCol[i * 3 + 2] *= 0.93; }
+    }
+    bGeo.attributes.position.needsUpdate = true; bGeo.attributes.color.needsUpdate = true;
   }
 
   // ── visuals per kart ─────────────────────────────────────────────
@@ -560,7 +634,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     if (Math.hypot(px - k.p.x, pz - k.p.z) > 20) k.p.set(px, k.tgt.p.y, pz);
     k.p.x += (px - k.p.x) * Math.min(1, dt * 10); k.p.z += (pz - k.p.z) * Math.min(1, dt * 10); k.p.y += (k.tgt.p.y - k.p.y) * Math.min(1, dt * 10);
     k.yaw += wrapA(k.tgt.yaw - k.yaw) * Math.min(1, dt * 10); k.speed = k.tgt.speed;
-    k.idx = locate(k.p, k.idx).i; k.s = L.s; k.ground = true;
+    const sf = surface(k.p, k.idx, k.sc, k.scj); k.idx = sf.idx; k.s = sf.s; k.sc = sf.sc; k.scj = sf.scj; k.ground = true;
     if (k.spinT > 0) k.spinA += dt * 13;
     if (k.mtStage > 0 && Math.random() < 0.6) { const c = Math.cos(k.yaw), s = Math.sin(k.yaw); emit(k.p.x - s * 1.1, k.p.y + 0.2, k.p.z - c * 1.1, STAGE_COL[k.mtStage], 0.3, 0.35); }
   }
@@ -647,7 +721,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
   }
   function goRace() {
     S.phase = "race"; S.raceT = 0;
-    showCount("GO!");
+    showCount("GO!"); if (track) confetti(track.P[0]);
     tone(1046, 0.6, 0.3, "square");
     for (const k of karts) {
       if (k.remote) continue;
@@ -695,7 +769,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
   function simulate(dt: number) {
     S.t += dt;
     if (!track) return;
-    track.update(dt, S.t);
+    track.update(dt, S.t, camera.position);
     if (S.phase === "intro") { S.introT -= dt; if (S.introT <= 0 && (!S.online || S.host)) { S.phase = "count"; S.countT = 3.4; } }
     if (S.phase === "count") {
       S.countT -= dt; const n = Math.ceil(S.countT - 0.4);
@@ -769,7 +843,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     <div class="tk-fx"></div>
     <div class="tk-itemslot"></div>
     <div class="tk-lap"><small>${tt("RUNDE", "LAP")}</small><b>1/3</b><span>0:00.00</span></div>
-    <svg class="tk-map" viewBox="0 0 200 200"><path class="out"/><path class="in"/><g></g></svg>
+    <svg class="tk-map" viewBox="0 0 200 200"><path class="out"/><path class="in"/><path class="sc"/><g></g></svg>
     <div class="tk-pos"><b>1</b><small>/8</small></div>
     <div class="tk-spd">0 KM/H</div>
     <div class="tk-wrong">${tt("FALSCHE RICHTUNG!", "WRONG WAY!")}</div>
@@ -800,7 +874,8 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     mapPts = [];
     for (let i = 0; i < N; i += 10) mapPts.push(mp(track!.P[i].x, track!.P[i].z));
     const d = "M" + mapPts.map((p) => p.join(",")).join("L") + "Z";
-    ui.map.querySelectorAll("path").forEach((p) => p.setAttribute("d", d));
+    ui.map.querySelectorAll("path.out,path.in").forEach((p) => p.setAttribute("d", d));
+    ui.map.querySelector("path.sc")!.setAttribute("d", track!.sc.map((c) => "M" + c.P.filter((_, j) => j % 6 === 0 || j === c.M - 1).map((p) => mp(p.x, p.z).join(",")).join("L")).join(""));
   }
   function mp(x: number, z: number): [number, number] { return [Math.round(100 - (x - mapOx) * mapScale), Math.round(100 - (z - mapOz) * mapScale)]; }
   let lastPlace = -1, lastItemHtml = "";
@@ -873,7 +948,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
   function renderMenu() {
     if (menuView === "main") {
       ui.menu.className = "tb-menu"; ui.menu.style.display = "block";
-      ui.menu.innerHTML = `<div class="tb-main-l"><h1 class="tb-logo"><span class="a">TURBO</span><span class="b">KART</span></h1><p class="tb-tag">${tt("Driften · Items · 8 Fahrer · 3 Strecken", "Drifting · items · 8 racers · 3 tracks")}</p>
+      ui.menu.innerHTML = `<div class="tb-main-l"><h1 class="tb-logo"><span class="a">CART</span><span class="b">RACE</span></h1><p class="tb-tag">${tt("Driften · Items · 8 Fahrer · 3 Strecken", "Drifting · items · 8 racers · 3 tracks")}</p>
         ${nameIn()}
         <button class="tb-item hot" data-a="setup"><i>🏁</i><span><b>${tt("RENNEN", "RACE")}</b><small>${tt("Einzelrennen oder Cup gegen Bots", "Single race or cup vs bots")}</small></span></button>
         <button class="tb-item hot2" data-a="online"><i>🌐</i><span><b>ONLINE</b><small>${tt("Mit Freunden per Code · bis 8 Spieler", "With friends via code · up to 8 players")}</small></span></button>
@@ -897,7 +972,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     const list = ms.map(([id, m]) => `<li><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${CHARS[m.ci]?.col || "#fff"};margin-right:6px"></span><span>${esc(m.name || "?")}</span>${id === myId ? `<i>${tt("DU", "YOU")}</i>` : id === hostId ? `<i>HOST</i>` : ""}</li>`).join("") + Array.from({ length: Math.max(0, 8 - ms.length) }, () => `<li class="bot"><span>🤖 Bot</span></li>`).join("");
     openPanel(`<div class="tb-panel wide"><div class="tb-ph"><h2>${tt("RAUM", "ROOM")}</h2><button class="tb-ghost tb-back" data-a="leave">✕</button></div>
       <div class="tb-codebox"><span class="tb-codebig">${S.code}</span><button class="tb-ghost" data-a="copy">${tt("Kopieren", "Copy")}</button></div>
-      <p class="tb-hint">${tt("Freunde öffnen Turbokart → Online → Code eingeben.", "Friends open Turbokart → Online → enter the code.")}</p>
+      <p class="tb-hint">${tt("Freunde öffnen Cart Race → Online → Code eingeben.", "Friends open Cart Race → Online → enter the code.")}</p>
       ${drivers()}
       ${S.host ? `${modes()}${S.cup ? "" : tracks()}${classes()}` : `<p class="tb-hint">${S.cup ? "Cup" : tt(TRACKS[S.trackI].de, TRACKS[S.trackI].en)} · ${["100", "150", "200"][S.cls]} ccm</p>`}
       <div class="tb-team blue"><ul>${list}</ul></div>

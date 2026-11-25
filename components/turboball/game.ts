@@ -888,7 +888,7 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
   function renderMenu() {
     if (menuView === "main") {
       ui.menu.className = "tb-menu"; ui.menu.style.display = "block";
-      ui.menu.innerHTML = `<div class="tb-main-l"><h1 class="tb-logo"><span class="a">TURBO</span><span class="b">BALL</span></h1><p class="tb-tag">${tt("Auto-Fußball · Boost · Flips · Tore", "Car soccer · boost · flips · goals")}</p>
+      ui.menu.innerHTML = `<div class="tb-main-l"><h1 class="tb-logo"><span class="a">ROCKET</span><span class="b">FOOTBALL</span></h1><p class="tb-tag">${tt("Auto-Fußball · Boost · Flips · Tore", "Car soccer · boost · flips · goals")}</p>
         ${nameIn()}
         <button class="tb-item hot" data-a="solo"><i>⚡</i><span><b>${tt("SPIELEN", "PLAY")}</b><small>${tt("Gegen Bots · 1v1 bis 3v3", "Vs bots · 1v1 to 3v3")}</small></span></button>
         <button class="tb-item hot2" data-a="online"><i>🌐</i><span><b>ONLINE</b><small>${tt("Mit Freunden per Code", "With friends via code")}</small></span></button>
@@ -918,7 +918,7 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
     };
     openPanel(`<div class="tb-panel wide"><div class="tb-ph"><h2>${tt("RAUM", "ROOM")}</h2><button class="tb-ghost tb-back" data-a="leave">✕</button></div>
       <div class="tb-codebox"><span class="tb-codebig">${S.code}</span><button class="tb-ghost" data-a="copy">${tt("Kopieren", "Copy")}</button></div>
-      <p class="tb-hint">${tt("Freunde öffnen Turboball → Online → Code eingeben.", "Friends open Turboball → Online → enter the code.")}</p>
+      <p class="tb-hint">${tt("Freunde öffnen Rocket Football → Online → Code eingeben.", "Friends open Rocket Football → Online → enter the code.")}</p>
       ${S.host ? `${modes()}${chips("diff", [[0, tt("Bots leicht", "Easy bots")], [1, tt("Bots mittel", "Medium bots")], [2, tt("Bots schwer", "Hard bots")]], S.diff)}` : `<p class="tb-hint">${S.mode} v ${S.mode}</p>`}
       <div class="tb-teams">${col(0)}${col(1)}</div>
       ${S.host ? `<button class="tb-go" data-a="start"><span>${tt("SPIEL STARTEN", "START MATCH")}</span></button>` : `<p class="tb-hint">${tt("Warte auf den Gastgeber …", "Waiting for the host …")}</p>`}</div>`);

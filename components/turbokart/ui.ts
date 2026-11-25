@@ -47,6 +47,7 @@ export const CSS = TB + `
 .tk-map{position:absolute;left:14px;bottom:14px;width:170px;height:170px;opacity:.92;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
 .tk-map path{fill:none;stroke:rgba(255,255,255,.85);stroke-width:7;stroke-linejoin:round}
 .tk-map path.in{stroke:rgba(20,22,40,.85);stroke-width:4}
+.tk-map path.sc{stroke:#ffd23f;stroke-width:3;stroke-dasharray:5 4;opacity:.9}
 .tk-map circle{stroke:#000;stroke-width:1.5}
 .tk-map circle.me{stroke:#fff;stroke-width:3}
 .tk-banner{position:absolute;top:26%;left:0;right:0;text-align:center;pointer-events:none}

@@ -7,16 +7,16 @@ export const meta = (lang: Lang): Metadata => {
   const t = tr(lang);
   return {
     title: t("Andere Spiele – Auto-Fußball und Kart-Rennen online", "Other games – car soccer and kart racing online"),
-    description: t("Turboball (Auto-Fußball) und Turbokart (Kart-Rennen mit Items): 3D-Spiele im Browser, gegen Bots oder online mit Freunden.", "Turboball (car soccer) and Turbokart (kart racing with items): 3D games in your browser, against bots or online with friends."),
+    description: t("Cart Race (Kart-Rennen mit Items) und Rocket Football (Auto-Fußball): 3D-Spiele im Browser, gegen Bots oder online mit Freunden.", "Cart Race (kart racing with items) and Rocket Football (car soccer): 3D games in your browser, against bots or online with friends."),
   };
 };
 
 const GAMES = [
   {
-    href: "/turbokart",
-    title: "Turbokart",
-    de: "Kart-Rennen mit Driften, Mini-Turbo, Item-Boxen, Raketen und Bananen. 3 Strecken, 8 Fahrer, online mit Freunden.",
-    en: "Kart racing with drifting, mini-turbos, item boxes, rockets and bananas. 3 tracks, 8 racers, online with friends.",
+    href: "/cart-race",
+    title: "Cart Race",
+    de: "Kart-Rennen mit Driften, Mini-Turbo, Item-Boxen, Raketen und Bananen. Abkürzungen, Vulkan-Tunnel, 8 Fahrer, online mit Freunden.",
+    en: "Kart racing with drifting, mini-turbos, item boxes, rockets and bananas. shortcuts, a volcano tunnel, 8 racers, online with friends.",
     tagDe: "Kart-Rennen", tagEn: "Kart racing",
     bg: "linear-gradient(135deg, #ff3d7f 0%, #ff8a00 45%, #ffd23f 100%)", edge: "#8a1f3f",
     art: (
@@ -31,8 +31,8 @@ const GAMES = [
     ),
   },
   {
-    href: "/turboball",
-    title: "Turboball",
+    href: "/rocket-football",
+    title: "Rocket Football",
     de: "Auto-Fußball mit Boost, Flips und Wandfahren. 1v1 bis 3v3 gegen Bots oder online mit Freunden.",
     en: "Car soccer with boost, flips and wall driving. 1v1 to 3v3 against bots or online with friends.",
     tagDe: "Auto-Fußball", tagEn: "Car soccer",

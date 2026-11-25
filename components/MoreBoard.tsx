@@ -14,7 +14,6 @@ import { SOUTHBEACH_ENABLED } from "@/lib/southbeach/flag";
 type Tile = { key: MoreKey; href: string; de: string; en: string; subDe: string; subEn: string; bg: string; edge: string; daily?: GameKey; dark?: boolean };
 
 const ALL_TILES: Tile[] = [
-  { key: "spiele", href: "/andere-spiele", de: "Andere Spiele", en: "Other games", subDe: "Kart-Rennen & Auto-Fußball", subEn: "Kart racing & car soccer", bg: "linear-gradient(160deg, #ff3d7f 0%, #6a1f8a 55%, #1f6fff 120%)", edge: "#1a0a2e", dark: true },
   { key: "koscher", href: "/koscher", de: "Ist das koscher?", en: "Is it kosher?", subDe: "Erlaubt im Judentum?", subEn: "Allowed in Judaism?", bg: "linear-gradient(160deg, #2f62e0 0%, #16307a 100%)", edge: "#0b1a45", dark: true },
   { key: "halal", href: "/halal", de: "Ist das halal?", en: "Is it halal?", subDe: "Erlaubt im Islam?", subEn: "Allowed in Islam?", bg: "linear-gradient(160deg, #18b07a 0%, #0c5a40 100%)", edge: "#063322", dark: true },
   { key: "tiefgang", href: "/tiefgang", de: "Tiefgang", en: "Deep Dive", subDe: "Je seltener, desto tiefer", subEn: "The rarer, the deeper", bg: "linear-gradient(160deg, #46a4e4 0%, #1a5aa0 100%)", edge: "#0b2f5e", dark: true },
@@ -61,6 +60,18 @@ export function MoreBoard() {
           );
         })}
       </div>
+      <Link
+        href="/andere-spiele"
+        className="chunk relative mt-5 flex items-center gap-4 overflow-hidden px-5 py-4 text-white sm:gap-6 sm:px-7 sm:py-5"
+        style={{ background: "linear-gradient(110deg, #ff3d7f 0%, #6a1f8a 50%, #1f6fff 100%)", ["--edge" as string]: "#1a0a2e" }}
+      >
+        <MoreArt game="spiele" className="h-16 w-auto shrink-0 sm:h-20" />
+        <span className="flex min-w-0 flex-col">
+          <span className="font-display text-[22px] font-semibold leading-tight sm:text-3xl">{t("Andere Spiele", "Other games")}</span>
+          <span className="text-[13px] font-bold leading-tight text-white/85 sm:text-base">{t("Cart Race & Rocket Football – 3D, gegen Bots oder online", "Cart Race & Rocket Football – 3D, vs bots or online")}</span>
+        </span>
+        <span className="ml-auto hidden rounded-md bg-white px-4 py-2 font-display text-lg font-semibold text-ink sm:block">{t("Spielen", "Play")} →</span>
+      </Link>
     </>
   );
 }
