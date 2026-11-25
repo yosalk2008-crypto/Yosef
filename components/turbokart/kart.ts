@@ -13,7 +13,7 @@ export const CHARS = [
   { name: "Tano", col: "#d9dfe9", acc: "#1f6fff", skin: "#b07a52", spd: 1.03, accel: 0.98, hand: 0.97, w: 1.15 },
 ] as const;
 
-export type KartMesh = { group: THREE.Group; body: THREE.Group; wheels: THREE.Object3D[]; front: THREE.Object3D[]; flames: THREE.Mesh[]; shield: THREE.Mesh; driver: THREE.Group; head: THREE.Object3D };
+export type KartMesh = { group: THREE.Group; body: THREE.Group; wheels: THREE.Object3D[]; front: THREE.Object3D[]; flames: THREE.Mesh[]; shield: THREE.Mesh; driver: THREE.Group; head: THREE.Object3D; glider: THREE.Group };
 
 const tire = new THREE.MeshStandardMaterial({ color: "#16171b", roughness: 0.85 });
 const metal = new THREE.MeshStandardMaterial({ color: "#9aa0ab", metalness: 0.8, roughness: 0.4 });
@@ -69,7 +69,16 @@ export function makeKart(ci: number): KartMesh {
   // shield bubble
   const shield = new THREE.Mesh(new THREE.SphereGeometry(2.0, 24, 16), new THREE.MeshPhysicalMaterial({ color: "#7de8ff", emissive: "#2fb8ff", emissiveIntensity: 0.8, transparent: true, opacity: 0.25, roughness: 0, iridescence: 1, depthWrite: false }));
   shield.position.y = 0.9; shield.visible = false; group.add(shield);
-  return { group, body, wheels, front, flames, shield, driver, head };
+  // paraglider: curved canopy with cells, lines down to the kart
+  const glider = new THREE.Group(); glider.position.y = 0.9; glider.visible = false; glider.scale.setScalar(0.001); body.add(glider);
+  const cg = new THREE.CylinderGeometry(4.2, 4.2, 1.9, 24, 1, true, -1.05, 2.1); cg.rotateX(-Math.PI / 2);
+  const canopyMat = new THREE.MeshStandardMaterial({ color: ch.col, side: THREE.DoubleSide, roughness: 0.6 });
+  const canopy = new THREE.Mesh(cg, canopyMat); canopy.scale.set(1, 0.32, 1); canopy.position.y = 1.4; canopy.castShadow = true; glider.add(canopy);
+  const cg2 = cg.clone(); const stripe = new THREE.Mesh(cg2, new THREE.MeshStandardMaterial({ color: ch.acc, side: THREE.DoubleSide })); stripe.scale.set(0.35, 0.33, 1.01); stripe.position.y = 1.4; glider.add(stripe);
+  const lineM = new THREE.LineBasicMaterial({ color: "#222" });
+  for (const x of [-3.6, -1.8, 1.8, 3.6]) glider.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x * 0.25, -0.2, 0), new THREE.Vector3(x, 4.3 - Math.abs(x) * 0.28, 0)]), lineM));
+  canopy.position.y = 2.8; stripe.position.y = 2.8;
+  return { group, body, wheels, front, flames, shield, driver, head, glider };
 }
 
 // ── item models ──

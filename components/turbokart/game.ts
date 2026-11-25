@@ -15,7 +15,7 @@ type Inp = { gas: boolean; brake: boolean; steer: number; drift: boolean; item: 
 type Kart = {
   id: string; name: string; ci: number; bot: boolean; remote: boolean;
   p: THREE.Vector3; yaw: number; speed: number; vy: number; ground: boolean; idx: number; s: number; lap: number; cp: boolean; prog: number; finish: number; place: number;
-  driftDir: number; driftT: number; hop: boolean; hopDir: number; mtT: number; mtStage: number; boostT: number; spinT: number; spinA: number; shieldT: number; airT: number; ramp: boolean; trick: number; trickOk: boolean;
+  driftDir: number; driftT: number; hop: boolean; hopDir: number; mtT: number; mtStage: number; boostT: number; spinT: number; spinA: number; shieldT: number; airT: number; ramp: boolean; trick: number; trickOk: boolean; glide: boolean; rampKind: string; respawnT: number; glideT: number;
   item: ItemKey | null; itemN: number; rollT: number; rollItem: ItemKey | null; holdT: number; wrongT: number; off: boolean; prevH: number; onRamp: boolean;
   mesh: KartMesh; inp: Inp; prevDrift: boolean; prevItem: boolean; prevGas: boolean; gasAt: number; vis: number; pitch: number; steerV: number;
   lane: number; laneT: number; skill: number; rubber: number; botDrift: number; stuck: number; pts: number; sc: number; scj: number; botSc: number;
@@ -112,7 +112,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
   }
 
   // ── track queries ────────────────────────────────────────────────
-  const L = { i: 0, i0: 0, f: 0, s: 0, y: 0, ramp: false };
+  const L = { i: 0, i0: 0, f: 0, s: 0, y: 0, ramp: false, rampKind: "" };
   function locate(p: THREE.Vector3, hint: number) {
     const P = track!.P;
     let best = hint, bd = Infinity;
@@ -125,16 +125,16 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     const a = P[i0], b = P[(i0 + 1) % N], r = track!.R[i0];
     L.i = best; L.i0 = i0; L.f = f; L.y = a.y + (b.y - a.y) * f;
     L.s = (p.x - (a.x + (b.x - a.x) * f)) * r.x + (p.z - (a.z + (b.z - a.z) * f)) * r.z;
-    L.ramp = false;
-    for (const ri of track!.ramps) {
-      let di = i0 + f - ri; if (di > N / 2) di -= N; if (di < -N / 2) di += N;
+    L.ramp = false; L.rampKind = "";
+    for (const rp of track!.ramps) {
+      let di = i0 + f - rp.i; if (di > N / 2) di -= N; if (di < -N / 2) di += N;
       const d = di * track!.seg;
-      if (d > -7 && d < 0 && Math.abs(L.s) < RW * 0.7) { L.y += 1.4 * (d + 7) / 7; L.ramp = true; }
+      if (d > -rp.len && d < 0 && Math.abs(L.s) < rp.w) { L.y += (rp.h * (d + rp.len)) / rp.len; L.ramp = true; L.rampKind = rp.kind; }
     }
     return L;
   }
   // where on the course is p? main road or one of the shortcuts
-  const SF = { idx: 0, s: 0, y: 0, ramp: false, off: false, sc: -1, scj: 0, nx: 0, nz: 0, over: 0 };
+  const SF = { idx: 0, s: 0, y: 0, ry: 0, ramp: false, rampKind: "", void: false, off: false, sc: -1, scj: 0, nx: 0, nz: 0, over: 0 };
   function locSc(c: Sc, p: THREE.Vector3, hint: number) {
     let best = 0, bd = Infinity;
     const a = hint >= 0 ? Math.max(0, hint - 20) : 0, b = hint >= 0 ? Math.min(c.M - 1, hint + 30) : c.M - 1;
@@ -144,18 +144,21 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
   }
   function surface(p: THREE.Vector3, hint: number, scHint: number, scjHint: number, margin = 0.95) {
     const l = locate(p, hint), lim = WALL - margin, tr = track!;
-    SF.sc = -1; SF.ramp = l.ramp; SF.over = 0;
+    SF.sc = -1; SF.ramp = l.ramp; SF.rampKind = l.rampKind; SF.over = 0; SF.void = false;
     if (Math.abs(l.s) > lim) for (let ci = 0; ci < tr.sc.length; ci++) {
       const c = tr.sc[ci], q = locSc(c, p, ci === scHint ? scjHint : -1);
       if (q.j >= 1 && q.j <= c.M - 2 && Math.abs(q.s) < c.w + 1.6) {
-        SF.sc = ci; SF.scj = q.j; SF.s = q.s; SF.y = q.y; SF.ramp = false; SF.off = c.kind === "off";
+        SF.sc = ci; SF.scj = q.j; SF.s = q.s; SF.y = q.y; SF.ry = q.y; SF.ramp = false; SF.off = c.kind === "off";
         SF.idx = (c.a + Math.round(((c.b - c.a) * q.j) / (c.M - 1))) % N;
         const wl = c.w - margin + 0.1;
         if (Math.abs(q.s) > wl) { const sg = Math.sign(q.s); SF.over = Math.abs(q.s) - wl; SF.nx = c.R[q.j].x * sg; SF.nz = c.R[q.j].z * sg; }
         return SF;
       }
     }
-    SF.idx = l.i; SF.s = l.s; SF.y = l.y; SF.off = Math.abs(l.s) > RW + CURB * 0.6;
+    SF.idx = l.i; SF.s = l.s; SF.y = l.y; SF.ry = l.y; SF.off = Math.abs(l.s) > RW + CURB * 0.6;
+    if (tr.voidM[l.i]) { SF.void = true; return SF; } // a hole in the road
+    const os = tr.openS[l.i];
+    if (os && Math.abs(l.s) > lim && (os === 2 || os === Math.sign(l.s))) { if (Math.abs(l.s) > WALL + 0.4) SF.void = true; return SF; } // no barrier here
     if (Math.abs(l.s) > lim) { const sg = Math.sign(l.s), r = tr.R[l.i0]; SF.over = Math.abs(l.s) - lim; SF.nx = r.x * sg; SF.nz = r.z * sg; }
     return SF;
   }
@@ -166,7 +169,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     const mesh = makeKart(ci); scene.add(mesh.group);
     const k: Kart = {
       id, name, ci, bot, remote, p: new THREE.Vector3(), yaw: 0, speed: 0, vy: 0, ground: true, idx: 0, s: 0, lap: -1, cp: true, prog: 0, finish: 0, place: 0,
-      driftDir: 0, driftT: 0, hop: false, hopDir: 0, mtT: 0, mtStage: 0, boostT: 0, spinT: 0, spinA: 0, shieldT: 0, airT: 0, ramp: false, trick: 0, trickOk: false,
+      driftDir: 0, driftT: 0, hop: false, hopDir: 0, mtT: 0, mtStage: 0, boostT: 0, spinT: 0, spinA: 0, shieldT: 0, airT: 0, ramp: false, trick: 0, trickOk: false, glide: false, rampKind: "", respawnT: 0, glideT: 0,
       item: null, itemN: 0, rollT: 0, rollItem: null, holdT: 0, wrongT: 0, off: false, prevH: 0, onRamp: false,
       mesh, inp: { gas: false, brake: false, steer: 0, drift: false, item: false, back: false }, prevDrift: false, prevItem: false, prevGas: false, gasAt: -1, vis: 0, pitch: 0, steerV: 0,
       lane: 0, laneT: 0, skill: 1, rubber: 1, botDrift: 0, stuck: 0, pts: 0, sc: -1, scj: 0, botSc: -1,
@@ -230,6 +233,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     tone(homing ? 700 : 400, 0.35, k.id === myId ? 0.25 : 0.08, "sawtooth", 150);
   }
   function hitKart(k: Kart, big: boolean) {
+    if (k.respawnT > 0) return;
     if (k.shieldT > 0) { k.shieldT = 0; burst(k.p.x, k.p.y + 1, k.p.z, "#7de8ff", 30, 9); if (k.id === myId) tone(900, 0.3, 0.2, "triangle", 300); return; }
     if (k.spinT > 0.3) return;
     k.spinT = big ? 1.4 : 1.0; k.speed *= big ? 0.2 : 0.35; if (big) { k.vy = 8; k.ground = false; }
@@ -251,7 +255,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
         const na = cur + Math.max(-4 * dt, Math.min(4 * dt, da)); q.v.set(Math.sin(na) * sp, 0, Math.cos(na) * sp);
       }
       q.p.x += q.v.x * dt; q.p.z += q.v.z * dt;
-      const l = surface(q.p, q.idx, q.sc, q.scj, 0.6); q.idx = l.idx; q.sc = l.sc; q.scj = l.scj; q.p.y += (l.y + 0.7 - q.p.y) * Math.min(1, dt * 12);
+      const l = surface(q.p, q.idx, q.sc, q.scj, 0.6); q.idx = l.idx; q.sc = l.sc; q.scj = l.scj; if (!l.void) q.p.y += (l.y + 0.7 - q.p.y) * Math.min(1, dt * 12);
       if (l.over > 0) {
         if (q.homing || q.bounces >= 6) { q.life = 0; } else {
           const vn = q.v.x * l.nx + q.v.z * l.nz;
@@ -286,7 +290,14 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
 
   // ── physics ──────────────────────────────────────────────────────
   function stepKart(k: Kart, dt: number) {
-    const I = k.inp, ch = CHARS[k.ci], tr = track!, R = tr.R;
+    const I = k.inp, ch = CHARS[k.ci], tr = track!;
+    if (k.respawnT > 0) { // being put back on the track
+      k.respawnT -= dt; const P0 = tr.P[k.idx];
+      k.p.set(P0.x, P0.y + 0.05 + Math.max(0, k.respawnT) * 3.5, P0.z); k.speed = 0; k.vy = 0;
+      if (Math.random() < 0.5) emit(k.p.x + (Math.random() - 0.5) * 2, k.p.y + 0.5, k.p.z + (Math.random() - 0.5) * 2, "#9ff3ff", 0.5, 0.6);
+      if (k.respawnT <= 0) { k.p.y = P0.y; k.ground = true; k.prevH = P0.y; }
+      k.prevDrift = I.drift; k.prevItem = I.item; return;
+    }
     k.mtT -= dt; k.boostT -= dt; k.shieldT -= dt; k.trick -= dt;
     if (k.rollT > 0) { k.rollT -= dt; if (k.rollT <= 0) { k.item = k.rollItem; k.itemN = k.item === "turbo3" ? 3 : 1; k.holdT = 0; if (k.id === myId) tone(1100, 0.15, 0.2, "triangle"); } }
     if (k.item) k.holdT += dt;
@@ -321,7 +332,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
         const turn = 1.9 * ch.hand * Math.min(1, sp / 6) * (1 - 0.25 * Math.min(1, sp / 40));
         k.yaw -= I.steer * turn * (k.speed < 0 ? -1 : 1) * dt;
       }
-    } else if (!k.ground && k.spinT <= 0) k.yaw -= I.steer * 0.9 * dt;
+    } else if (!k.ground && k.spinT <= 0) k.yaw -= I.steer * (k.glide ? 1.4 : 0.9) * dt;
     // hop → drift
     if (racing && I.drift && !k.prevDrift && k.ground && k.spinT <= 0 && sp > 4) { k.vy = 5; k.ground = false; k.hop = true; k.hopDir = 0; tone(180, 0.08, 0.08, "square"); }
     if (racing && I.drift && !k.prevDrift && !k.ground && k.ramp && k.trick <= 0 && k.spinT <= 0) { k.trick = 0.5; k.trickOk = true; if (k.id === myId) tone(900, 0.15, 0.15, "triangle", 1400); }
@@ -331,7 +342,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     const slide = k.driftDir ? -k.driftDir * sp * 0.07 : 0;
     k.p.x += (fx * k.speed - fz * slide) * dt;
     k.p.z += (fz * k.speed + fx * slide) * dt;
-    k.vy -= G * dt; k.p.y += k.vy * dt;
+    k.vy -= G * dt * (k.glide ? 0.45 : 1); if (k.glide) { k.glideT += dt; if (k.vy < -3.2) k.vy = -3.2; k.speed = Math.max(k.speed, 27); } k.p.y += k.vy * dt;
     const l = surface(k.p, k.idx, k.sc, k.scj);
     k.sc = l.sc; k.scj = l.scj;
     // laps
@@ -342,22 +353,31 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     if (k.idx > N * 0.4 && k.idx < N * 0.6) k.cp = true;
     k.prog = k.lap + k.idx / N; k.s = l.s;
     k.off = l.off;
-    // ground
-    const h = l.y;
-    if (k.p.y <= h + 0.02) {
+    // ground (none over holes; once you dropped below the road you keep falling)
+    let h = l.void ? -1e4 : l.y;
+    if (h > -1e3 && !k.ground && k.p.y < h - 0.8) h = -1e4;
+    if (h > -1e3 && k.p.y <= h + 0.02) {
       if (!k.ground) {
         if (k.airT > 0.3 && k.id === myId) tone(120, 0.12, 0.2, "sine", 60);
         if (k.trickOk && k.spinT <= 0) { k.mtT = Math.max(k.mtT, 0.9); burst(k.p.x, k.p.y + 0.5, k.p.z, "#7dffb0", 14, 4); if (k.id === myId) tone(400, 0.3, 0.2, "sawtooth", 1000); }
         k.trickOk = false; k.ramp = false;
         if (k.hop && I.drift && Math.abs(k.hopDir || I.steer) > 0 && sp > 10 && !k.driftDir && Math.abs(I.steer) > 0.15) { k.driftDir = Math.sign(I.steer); k.driftT = 0; k.mtStage = 0; }
         k.hop = false; k.airT = 0;
+        if (k.glide) { k.glide = false; if (k.id === myId) tone(300, 0.2, 0.15, "triangle", 150); }
       }
       k.p.y = h; k.ground = true;
       k.vy = Math.max(-20, Math.min(14, (h - k.prevH) / Math.max(dt, 1e-3)));
     } else { k.ground = false; k.airT += dt; }
-    if (k.onRamp && !l.ramp && sp > 14 && k.vy > 0) { k.vy += 5; k.ramp = true; k.ground = false; }
-    k.prevH = h; k.onRamp = l.ramp;
+    if (k.onRamp && !l.ramp && k.vy > 0 && (sp > 14 || k.rampKind !== "jump")) {
+      k.vy += k.rampKind === "glide" ? 9 : k.rampKind === "boost" ? 4 : 5; k.ramp = true; k.ground = false;
+      if (k.rampKind === "glide") { k.glide = true; k.glideT = 0; if (k.id === myId) { tone(500, 0.5, 0.2, "sine", 1000); msg(tt("Gleitschirm auf!", "Glider out!")); } }
+    }
+    if (l.ramp && l.rampKind !== "jump" && k.spinT <= 0) { if (k.boostT < 0.3 && k.id === myId) tone(350, 0.4, 0.22, "sawtooth", 1000); k.boostT = Math.max(k.boostT, 0.9); }
+    if (h > -1e3) k.prevH = h;
+    k.onRamp = l.ramp; k.rampKind = l.rampKind;
     if (k.vy > 0 && k.p.y > h + 0.05) k.ground = false;
+    // fell into water / lava / off the map → back onto the track
+    if (!k.ground && (k.p.y < tr.deathY - 0.2 || k.p.y < l.ry - 9)) { respawn(k); return; }
     // walls
     if (l.over > 0) {
       const nx = l.nx, nz = l.nz;
@@ -388,6 +408,18 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     const tdot = fx * tr.T[k.idx].x + fz * tr.T[k.idx].z;
     k.wrongT = racing && tdot < -0.3 && k.speed > 2 ? k.wrongT + dt : 0;
     k.prevDrift = I.drift; k.prevItem = I.item; k.prevGas = I.gas;
+  }
+  function respawn(k: Kart) {
+    const tr = track!; let i = k.idx, n = 0;
+    while (n++ < 300 && (tr.voidM[i] || tr.voidM[(i + 32) % N])) i = (i - 1 + N) % N;
+    i = (i - 4 + N) % N;
+    const col = TRACKS[S.trackI].key === "volcano" ? "#ff7a1a" : TRACKS[S.trackI].key === "beach" ? "#bff2ff" : "#ffffff";
+    for (let q = 0; q < 30; q++) emitBig(k.p.x, Math.max(k.p.y, tr.deathY) + 0.3, k.p.z, col, 0.9, 3, 6);
+    const P0 = tr.P[i], T0 = tr.T[i];
+    k.idx = i; k.p.set(P0.x, P0.y + 3.5, P0.z); k.yaw = Math.atan2(T0.x, T0.z); k.vis = k.yaw; k.speed = 0; k.vy = 0;
+    k.ground = false; k.glide = false; k.driftDir = 0; k.driftT = 0; k.mtStage = 0; k.mtT = 0; k.boostT = 0; k.spinT = 0; k.hop = false; k.trickOk = false; k.ramp = false; k.onRamp = false; k.rampKind = "";
+    k.sc = -1; k.botSc = -1; k.respawnT = 1.1; k.prevH = P0.y;
+    if (k.id === myId) { camInit = false; S.shake = 0; msg(tt("Abgestürzt – zurück auf die Strecke!", "Fell off – back on the track!")); tone(700, 0.25, 0.15, "triangle", 350); }
   }
   function onLap(k: Kart) {
     if (k.lap >= LAPS && !k.finish) {
@@ -426,6 +458,9 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     if (!k.item && k.rollT <= 0) for (const b of tr.boxes) { let d = b.i - k.idx; if (d < 0) d += N; if (d > 5 && d < 45 && b.t <= 0) { const bs = (b.p.x - P[b.i].x) * R[b.i].x + (b.p.z - P[b.i].z) * R[b.i].z; if (Math.abs(bs - k.s) < 5) { lane = bs; break; } } }
     // dodge bananas
     for (const n of nanas) { let d = n.idx - k.idx; if (d < 0) d += N; if (d > 0 && d < 30) { const ns = (n.p.x - P[n.idx].x) * R[n.idx].x + (n.p.z - P[n.idx].z) * R[n.idx].z; if (Math.abs(ns - lane) < 2.6) lane = ns + (ns > 0 ? -4 : 4); } }
+    let nearRamp = false;
+    for (const rp of tr.ramps) if (rp.kind !== "jump") { let d = rp.i - k.idx; if (d < -N / 2) d += N; if (d > -4 && d < 90) { lane = 0; nearRamp = true; } }
+    if (tr.voidM[k.idx]) { lane = 0; nearRamp = true; }
     lane = Math.max(-RW + 1.8, Math.min(RW - 1.8, lane));
     const look = 9 + Math.floor(sp * 0.55), j = (k.idx + look) % N;
     let tx = P[j].x + R[j].x * lane, tz = P[j].z + R[j].z * lane;
@@ -451,7 +486,8 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     I.gas = true; I.brake = false;
     // corner ahead?
     const j2 = (k.idx + 45) % N, turnA = wrapA(Math.atan2(T[j2].x, T[j2].z) - Math.atan2(T[k.idx].x, T[k.idx].z));
-    if (!k.driftDir && !k.hop && Math.abs(turnA) > 0.55 && sp > 20 && k.ground && Math.random() < 0.08 * (S.cls + 1)) { I.drift = true; I.steer = turnA < 0 ? 1 : -1; k.botDrift = 0; }
+    if (nearRamp) { I.drift = false; if (k.driftDir && k.mtStage > 0) I.drift = false; }
+    else if (!k.driftDir && !k.hop && Math.abs(turnA) > 0.55 && sp > 20 && k.ground && Math.random() < 0.08 * (S.cls + 1)) { I.drift = true; I.steer = turnA < 0 ? 1 : -1; k.botDrift = 0; }
     else if (k.driftDir) {
       k.botDrift += dt;
       const wrong = (-da * 2.6) * k.driftDir < -0.9;
@@ -569,6 +605,9 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
       const col = k.boostT > 0 ? "#ff9a3a" : STAGE_COL[Math.max(1, k.mtStage)];
       (f.material as THREE.MeshBasicMaterial).color.set(col).multiplyScalar(2.5);
     }
+    m.group.visible = k.respawnT > 0 ? Math.floor(S.t * 14) % 2 === 0 : true;
+    const gs = m.glider.scale.x + ((k.glide ? 1 : 0) - m.glider.scale.x) * Math.min(1, dt * 8);
+    m.glider.scale.setScalar(Math.max(0.001, gs)); m.glider.visible = gs > 0.02; m.glider.rotation.z = -k.steerV * 0.25;
     m.shield.visible = k.shieldT > 0; if (k.shieldT > 0) { const sc = 1 + Math.sin(S.t * 8) * 0.04; m.shield.scale.setScalar(sc); }
   }
 
@@ -616,7 +655,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
   const members = new Map<string, { name: string; ci: number }>();
   const send = (event: string, payload: unknown) => { void ch?.send({ type: "broadcast", event, payload }); };
   const r2 = (x: number) => Math.round(x * 100) / 100;
-  const pack = (k: Kart) => [k.id, r2(k.p.x), r2(k.p.y), r2(k.p.z), r2(k.yaw), r2(k.speed), (k.spinT > 0 ? 1 : 0) | (k.shieldT > 0 ? 2 : 0) | (k.mtStage << 2) | ((k.boostT > 0 || k.mtT > 0 ? 1 : 0) << 4), r2(k.prog * 1000) / 1000, r2(k.finish), k.driftDir, k.ci, k.name, r2(k.steerV)];
+  const pack = (k: Kart) => [k.id, r2(k.p.x), r2(k.p.y), r2(k.p.z), r2(k.yaw), r2(k.speed), (k.spinT > 0 ? 1 : 0) | (k.shieldT > 0 ? 2 : 0) | (k.mtStage << 2) | ((k.boostT > 0 || k.mtT > 0 ? 1 : 0) << 4) | ((k.glide ? 1 : 0) << 5) | ((k.respawnT > 0 ? 1 : 0) << 6), r2(k.prog * 1000) / 1000, r2(k.finish), k.driftDir, k.ci, k.name, r2(k.steerV)];
   function unpack(a: (string | number)[], bot: boolean) {
     const id = a[0] as string; if (id === myId) return;
     let k = karts.find((x) => x.id === id);
@@ -624,7 +663,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     k.remote = true;
     k.tgt = { p: new THREE.Vector3(a[1] as number, a[2] as number, a[3] as number), yaw: a[4] as number, speed: a[5] as number, t: performance.now() };
     const fl = a[6] as number;
-    k.spinT = fl & 1 ? Math.max(k.spinT, 0.1) : 0; k.shieldT = fl & 2 ? 1 : 0; k.mtStage = (fl >> 2) & 3; k.mtT = (fl >> 4) & 1 ? 0.1 : 0;
+    k.spinT = fl & 1 ? Math.max(k.spinT, 0.1) : 0; k.shieldT = fl & 2 ? 1 : 0; k.mtStage = (fl >> 2) & 3; k.mtT = (fl >> 4) & 1 ? 0.1 : 0; k.glide = !!((fl >> 5) & 1); k.respawnT = (fl >> 6) & 1 ? 0.2 : 0;
     k.prog = a[7] as number; k.finish = a[8] as number; k.driftDir = a[9] as number; k.inp.steer = (a[12] as number) || 0;
   }
   function stepRemote(k: Kart, dt: number) {
@@ -843,7 +882,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     <div class="tk-fx"></div>
     <div class="tk-itemslot"></div>
     <div class="tk-lap"><small>${tt("RUNDE", "LAP")}</small><b>1/3</b><span>0:00.00</span></div>
-    <svg class="tk-map" viewBox="0 0 200 200"><path class="out"/><path class="in"/><path class="sc"/><g></g></svg>
+    <svg class="tk-map" viewBox="0 0 200 200"><path class="out"/><path class="in"/><g></g></svg>
     <div class="tk-pos"><b>1</b><small>/8</small></div>
     <div class="tk-spd">0 KM/H</div>
     <div class="tk-wrong">${tt("FALSCHE RICHTUNG!", "WRONG WAY!")}</div>
@@ -875,7 +914,7 @@ export async function mountTurbokart(root: HTMLElement, opts: { lang: Lang }) {
     for (let i = 0; i < N; i += 10) mapPts.push(mp(track!.P[i].x, track!.P[i].z));
     const d = "M" + mapPts.map((p) => p.join(",")).join("L") + "Z";
     ui.map.querySelectorAll("path.out,path.in").forEach((p) => p.setAttribute("d", d));
-    ui.map.querySelector("path.sc")!.setAttribute("d", track!.sc.map((c) => "M" + c.P.filter((_, j) => j % 6 === 0 || j === c.M - 1).map((p) => mp(p.x, p.z).join(",")).join("L")).join(""));
+
   }
   function mp(x: number, z: number): [number, number] { return [Math.round(100 - (x - mapOx) * mapScale), Math.round(100 - (z - mapOz) * mapScale)]; }
   let lastPlace = -1, lastItemHtml = "";

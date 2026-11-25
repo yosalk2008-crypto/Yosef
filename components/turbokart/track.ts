@@ -7,26 +7,34 @@ export type Theme = "beach" | "city" | "volcano";
 export type ScKind = "off" | "road";
 export type ScDef = { a: number; b: number; w: number; kind: ScKind };
 export type CraterDef = { x: number; z: number; rin: number; rpk: number; rout: number; h: number };
-export type TrackDef = { key: Theme; de: string; en: string; pts: [number, number, number][]; boxes: number[]; pads: [number, number][]; ramps: number[]; shortcuts: ScDef[]; crater?: CraterDef };
+export type Span = { a: number; b: number };
+export type TrackDef = {
+  key: Theme; de: string; en: string; pts: [number, number, number][]; boxes: number[]; pads: [number, number][]; ramps: number[]; shortcuts: ScDef[]; crater?: CraterDef;
+  hills?: [number, number, number][]; gaps?: { at: number; len: number }[]; glide?: { at: number; len: number }; open?: (Span & { side: number })[]; tunnels?: (Span & { kind: "rock" | "neon" })[]; deathY: number;
+};
+export type Ramp = { i: number; len: number; h: number; w: number; kind: "jump" | "boost" | "glide" };
 
 export const TRACKS: TrackDef[] = [
   {
     key: "beach", de: "Sonnenstrand", en: "Sunny Beach",
     pts: [[0, -150, 0], [90, -160, 0], [165, -115, 1], [175, -30, 4], [125, 35, 7], [160, 105, 4], [105, 175, 1], [10, 160, 0], [-55, 95, 4], [-135, 125, 2], [-195, 45, 0], [-160, -60, 0], [-85, -125, 0]],
-    boxes: [0.15, 0.48, 0.76], pads: [[0.31, -3], [0.62, 4], [0.9, 0]], ramps: [0.55],
+    boxes: [0.15, 0.48, 0.76], pads: [[0.31, -3], [0.62, 4]], ramps: [],
     shortcuts: [{ a: 430, b: 690, w: 5.5, kind: "off" }, { a: 850, b: 1110, w: 4.6, kind: "road" }],
+    hills: [[0.555, 0.035, 5], [0.8, 0.06, 16]], gaps: [{ at: 0.55, len: 24 }], glide: { at: 0.815, len: 150 }, tunnels: [{ a: 0.1, b: 0.135, kind: "rock" }], deathY: -0.45,
   },
   {
     key: "city", de: "Neon-City", en: "Neon City",
     pts: [[0, -125, 0], [110, -135, 0], [160, -95, 0], [165, -15, 5], [160, 60, 12], [110, 115, 13], [25, 115, 10], [-15, 60, 5], [-65, 20, 0], [-150, 35, 0], [-185, -30, 0], [-150, -105, 0], [-75, -135, 0]],
-    boxes: [0.12, 0.45, 0.78], pads: [[0.22, 0], [0.4, -4], [0.66, 3], [0.92, 0]], ramps: [0.56],
+    boxes: [0.12, 0.45, 0.78], pads: [[0.22, 0], [0.66, 3], [0.92, 0]], ramps: [0.56],
     shortcuts: [{ a: 880, b: 1140, w: 4.8, kind: "road" }],
+    gaps: [{ at: 0.36, len: 24 }], open: [{ a: 0.4, b: 0.47, side: 0 }], tunnels: [{ a: 0.17, b: 0.25, kind: "neon" }], deathY: -0.6,
   },
   {
     key: "volcano", de: "Vulkan", en: "Volcano",
     pts: [[0, -175, 0], [100, -160, 6], [175, -90, 14], [150, -5, 20], [65, 15, 22], [25, 85, 16], [100, 140, 9], [80, 205, 4], [-10, 220, 1], [-110, 205, 3], [-200, 180, 8], [-262, 135, 11], [-268, 60, 11], [-268, 0, 11], [-264, -70, 11], [-225, -140, 6], [-130, -175, 1]],
     boxes: [0.14, 0.44, 0.74], pads: [[0.28, 3], [0.58, -3], [0.88, 0]], ramps: [0.35, 0.86],
     shortcuts: [{ a: 440, b: 700, w: 5.5, kind: "off" }],
+    hills: [[0.54, 0.03, 8]], gaps: [{ at: 0.535, len: 26 }], open: [{ a: 0.89, b: 0.95, side: 2 }], deathY: -2.2,
     crater: { x: -268, z: 30, rin: 44, rpk: 60, rout: 98, h: 50 },
   },
 ];
@@ -36,7 +44,7 @@ export type Fx = { emit(x: number, y: number, z: number, col: string, life: numb
 export type Track = {
   def: TrackDef; P: THREE.Vector3[]; T: THREE.Vector3[]; R: THREE.Vector3[]; len: number; seg: number; sc: Sc[];
   boxes: { p: THREE.Vector3; i: number; t: number; mesh: THREE.Object3D }[];
-  pads: { i: number; s: number; sc: number; p: THREE.Vector3 }[]; ramps: number[];
+  pads: { i: number; s: number; sc: number; p: THREE.Vector3 }[]; ramps: Ramp[]; voidM: Uint8Array; openS: Int8Array; deathY: number;
   group: THREE.Group; bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
   update(dt: number, time: number, cam: THREE.Vector3): void;
 };
@@ -60,6 +68,7 @@ export function sampleTrack(def: TrackDef) {
   const P: THREE.Vector3[] = [], T: THREE.Vector3[] = [], R: THREE.Vector3[] = [];
   const pts = curve.getSpacedPoints(N);
   for (let i = 0; i < N; i++) P.push(pts[i]);
+  for (const [f, hw, h] of def.hills || []) { const c = f * N, w = hw * N; for (let i = 0; i < N; i++) { let d = Math.abs(i - c); d = Math.min(d, N - d); if (d < w) P[i].y += h * (0.5 + 0.5 * Math.cos((Math.PI * d) / w)); } }
   frame(P, T, R, true);
   return { P, T, R, len: curve.getLength() };
 }
@@ -109,6 +118,22 @@ export function buildTrack(def: TrackDef, scene: THREE.Scene, quality: number, f
   const animated: ((dt: number, t: number, cam: THREE.Vector3) => void)[] = [];
   const night = def.key !== "beach";
   const crater = def.crater;
+  // holes in the road (gaps you jump over, the glider stretch) and edges without barriers
+  const voidM = new Uint8Array(N), openS = new Int8Array(N);
+  const ramps: Ramp[] = def.ramps.map((f) => ({ i: Math.floor(f * N), len: 7, h: 1.4, w: RW * 0.7, kind: "jump" as const }));
+  for (const g of def.gaps || []) { const i = Math.floor(g.at * N); ramps.push({ i, len: 10, h: 2.2, w: RW + CURB, kind: "boost" }); for (let k = 1; k <= Math.round(g.len / seg); k++) voidM[(i + k) % N] = 1; }
+  if (def.glide) { const i = Math.floor(def.glide.at * N); ramps.push({ i, len: 14, h: 4, w: RW + CURB, kind: "glide" }); for (let k = 1; k <= Math.round(def.glide.len / seg); k++) voidM[(i + k) % N] = 2; }
+  for (const o of def.open || []) {
+    const a = Math.floor(o.a * N), b = Math.floor(o.b * N), m = Math.floor((a + b) / 2);
+    const side = o.side || (((P[m].x - cx) * R[m].x + (P[m].z - cz) * R[m].z) > 0 ? 1 : -1);
+    for (let i = a; i <= b; i++) openS[i % N] = side;
+  }
+  const voidRuns: [number, number][] = []; // [start, end) of each hole
+  for (let i = 0; i < N; i++) if (voidM[i] && !voidM[(i - 1 + N) % N]) { let e = i; while (voidM[e % N]) e++; voidRuns.push([i, e]); }
+  const solidRuns: [number, number][] = [];
+  if (!voidRuns.length) solidRuns.push([0, N]);
+  else voidRuns.forEach((r, k) => { const nx = voidRuns[(k + 1) % voidRuns.length]; let e = nx[0]; if (e <= r[1]) e += N; solidRuns.push([r[1], e]); });
+  const openL = (i: number) => openS[i] === -1 || openS[i] === 2, openR = (i: number) => openS[i] === 1 || openS[i] === 2;
 
   // ── sky dome (+ stars at night) ──
   const skyTex = canvas(4, 256, (g) => { const gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, th.sky[0]); gr.addColorStop(0.55, th.sky[1]); gr.addColorStop(1, th.sky[2]); g.fillStyle = gr; g.fillRect(0, 0, 4, 256); }, false);
@@ -168,7 +193,8 @@ export function buildTrack(def: TrackDef, scene: THREE.Scene, quality: number, f
     const x = P[i].x + R[i].x * WALL * sd, z = P[i].z + R[i].z * WALL * sd;
     for (let j = 1; j < c.M - 1; j++) { const q = c.P[j]; if ((q.x - x) ** 2 + (q.z - z) ** 2 < (c.w + 1.2) ** 2) { gap[si][i] = 1; break; } }
   }
-  const skipL = (i: number) => !!gap[0][i], skipR = (i: number) => !!gap[1][i];
+  const skipL = (i: number) => !!gap[0][i] || !!voidM[i] || openL(i), skipR = (i: number) => !!gap[1][i] || !!voidM[i] || openR(i);
+  const skirtL = (i: number) => !!gap[0][i] || !!voidM[i], skirtR = (i: number) => !!gap[1][i] || !!voidM[i];
 
   // ── road ──
   const roadTex = canvas(256, 256, (g) => {
@@ -177,18 +203,26 @@ export function buildTrack(def: TrackDef, scene: THREE.Scene, quality: number, f
     g.fillStyle = "rgba(255,255,255,.22)"; g.fillRect(126, 0, 4, 120);
   });
   const road = new THREE.MeshStandardMaterial({ map: roadTex, roughness: night ? 0.5 : 0.85, metalness: night ? 0.3 : 0.05 });
-  strip(P, R, -RW, RW, road, 18);
+  const runStrip = (a: number, b: number, mat: THREE.Material, vLen: number, dy = 0, uRep = 1) => { for (const [f, t] of solidRuns) strip(P, R, a, b, mat, vLen, dy, uRep, voidRuns.length === 0, f, t); };
+  runStrip(-RW, RW, road, 18);
   const curbTex = canvas(4, 64, (g) => { g.fillStyle = th.wall[1]; g.fillRect(0, 0, 4, 32); g.fillStyle = "#f4f4f4"; g.fillRect(0, 32, 4, 32); });
   const curb = new THREE.MeshStandardMaterial({ map: curbTex, roughness: 0.6, emissive: def.key === "city" ? "#00a0c0" : "#000", emissiveIntensity: def.key === "city" ? 0.35 : 0 });
-  strip(P, R, RW, RW + CURB, curb, 5, 0.03); strip(P, R, -RW - CURB, -RW, curb, 5, 0.03);
+  runStrip(RW, RW + CURB, curb, 5, 0.03); runStrip(-RW - CURB, -RW, curb, 5, 0.03);
   const offTex = canvas(128, 128, (g) => noise(g, 128, 128, th.off[0], th.off[1], 2500, 3, rand));
   const off = new THREE.MeshStandardMaterial({ map: offTex, roughness: 0.95 });
-  strip(P, R, RW + CURB, WALL + 0.4, off, 12, -0.02, 2); strip(P, R, -WALL - 0.4, -RW - CURB, off, 12, -0.02, 2);
+  runStrip(RW + CURB, WALL + 0.4, off, 12, -0.02, 2); runStrip(-WALL - 0.4, -RW - CURB, off, 12, -0.02, 2);
   const wallTex = canvas(64, 16, (g) => { g.fillStyle = th.wall[0]; g.fillRect(0, 0, 64, 16); g.fillStyle = th.wall[1]; g.fillRect(0, 10, 64, 6); if (def.key === "beach") { g.fillRect(0, 0, 32, 4); } });
   const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.5, side: THREE.DoubleSide, emissive: def.key === "beach" ? "#000" : th.wall[1], emissiveMap: def.key === "beach" ? null : wallTex, emissiveIntensity: def.key === "beach" ? 0 : 0.5 });
   wallAlong(P, R, WALL + 0.4, 0, 1.3, wallMat, 4, true, skipR); wallAlong(P, R, -WALL - 0.4, 0, 1.3, wallMat, 4, true, skipL);
   const skirt = new THREE.MeshStandardMaterial({ color: night ? "#22242f" : "#cdb48a", roughness: 0.9, side: THREE.DoubleSide });
-  wallAlong(P, R, WALL + 0.45, -40, 0.01, skirt, 10, true, skipR, 0, N, false); wallAlong(P, R, -WALL - 0.45, -40, 0.01, skirt, 10, true, skipL, 0, N, false);
+  wallAlong(P, R, WALL + 0.45, -40, 0.01, skirt, 10, true, skirtR, 0, N, false); wallAlong(P, R, -WALL - 0.45, -40, 0.01, skirt, 10, true, skirtL, 0, N, false);
+  // the ends of each hole: front faces, glowing edge bars, support pillars
+  const edgeMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.6, 1.6, 0.3), toneMapped: false });
+  for (const [a, b] of voidRuns) for (const [i, dir] of [[(a - 1 + N) % N, 1], [b % N, -1]] as const) {
+    const p = P[i], t = T[i], yaw = Math.atan2(t.x, t.z);
+    const face = new THREE.Mesh(new THREE.BoxGeometry(2 * WALL + 1, 40, 0.6), skirt); face.position.set(p.x + t.x * 0.3 * dir, p.y - 20.02, p.z + t.z * 0.3 * dir); face.rotation.y = yaw; group.add(face);
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(2 * (RW + CURB), 0.25, 0.5), edgeMat); bar.position.set(p.x, p.y + 0.05, p.z); bar.rotation.y = yaw; group.add(bar);
+  }
   if (def.key !== "beach") {
     const glow = new THREE.MeshBasicMaterial({ color: new THREE.Color(th.wall[1]).multiplyScalar(2.2), toneMapped: false, side: THREE.DoubleSide });
     wallAlong(P, R, WALL + 0.38, 1.3, 1.45, glow, 4, true, skipR, 0, N, false); wallAlong(P, R, -WALL - 0.38, 1.3, 1.45, glow, 4, true, skipL, 0, N, false);
@@ -234,13 +268,21 @@ export function buildTrack(def: TrackDef, scene: THREE.Scene, quality: number, f
   gTex.repeat.set(60, 60);
   const groundR = def.key === "beach" ? 330 : def.key === "volcano" ? ext + 80 : 900;
   const ground = new THREE.Mesh(new THREE.CircleGeometry(groundR, 72).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: gTex, roughness: 1 }));
-  ground.position.set(cx, -0.6, cz); ground.receiveShadow = true; group.add(ground);
+  ground.position.set(cx, -0.6, cz); ground.receiveShadow = true; if (def.key !== "volcano") group.add(ground);
+  const flatStrip = (from: number, to: number, a: number, b: number, y: number, mat: THREE.Material) => {
+    const pos: number[] = [], idx: number[] = [], uv: number[] = [];
+    for (let i = from, q = 0; i <= to; i++, q++) { const k = (i + N) % N, p = P[k], r = R[k]; pos.push(p.x + r.x * a, y, p.z + r.z * a, p.x + r.x * b, y, p.z + r.z * b); uv.push(0, q / 30, 1, q / 30); if (i < to) { const o = q * 2; idx.push(o, o + 2, o + 1, o + 1, o + 2, o + 3); } }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+    if (g.getAttribute("normal").getY(0) < 0) { idx.reverse(); g.setIndex(idx); g.computeVertexNormals(); }
+    const m = new THREE.Mesh(g, mat); group.add(m); return m;
+  };
 
   // distance from the track (for scenery placement)
   const near = (x: number, z: number, d: number) => {
     for (let i = 0; i < N; i += 4) { const p = P[i]; if ((p.x - x) ** 2 + (p.z - z) ** 2 < d * d) return true; }
     for (const c of sc) for (let j = 0; j < c.M; j += 3) { const p = c.P[j]; if ((p.x - x) ** 2 + (p.z - z) ** 2 < Math.max(4, d - WALL + c.w + 3) ** 2) return true; }
     if (crater && Math.hypot(x - crater.x, z - crater.z) < crater.rout + 4) return true;
+    for (const [a, b] of voidRuns) for (let i = a - 30; i < b + 30; i += 4) { const p = P[(i + N) % N]; if ((p.x - x) ** 2 + (p.z - z) ** 2 < 62 * 62) return true; }
     return false;
   };
   const scatter = (n: number, rMin: number, rMax: number, ok: (x: number, z: number) => boolean = () => true) => {
@@ -301,7 +343,7 @@ export function buildTrack(def: TrackDef, scene: THREE.Scene, quality: number, f
     const fc = ["#ff3d7f", "#ffd23f", "#00c2ff", "#2ecc71", "#ff8a00", "#9b5de5"];
     for (let i = N - 120; i < N + 60; i += 30) for (const sd of [-1, 1]) {
       const k = (i + N) % N, p = P[k], r = R[k], x = p.x + r.x * (WALL + 1.5) * sd, z = p.z + r.z * (WALL + 1.5) * sd;
-      if (gap[sd < 0 ? 0 : 1][k]) continue;
+      if (gap[sd < 0 ? 0 : 1][k] || voidM[k]) continue;
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 7), new THREE.MeshStandardMaterial({ color: "#ccc", metalness: 0.8 })); pole.position.set(x, p.y + 3.5, z); group.add(pole);
       const fgeo = new THREE.PlaneGeometry(2.6, 1.5, 8, 1); fgeo.translate(1.3, 0, 0);
       const col = fc[flags.length % fc.length];
@@ -475,6 +517,127 @@ export function buildTrack(def: TrackDef, scene: THREE.Scene, quality: number, f
     if (crater) buildVolcano(crater);
   }
 
+  /** A road tunnel: an arch following the track from i0 to i1, with portals, glowing trim and ceiling lamps. */
+  function archTunnel(i0: number, i1: number, TW: number, TH: number, mat: THREE.Material, portalMat: THREE.Material | null, glowMat: THREE.Material, light: THREE.Color | null, rings?: (q: number, curve: THREE.CatmullRomCurve3) => void) {
+    const arch: [number, number][] = [[-TW, -0.3], [-TW, 5]];
+    for (let k = 1; k < 12; k++) { const a = Math.PI - (k / 12) * Math.PI; arch.push([Math.cos(a) * TW, 5 + Math.sin(a) * (TH - 5)]); }
+    arch.push([TW, 5], [TW, -0.3]);
+    const pts: number[] = [], uvs: number[] = [], ind: number[] = [];
+    const cnt = ((i1 - i0 + N) % N) + 1, K = arch.length;
+    let d = 0;
+    for (let q = 0; q < cnt; q++) {
+      const i = (i0 + q) % N, p = P[i], r = R[i];
+      if (q > 0) d += P[(i - 1 + N) % N].distanceTo(p);
+      arch.forEach(([x, y], k) => { pts.push(p.x + r.x * x, p.y + y, p.z + r.z * x); uvs.push(k / (K - 1), d / 20); });
+      if (q < cnt - 1) for (let k = 0; k < K - 1; k++) { const o = q * K + k; ind.push(o, o + K, o + 1, o + 1, o + K, o + K + 1); }
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2)); g.setIndex(ind); g.computeVertexNormals();
+    const tm = new THREE.Mesh(g, mat); tm.receiveShadow = true; group.add(tm);
+    const archCurve = (i: number, grow: number) => { const p = P[i]; return new THREE.CatmullRomCurve3(Array.from({ length: 17 }, (_, k) => { const a = Math.PI - (k / 16) * Math.PI; const x = Math.cos(a) * (TW + grow), y = k === 0 || k === 16 ? -0.3 : 5 + Math.sin(a) * (TH - 5 + grow); return new THREE.Vector3(p.x + R[i].x * x, p.y + y, p.z + R[i].z * x); })); };
+    if (rings) for (let q = 4; q < cnt - 2; q += 12) rings(q, archCurve((i0 + q) % N, -0.3));
+    else for (let q = 6; q < cnt - 4; q += 12) { const i = (i0 + q) % N, p = P[i]; const l = new THREE.Mesh(new THREE.BoxGeometry(3, 0.3, 1.2), glowMat); l.position.set(p.x, p.y + TH - 0.4, p.z); l.rotation.y = Math.atan2(T[i].x, T[i].z); group.add(l); }
+    if (light) { const mid = P[(i0 + Math.floor(cnt / 2)) % N]; const pl = new THREE.PointLight(light, 35, 60, 1.2); pl.position.set(mid.x, mid.y + TH - 2, mid.z); group.add(pl); }
+    for (const [i, dir] of [[i0, 1], [i1, -1]] as const) {
+      if (portalMat) {
+        const O = 3.5, sh = new THREE.Shape();
+        sh.moveTo(-TW - O, -0.3); sh.lineTo(-TW - O, 5);
+        for (let k = 1; k < 16; k++) { const a = Math.PI - (k / 16) * Math.PI; sh.lineTo(Math.cos(a) * (TW + O), 5 + Math.sin(a) * (TH - 5 + O)); }
+        sh.lineTo(TW + O, 5); sh.lineTo(TW + O, -0.3); sh.lineTo(TW, -0.3); sh.lineTo(TW, 5);
+        for (let k = 15; k >= 1; k--) { const a = Math.PI - (k / 16) * Math.PI; sh.lineTo(Math.cos(a) * TW, 5 + Math.sin(a) * (TH - 5)); }
+        sh.lineTo(-TW, 5); sh.lineTo(-TW, -0.3); sh.closePath();
+        const pm = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 4, bevelEnabled: false }), portalMat), p = P[i];
+        const basis = new THREE.Matrix4().makeBasis(new THREE.Vector3(R[i].x * dir, 0, R[i].z * dir), new THREE.Vector3(0, 1, 0), new THREE.Vector3(-T[i].x * dir, 0, -T[i].z * dir));
+        pm.quaternion.setFromRotationMatrix(basis); pm.position.set(p.x, p.y, p.z); pm.castShadow = quality > 0; group.add(pm);
+      }
+      group.add(new THREE.Mesh(new THREE.TubeGeometry(archCurve(i, 0.6), 40, 0.35, 6), glowMat));
+    }
+  }
+
+  // ── set pieces ──
+  const frac = (f: number) => Math.floor(f * N) % N;
+  for (const tn of def.tunnels || []) {
+    const i0 = frac(tn.a), i1 = frac(tn.b);
+    if (tn.kind === "rock") {
+      const rt = canvas(256, 256, (g) => noise(g, 256, 256, "#7a6a58", ["#5a4a3a", "#8f7d68", "#6a5a48"], 5000, 4, rand)); rt.repeat.set(6, 3);
+      const rock = new THREE.MeshStandardMaterial({ map: rt, roughness: 1, side: THREE.DoubleSide, flatShading: true });
+      archTunnel(i0, i1, WALL + 1.4, 12, rock, rock, new THREE.MeshBasicMaterial({ color: new THREE.Color(2.6, 2.2, 1.4), toneMapped: false }), null);
+      // a rocky hill sitting on top of the arch, with palms
+      const cnt = (i1 - i0 + N) % N;
+      for (let q = 0; q <= cnt; q += 8) { const i = (i0 + q) % N, p = P[i]; for (const sd of [-1, 0, 1]) { const b = new THREE.Mesh(new THREE.DodecahedronGeometry(9 + rand() * 4, 0), new THREE.MeshStandardMaterial({ color: "#8a7a64", roughness: 1, flatShading: true })); b.position.set(p.x + R[i].x * sd * 16, p.y + 12 + rand() * 3, p.z + R[i].z * sd * 16); b.scale.y = 0.55; b.rotation.y = rand() * 6; b.castShadow = quality > 0; group.add(b); } }
+    } else {
+      const glass = new THREE.MeshPhysicalMaterial({ color: "#5fd8ff", transparent: true, opacity: 0.16, roughness: 0.05, metalness: 0.2, side: THREE.DoubleSide, depthWrite: false });
+      const ringMats: THREE.MeshBasicMaterial[] = [];
+      archTunnel(i0, i1, WALL + 1.4, 12, glass, null, new THREE.MeshBasicMaterial({ color: new THREE.Color(0.4, 2.4, 3), toneMapped: false }), null, (q, curve) => {
+        const m = new THREE.MeshBasicMaterial({ color: "#fff", toneMapped: false }); ringMats.push(m);
+        group.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 30, 0.22, 5), m));
+      });
+      animated.push((_, t) => ringMats.forEach((m, k) => { const h = (t * 0.6 - k * 0.08) % 1; m.color.setHSL((h + 1) % 1 > 0.5 ? 0.88 : 0.52, 1, 0.5).multiplyScalar(2.4 + Math.max(0, Math.sin(t * 8 - k * 0.7)) * 2); }));
+    }
+  }
+  // beach: river under the jump, lagoon under the glider, dolphins, a ship wreck and glowing hoops along the glide line
+  if (def.key === "beach") {
+    const wt = canvas(128, 128, (g) => { g.fillStyle = "#1aa8d8"; g.fillRect(0, 0, 128, 128); for (let i = 0; i < 60; i++) { g.strokeStyle = `rgba(255,255,255,${0.1 + rand() * 0.25})`; g.lineWidth = 1 + rand() * 2; const x = rand() * 128, y = rand() * 128; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + 10, y - 3, x + 20, y); g.stroke(); } });
+    const wm = new THREE.MeshStandardMaterial({ map: wt, color: "#9fe2ff", roughness: 0.1, metalness: 0.3, polygonOffset: true, polygonOffsetFactor: -3 });
+    animated.push((_, t) => { wt.offset.set(t * 0.03, t * 0.05); });
+    for (const [a, b] of voidRuns) {
+      const glide = voidM[a] === 2;
+      flatStrip(a - (glide ? 30 : 12), b + (glide ? 30 : 12), glide ? -62 : -26, glide ? 62 : 26, -0.45, wm);
+      if (glide) {
+        const hoopM = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.6, 2.4, 3), toneMapped: false });
+        const hoops: THREE.Mesh[] = [];
+        for (let k = 1; k <= 4; k++) { const i = (a + Math.floor(((b - a) * k) / 5)) % N, p = P[i]; const ring = new THREE.Mesh(new THREE.TorusGeometry(7, 0.35, 8, 40), hoopM); const y = P[(a - 1 + N) % N].y + 6 - k * 3; ring.position.set(p.x, y, p.z); ring.rotation.y = Math.atan2(T[i].x, T[i].z); group.add(ring); hoops.push(ring); }
+        animated.push((_, t) => hoops.forEach((h, k) => h.scale.setScalar(1 + Math.sin(t * 3 + k) * 0.05)));
+        // wreck in the lagoon
+        const mid = P[(a + Math.floor((b - a) * 0.35)) % N], r = R[(a + Math.floor((b - a) * 0.35)) % N];
+        const wreck = new THREE.Group(); wreck.position.set(mid.x + r.x * 38, -0.6, mid.z + r.z * 38); wreck.rotation.set(0.25, rand() * 6, 0.15); group.add(wreck);
+        const hull = new THREE.Mesh(new THREE.BoxGeometry(5, 3, 16), new THREE.MeshStandardMaterial({ color: "#5a3a22", roughness: 1 })); wreck.add(hull);
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 12), new THREE.MeshStandardMaterial({ color: "#4a2e1a" })); mast.position.set(0, 6, 1); mast.rotation.z = 0.3; wreck.add(mast);
+        const sail = new THREE.Mesh(new THREE.PlaneGeometry(5, 4), new THREE.MeshStandardMaterial({ color: "#e8dcc0", side: THREE.DoubleSide })); sail.position.set(1.5, 8, 1); sail.rotation.z = 0.3; wreck.add(sail);
+        // dolphins
+        const dol: { m: THREE.Mesh; i: number; s: number; ph: number }[] = [];
+        for (let k = 0; k < 4; k++) { const m = new THREE.Mesh(new THREE.CapsuleGeometry(0.7, 2.6, 4, 8), new THREE.MeshStandardMaterial({ color: "#6f8fa8", roughness: 0.4 })); m.rotation.x = Math.PI / 2; group.add(m); dol.push({ m, i: (a + Math.floor(rand() * (b - a))) % N, s: (rand() < 0.5 ? -1 : 1) * (25 + rand() * 25), ph: rand() * 6 }); }
+        animated.push((_, t) => dol.forEach((d) => { const c = ((t * 0.5 + d.ph) % 3) / 3, p = P[d.i], rr = R[d.i]; const x = p.x + rr.x * d.s + T[d.i].x * (c - 0.5) * 16, z = p.z + rr.z * d.s + T[d.i].z * (c - 0.5) * 16; const y = -0.5 + Math.sin(c * Math.PI) * 5; d.m.visible = c < 1; d.m.position.set(x, y, z); d.m.rotation.set(Math.PI / 2 - (c - 0.5) * 2.4, Math.atan2(T[d.i].x, T[d.i].z), 0, "YXZ"); if (c > 0.97 || c < 0.03) fx.emit(x, -0.4, z, "#ffffff", 0.5, 2, 3); }));
+      }
+    }
+  }
+  // city: traffic below the jump, a construction site at the open edge with a crane
+  if (def.key === "city") {
+    for (const [a, b] of voidRuns) {
+      const m = (a + Math.floor((b - a) / 2)) % N, p = P[m], t = T[m];
+      const st = new THREE.Mesh(new THREE.PlaneGeometry(14, 400).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: roadTex, roughness: 0.5, polygonOffset: true, polygonOffsetFactor: -3 }));
+      st.position.set(p.x, -0.55, p.z); st.rotation.y = Math.atan2(R[m].x, R[m].z); group.add(st);
+      const cars: { m: THREE.Mesh; o: number; sp: number; lane: number }[] = [];
+      for (let k = 0; k < 10; k++) { const c = new THREE.Mesh(new THREE.BoxGeometry(2, 1.4, 4.4), new THREE.MeshStandardMaterial({ color: neonCols[k % 5], emissive: neonCols[k % 5], emissiveIntensity: 0.5 })); group.add(c); cars.push({ m: c, o: rand() * 400, sp: 14 + rand() * 10, lane: k % 2 ? 3 : -3 }); }
+      animated.push((dt) => cars.forEach((c) => { c.o = (c.o + c.sp * dt * (c.lane > 0 ? 1 : -1) + 400) % 400; const d = c.o - 200; c.m.position.set(p.x + R[m].x * d + t.x * c.lane, 0.2, p.z + R[m].z * d + t.z * c.lane); c.m.rotation.y = Math.atan2(R[m].x, R[m].z); }));
+      for (const sd of [-1, 1]) { const pil = new THREE.Mesh(new THREE.BoxGeometry(2 * WALL, 1, 2), new THREE.MeshStandardMaterial({ color: "#2a2d3e" })); const e = sd < 0 ? (a - 1 + N) % N : b % N, q = P[e]; pil.scale.y = q.y; pil.position.set(q.x, q.y / 2 - 0.5, q.z); pil.rotation.y = Math.atan2(T[e].x, T[e].z); group.add(pil); }
+    }
+    for (const o of def.open || []) {
+      const a = frac(o.a), b = frac(o.b);
+      const cone = new THREE.ConeGeometry(0.35, 0.9, 8); cone.translate(0, 0.45, 0);
+      const list: [number, number][] = [], ys: number[] = [];
+      for (let i = a; i <= b; i += 6) { const sd = openS[i % N] === -1 ? -1 : 1, p = P[i % N], r = R[i % N]; list.push([p.x + r.x * (RW + CURB + 1.2) * sd, p.z + r.z * (RW + CURB + 1.2) * sd]); ys.push(p.y); }
+      const cm = inst(cone, new THREE.MeshStandardMaterial({ color: "#ff7a1a", emissive: "#ff5a00", emissiveIntensity: 0.4 }), list, (oo, i) => { oo.position.y = ys[i]; }, false);
+      void cm;
+      const m = (a + b) >> 1, p = P[m], sd = openS[m] === -1 ? -1 : 1;
+      const crane = new THREE.Group(); crane.position.set(p.x + R[m].x * (WALL + 30) * sd, 0, p.z + R[m].z * (WALL + 30) * sd); group.add(crane);
+      const ym = new THREE.MeshStandardMaterial({ color: "#ffc21a", emissive: "#664400", metalness: 0.4 });
+      const tower = new THREE.Mesh(new THREE.BoxGeometry(2.2, 60, 2.2), ym); tower.position.y = 30; crane.add(tower);
+      const jib = new THREE.Group(); jib.position.y = 60; crane.add(jib);
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 50), ym); arm.position.z = 16; jib.add(arm);
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 0.3, 0.2), toneMapped: false })); lamp.position.set(0, 1.4, 40); jib.add(lamp);
+      animated.push((_, t) => { jib.rotation.y = Math.sin(t * 0.15) * 1.2; (lamp.material as THREE.MeshBasicMaterial).color.setRGB(Math.sin(t * 5) > 0 ? 3 : 0.3, 0.2, 0.1); });
+    }
+  }
+  // volcano: lava geysers beside the road and glowing cracks along the open causeway
+  if (def.key === "volcano") {
+    const gs: { p: THREE.Vector3; t: number }[] = [];
+    for (const f of [0.06, 0.18, 0.43, 0.6, 0.88, 0.97]) { const i = frac(f), sd = rand() < 0.5 ? -1 : 1, p = P[i]; const x = p.x + R[i].x * (WALL + 7) * sd, z = p.z + R[i].z * (WALL + 7) * sd; const cone = new THREE.Mesh(new THREE.ConeGeometry(4, 5, 8, 1, true), new THREE.MeshStandardMaterial({ color: "#2a1a14", emissive: "#ff3a00", emissiveIntensity: 0.3, flatShading: true, side: THREE.DoubleSide })); cone.position.set(x, -0.2, z); group.add(cone); gs.push({ p: new THREE.Vector3(x, 2.2, z), t: rand() * 5 }); }
+    animated.push((dt, _, cam) => gs.forEach((g) => { if (g.p.distanceToSquared(cam) > 260 ** 2) return; g.t -= dt; if (g.t < 1.4) for (let k = 0; k < 4; k++) fx.big(g.p.x + (rand() - 0.5), g.p.y, g.p.z + (rand() - 0.5), k % 2 ? "#ffd04a" : "#ff5a10", 1.1, 1.2, 22); else if (rand() < 0.2) fx.emit(g.p.x, g.p.y, g.p.z, "#ff8a30", 0.8, 0.5, 3); if (g.t <= 0) { g.t = 4 + rand() * 4; fx.boom(0.2, g.p); } }));
+    const crack = new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 1, 0.15), toneMapped: false });
+    for (const o of def.open || []) { const a = frac(o.a), b = frac(o.b); runStripRange(a, b, WALL + 0.1, WALL + 0.6, crack); runStripRange(a, b, -WALL - 0.6, -WALL - 0.1, crack); }
+  }
+  function runStripRange(a: number, b: number, s0: number, s1: number, mat: THREE.Material) { strip(P, R, s0, s1, mat, 6, 0.05, 1, false, a, b + 1); }
+
   /** The volcano: a mountain ring with tunnels through its flanks, a crater with a lava lake, lava falls and eruptions. */
   function buildVolcano(cr: CraterDef) {
     const TH = 11.5, TW = WALL + 1.4;
@@ -551,35 +714,7 @@ export function buildTrack(def: TrackDef, scene: THREE.Scene, quality: number, f
     const tunMat = new THREE.MeshStandardMaterial({ map: crackTex, emissiveMap: crackE, emissive: "#ffffff", emissiveIntensity: 1.4, roughness: 0.95, side: THREE.DoubleSide });
     const portalMat = new THREE.MeshStandardMaterial({ color: "#1a1210", roughness: 0.7, metalness: 0.3, flatShading: true });
     const glowMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 0.9, 0.2), toneMapped: false });
-    for (const [i0, i1] of segs) {
-      const pts: number[] = [], uvs: number[] = [], ind: number[] = [];
-      const cnt = ((i1 - i0 + N) % N) + 1, K = arch.length;
-      let d = 0;
-      for (let q = 0; q < cnt; q++) {
-        const i = (i0 + q) % N, p = P[i], r = R[i];
-        if (q > 0) d += P[(i - 1 + N) % N].distanceTo(p);
-        arch.forEach(([x, y], k) => { pts.push(p.x + r.x * x, p.y + y, p.z + r.z * x); uvs.push(k / (K - 1), d / 20); });
-        if (q < cnt - 1) for (let k = 0; k < K - 1; k++) { const o = q * K + k; ind.push(o, o + K, o + 1, o + 1, o + K, o + K + 1); }
-      }
-      const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2)); g.setIndex(ind); g.computeVertexNormals();
-      const tm = new THREE.Mesh(g, tunMat); tm.receiveShadow = true; group.add(tm);
-      for (let q = 6; q < cnt - 4; q += 12) { const i = (i0 + q) % N, p = P[i]; const l = new THREE.Mesh(new THREE.BoxGeometry(3, 0.3, 1.2), glowMat); l.position.set(p.x, p.y + TH - 0.4, p.z); l.rotation.y = Math.atan2(T[i].x, T[i].z); group.add(l); }
-      const mid = P[(i0 + Math.floor(cnt / 2)) % N]; const pl = new THREE.PointLight("#ff6a20", 35, 60, 1.2); pl.position.set(mid.x, mid.y + TH - 2, mid.z); group.add(pl);
-      // portal arches at both ends
-      for (const [i, dir] of [[i0, 1], [i1, -1]] as const) {
-        const O = 3.5, sh = new THREE.Shape();
-        sh.moveTo(-TW - O, -0.3); sh.lineTo(-TW - O, 5);
-        for (let k = 1; k < 16; k++) { const a = Math.PI - (k / 16) * Math.PI; sh.lineTo(Math.cos(a) * (TW + O), 5 + Math.sin(a) * (TH - 5 + O)); }
-        sh.lineTo(TW + O, 5); sh.lineTo(TW + O, -0.3); sh.lineTo(TW, -0.3); sh.lineTo(TW, 5);
-        for (let k = 15; k >= 1; k--) { const a = Math.PI - (k / 16) * Math.PI; sh.lineTo(Math.cos(a) * TW, 5 + Math.sin(a) * (TH - 5)); }
-        sh.lineTo(-TW, 5); sh.lineTo(-TW, -0.3); sh.closePath();
-        const pm = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: 4, bevelEnabled: false }), portalMat), p = P[i];
-        const basis = new THREE.Matrix4().makeBasis(new THREE.Vector3(R[i].x * dir, 0, R[i].z * dir), new THREE.Vector3(0, 1, 0), new THREE.Vector3(-T[i].x * dir, 0, -T[i].z * dir));
-        pm.quaternion.setFromRotationMatrix(basis); pm.position.set(p.x, p.y, p.z); pm.castShadow = quality > 0; group.add(pm);
-        const curve = new THREE.CatmullRomCurve3(Array.from({ length: 17 }, (_, k) => { const a = Math.PI - (k / 16) * Math.PI; const x = Math.cos(a) * (TW + 0.6), y = k === 0 || k === 16 ? -0.3 : 5 + Math.sin(a) * (TH - 5 + 0.6); return new THREE.Vector3(p.x + R[i].x * x, p.y + y, p.z + R[i].z * x); }));
-        group.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 40, 0.35, 6), glowMat));
-      }
-    }
+    for (const [i0, i1] of segs) archTunnel(i0, i1, TW, TH, tunMat, portalMat, glowMat, new THREE.Color("#ff6a20"));
 
     // lava lake inside the crater
     const lakeY = 0;
@@ -679,14 +814,23 @@ export function buildTrack(def: TrackDef, scene: THREE.Scene, quality: number, f
   // ── ramps (jump wedges) ──
   const rampMat = new THREE.MeshStandardMaterial({ color: "#2a2e44", metalness: 0.5, roughness: 0.4 });
   const rampStripe = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.5, 2.2, 3), toneMapped: false });
-  const ramps = def.ramps.map((f) => {
-    const i = Math.floor(f * N), p = P[i], t = T[i];
-    const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(7, 0); sh.lineTo(7, 1.4); sh.lineTo(0, 0);
-    const g = new THREE.ExtrudeGeometry(sh, { depth: RW * 1.4, bevelEnabled: false }); g.translate(-7, 0, -RW * 0.7); g.rotateY(-Math.PI / 2);
+  const boostTop = new THREE.MeshBasicMaterial({ map: padTex, color: new THREE.Color(2.2, 1.5, 0.5), toneMapped: false });
+  const glideTex = canvas(64, 128, (g) => { g.fillStyle = "#06244a"; g.fillRect(0, 0, 64, 128); for (let k = 0; k < 3; k++) { g.strokeStyle = "#7de8ff"; g.lineWidth = 9; g.beginPath(); g.moveTo(8, 50 + k * 30); g.lineTo(32, 20 + k * 30); g.lineTo(56, 50 + k * 30); g.stroke(); } }, false);
+  glideTex.wrapT = THREE.RepeatWrapping;
+  const glideTop = new THREE.MeshBasicMaterial({ map: glideTex, color: new THREE.Color(1.4, 2.2, 3), toneMapped: false });
+  animated.push((_, t) => { glideTex.offset.y = -t * 2; });
+  for (const rp of ramps) {
+    const p = P[rp.i], t = T[rp.i];
+    const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(rp.len, 0); sh.lineTo(rp.len, rp.h); sh.lineTo(0, 0);
+    const g = new THREE.ExtrudeGeometry(sh, { depth: rp.w * 2, bevelEnabled: false }); g.translate(-rp.len, 0, -rp.w); g.rotateY(-Math.PI / 2);
     const m = new THREE.Mesh(g, rampMat); m.position.set(p.x, p.y, p.z); m.rotation.y = Math.atan2(t.x, t.z); m.castShadow = true; m.receiveShadow = true; group.add(m);
-    const st = new THREE.Mesh(new THREE.BoxGeometry(RW * 1.4, 0.12, 0.4), rampStripe); st.position.set(0, 1.42, -0.2); m.add(st);
-    return i;
-  });
+    if (rp.kind === "jump") { const st = new THREE.Mesh(new THREE.BoxGeometry(rp.w * 2, 0.12, 0.4), rampStripe); st.position.set(0, rp.h + 0.02, -0.2); m.add(st); }
+    else { // glowing boost / glider surface on top of the wedge
+      const L = Math.hypot(rp.len, rp.h), top = new THREE.Mesh(new THREE.PlaneGeometry(rp.w * 2 - 0.4, L).rotateX(-Math.PI / 2), rp.kind === "glide" ? glideTop : boostTop);
+      top.rotation.x = Math.atan2(rp.h, rp.len); top.position.set(0, rp.h / 2 + 0.06, -rp.len / 2); m.add(top);
+      for (const sd of [-1, 1]) { const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 9), new THREE.MeshStandardMaterial({ color: "#ddd", metalness: 0.7 })); pole.position.set(sd * (rp.w + 1), rp.h + 3.5, 0); m.add(pole); const fl = new THREE.Mesh(new THREE.ConeGeometry(0.9, 2.2, 4), new THREE.MeshBasicMaterial({ color: rp.kind === "glide" ? new THREE.Color(0.6, 2, 3) : new THREE.Color(3, 1.8, 0.4), toneMapped: false })); fl.position.set(sd * (rp.w + 1), rp.h + 8.6, 0); fl.rotation.x = Math.PI; m.add(fl); }
+    }
+  }
 
   // ── item boxes ──
   const boxGeo = new THREE.IcosahedronGeometry(1.05, 0);
@@ -712,7 +856,7 @@ export function buildTrack(def: TrackDef, scene: THREE.Scene, quality: number, f
   });
 
   return {
-    def, P, T, R, len, seg, sc, boxes, pads, ramps, group, bounds: { minX, maxX, minZ, maxZ },
+    def, P, T, R, len, seg, sc, boxes, pads, ramps, voidM, openS, deathY: def.deathY, group, bounds: { minX, maxX, minZ, maxZ },
     update(dt, t, cam) {
       for (const f of animated) f(dt, t, cam);
       for (const b of boxes) {
