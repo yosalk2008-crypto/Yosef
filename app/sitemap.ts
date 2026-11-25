@@ -17,7 +17,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/gipfelsturm/endlos",
     "/fernweh",
     "/fernweh/endlos",
-    "/southbeach",
     "/koscher",
     "/halal",
     "/multiplayer",
