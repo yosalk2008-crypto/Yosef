@@ -12,8 +12,8 @@ export const meta = (lang: Lang): Metadata => {
   return {
     title: t("Ist das koscher?", "Is it kosher?"),
     description: t(
-      "Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – über 230 Fragen mit Erklärungen.",
-      "Shrimp, giraffe, light switches on Shabbat: guess what Judaism allows – over 230 questions with explanations."
+      "Shrimps, Giraffe, Lichtschalter am Schabbat: Rate, was im Judentum erlaubt ist – über 240 Fragen mit Erklärungen.",
+      "Shrimp, giraffe, light switches on Shabbat: guess what Judaism allows – over 240 questions with explanations."
     ),
   };
 };
