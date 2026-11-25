@@ -18,6 +18,17 @@ export const CSS = `
 .sb-weap{margin-top:8px;font-size:18px;font-weight:700;white-space:nowrap}.sb-weap span{opacity:.6;font-size:14px}
 .sb-mm{position:absolute;left:22px;bottom:22px;width:220px;height:220px;border-radius:50%;border:3px solid rgba(0,0,0,.6);box-shadow:0 4px 18px rgba(0,0,0,.5)}
 .sb-mm canvas{width:100%;height:100%;border-radius:50%}
+.sb-mm{pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sb-mmhint{position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);font:800 10px Arial,sans-serif;letter-spacing:.14em;background:rgba(0,0,0,.7);color:#fff;border-radius:6px;padding:2px 7px;font-style:normal}
+.sb-big{position:absolute;inset:0;z-index:6;pointer-events:auto;background:#123}
+.sb-big canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+.sb-bighead{position:absolute;left:50%;top:12px;transform:translateX(-50%);text-align:center;background:rgba(10,8,20,.8);border-radius:10px;padding:7px 16px;pointer-events:none}
+.sb-bighead b{display:block;font:900 15px Arial,sans-serif;letter-spacing:.14em}.sb-bighead span{font:600 11px Arial,sans-serif;opacity:.75}
+.sb-bigbtns{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;gap:8px}
+.sb-bigbtns button{width:44px;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.3);background:rgba(10,8,20,.85);color:#fff;font:800 20px Arial,sans-serif;cursor:pointer;touch-action:manipulation}
+.sb-legend{position:absolute;left:14px;bottom:14px;display:grid;grid-template-columns:auto auto;gap:4px 8px;align-items:center;background:rgba(10,8,20,.82);border-radius:10px;padding:10px 12px;font:700 12px Arial,sans-serif;pointer-events:none}
+.sb-legend i{display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid rgba(0,0,0,.6)}
+.sb-touch .sb-legend{font-size:10px;padding:6px 8px;grid-template-columns:auto auto auto auto}
 .sb-street{position:absolute;left:258px;bottom:28px;font-size:20px;font-weight:700;font-style:italic;text-shadow:0 2px 6px #000;color:#fff}
 .sb-cross{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;display:none;border-radius:50%;border:2px solid rgba(255,255,255,.9);box-shadow:0 0 4px #000}
 .sb-cross:after{content:"";position:absolute;left:50%;top:50%;width:3px;height:3px;margin:-1.5px 0 0 -1.5px;border-radius:50%;background:#fff}
@@ -97,6 +108,24 @@ export const CSS = `
 .sb-touch .sb-hot{bottom:10px}.sb-touch .sb-hot button{width:58px;height:58px}.sb-touch .sb-hot button i{font-size:22px}.sb-touch .sb-hot button b{display:none}
 .sb-goal{display:none;position:absolute;left:50%;top:14px;transform:translateX(-50%);max-width:min(560px,70%);text-align:center;background:rgba(40,10,60,.72);border:1px solid rgba(214,150,255,.55);border-radius:10px;padding:8px 16px;font:700 15px Arial,sans-serif;text-shadow:0 1px 3px #000}
 .sb-goal b{display:block;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#e0a8ff;margin-bottom:2px}
+.sb-goal .sb-gstep{display:inline-block;background:#b46bff;color:#fff;border-radius:999px;font:900 11px Arial,sans-serif;padding:2px 8px;margin-right:6px;vertical-align:1px}
+.sb-goal small{display:block;opacity:.65;font:600 12px Arial,sans-serif;margin-top:3px}
+.sb-heist{border:1px solid rgba(214,150,255,.28);border-radius:12px;padding:12px 14px;margin:10px 0;background:rgba(180,107,255,.07)}
+.sb-heist h3{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 4px;font:900 16px Arial,sans-serif}
+.sb-heist h3 span{color:#ffd24a;font-size:15px;white-space:nowrap}
+.sb-heist p{margin:0 0 8px;font:600 13px Arial,sans-serif;opacity:.8}
+.sb-stage{display:flex;gap:10px;padding:6px 0;border-top:1px solid rgba(255,255,255,.07)}
+.sb-stage>i{flex:none;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:900 12px Arial,sans-serif;font-style:normal;background:rgba(255,255,255,.12)}
+.sb-stage.done>i{background:#2ecc71}.sb-stage.now>i{background:#b46bff;box-shadow:0 0 0 3px rgba(180,107,255,.35)}
+.sb-stage.done{opacity:.55}
+.sb-stage b{display:block;font:800 13px Arial,sans-serif}
+.sb-stage ol{margin:3px 0 0;padding-left:18px;font:600 12px Arial,sans-serif;opacity:.85}
+.sb-heist .sb-hbtn{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px}
+.sb-heist .sb-hbtn small{opacity:.6;font:600 12px Arial,sans-serif}
+.sb-heist button{border:0;border-radius:8px;padding:10px 16px;font:800 14px Arial,sans-serif;background:linear-gradient(90deg,#b46bff,#ff2f8e);color:#fff;cursor:pointer;touch-action:manipulation}
+.sb-heist button[disabled]{background:rgba(255,255,255,.12);color:rgba(255,255,255,.45);cursor:not-allowed}
+.sb-howto{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 2px;font:700 12px Arial,sans-serif}
+.sb-howto span{background:rgba(255,255,255,.08);border-radius:999px;padding:4px 10px}
 .sb-touch .sb-goal{top:auto;bottom:84px;font-size:13px;padding:6px 12px}
 .sb-meter{height:6px;margin-top:6px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}.sb-meter i{display:block;height:100%;background:linear-gradient(90deg,#b46bff,#ff2f8e)}
 .sb-shoplist p{color:#d8d2e6;font-size:14px;line-height:1.5}

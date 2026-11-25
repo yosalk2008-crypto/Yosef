@@ -174,3 +174,41 @@ export function makeKiosk(label: string) {
   const s = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 1.05), new THREE.MeshBasicMaterial({ map: t, toneMapped: false })); s.position.set(0, 3.4, 1.55); g.add(s);
   return g;
 }
+
+/** Police helicopter. Nose points to +z. Returns the rotors so they can spin, and a searchlight cone. */
+export function makeHeli() {
+  const g = new THREE.Group();
+  const blue = new THREE.MeshPhysicalMaterial({ color: "#1b2d5c", roughness: 0.35, metalness: 0.3, clearcoat: 1 });
+  const white = new THREE.MeshPhysicalMaterial({ color: "#f2f4f7", roughness: 0.3, metalness: 0.2, clearcoat: 1 });
+  const dark = new THREE.MeshStandardMaterial({ color: "#16181c", roughness: 0.5, metalness: 0.6 });
+  const glassH = new THREE.MeshPhysicalMaterial({ color: "#0b1620", roughness: 0.05, metalness: 0.5, transparent: true, opacity: 0.85 });
+  const body = new THREE.Mesh(new THREE.SphereGeometry(1.25, 20, 14), white); body.scale.set(1, 0.95, 2.0); g.add(body);
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(1.27, 20, 14, 0, Math.PI * 2, Math.PI * 0.55, Math.PI * 0.45), blue); belly.scale.set(1, 0.95, 2.0); g.add(belly);
+  const cockpit = new THREE.Mesh(new THREE.SphereGeometry(1.0, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.5), glassH); cockpit.scale.set(1.05, 0.9, 1.3); cockpit.position.set(0, 0.15, 1.15); cockpit.rotation.x = 0.45; g.add(cockpit);
+  const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.38, 5.2, 10).rotateX(Math.PI / 2), white); boom.position.set(0, 0.35, -4.4); g.add(boom);
+  const fin = box(0.12, 1.4, 0.9, blue, 0, 1.0, -6.8); const stab = box(1.6, 0.08, 0.5, blue, 0, 0.45, -6.4); g.add(fin, stab);
+  for (const sx of [-0.85, 0.85]) {
+    const skid = box(0.08, 0.08, 3.2, dark, sx, -1.35, 0.1); g.add(skid);
+    for (const sz of [-0.8, 0.9]) { const st = box(0.06, 0.55, 0.06, dark, sx * 0.9, -1.05, sz); g.add(st); }
+  }
+  const mastH = box(0.2, 0.5, 0.2, dark, 0, 1.35, 0); g.add(mastH);
+  const rotor = new THREE.Group(); rotor.position.set(0, 1.62, 0);
+  for (let k = 0; k < 4; k++) { const bl = box(0.28, 0.04, 5.2, dark, 0, 0, 2.6); const arm = new THREE.Group(); arm.add(bl); arm.rotation.y = (k * Math.PI) / 2; rotor.add(arm); }
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(5.3, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: "#222", transparent: true, opacity: 0.12, depthWrite: false }));
+  rotor.add(disc); g.add(rotor);
+  const tail = new THREE.Group(); tail.position.set(0.2, 1.0, -6.9);
+  for (const r of [0, Math.PI / 2]) { const t = box(0.04, 1.3, 0.12, dark, 0, 0, 0); t.rotation.x = r; tail.add(t); }
+  g.add(tail);
+  // POLICE on both sides
+  const c = document.createElement("canvas"); c.width = 512; c.height = 128;
+  const x = c.getContext("2d")!; x.fillStyle = "#ffffff"; x.font = "900 86px Arial"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("POLICE", 256, 68);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  for (const s of [-1, 1]) { const d = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.55), new THREE.MeshBasicMaterial({ map: t, transparent: true })); d.position.set(s * 1.27, -0.45, -0.3); d.rotation.y = (s * Math.PI) / 2; g.add(d); }
+  // blinking lights
+  const red = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 0.2, 0.2), toneMapped: false })); red.position.set(0, 1.25, -7.25); g.add(red);
+  const blueL = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.2, 0.5, 5), toneMapped: false })); blueL.position.set(0, -1.15, 0.6); g.add(blueL);
+  // searchlight beam (cone hanging down, aimed in update)
+  const beam = new THREE.Mesh(new THREE.ConeGeometry(4, 40, 24, 1, true).translate(0, -20, 0), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 1.6, 1.4), transparent: true, opacity: 0.07, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
+  g.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh && m !== disc) m.castShadow = true; });
+  return { group: g, rotor, tail, beam, red, blueL };
+}

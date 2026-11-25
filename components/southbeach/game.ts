@@ -13,16 +13,16 @@ import { makeCar, makeJetski, makeCopJetski, makeSpeedboat, stepCar, syncCar, PH
 import { Sound } from "./audio";
 import { syntheticMap } from "./synthetic";
 import { CSS, paintLoading } from "./ui";
-import { makeShopInterior, makeYacht } from "./props";
+import { makeShopInterior, makeYacht, makeHeli } from "./props";
 import { buildBeach } from "./beach";
 
 type Lang = "de" | "en";
 type Ped = { obj: THREE.Object3D; mixer: THREE.AnimationMixer; act: Record<string, THREE.AnimationAction>; cur: string; x: number; z: number; a: number; mode: "walk" | "flee" | "dead" | "idle" | "fight"; from: number; to: number; hp: number; t: number; deadT: number; fallT: number; witness: number; ko?: boolean; robbed?: boolean; wealth: number;
   /** 0 = gives up, 1 = fights with fists, 2 = carries a gun */
-  tough: number; atkT: number; aggro: number; y?: number; room?: "shop" | "yacht"; yacht?: Yacht; fix?: { x: number; z: number; a: number }; cashier?: boolean; guard?: boolean; beach?: boolean;
+  tough: number; atkT: number; aggro: number; y?: number; room?: "shop" | "yacht"; yacht?: Yacht; fix?: { x: number; z: number; a: number }; cashier?: boolean; guard?: boolean; beach?: boolean; cop?: boolean; copCar?: Car;
   bones?: { arm?: THREE.Bone; fore?: THREE.Bone; hand?: THREE.Bone; larm?: THREE.Bone; lfore?: THREE.Bone; lhand?: THREE.Bone }; gun?: THREE.Object3D };
 type Yacht = { g: THREE.Group; x: number; z: number; a: number; sc: number; deckY: number; walk: { x0: number; z0: number; x1: number; z1: number }; block: { x0: number; z0: number; x1: number; z1: number }; stern: { x: number; z: number }; spots: { x: number; z: number }[]; crew: Ped[]; name: string; cool: number };
-type Pickup = { mesh: THREE.Object3D; x: number; z: number; kind: "cash" | "ammo" | "health" | "drop"; t: number; v?: number };
+type Pickup = { mesh: THREE.Object3D; x: number; z: number; kind: "cash" | "ammo" | "health" | "drop"; t: number; v?: number; y?: number };
 type Shop = { x: number; z: number; nx: number; nz: number; name: string; cool: number; dealer?: boolean; rx: number; rz: number };
 type HStep = { de: string; en: string; kind: "goto" | "hold" | "car" | "lose" | "van"; at: () => { x: number; z: number }; r: number; hold?: number; stars?: number; timer?: number; models?: number[]; boat?: boolean; van?: boolean; deck?: boolean };
 type Mission = { title: string; steps: HStep[]; i: number; hold: number; t: number; done: () => void; van: Car | null; alarmed: boolean };
@@ -33,7 +33,7 @@ const CFG = {
   dtFixed: 1 / 60, dtMax: 0.1,
   walk: 1.8, run: 5.2, sprint: 7.4, turnFoot: 12, jump: 4.6, gravity: 14, pr: 0.38,
   civCars: 18, peds: 18, pickups: 26, lane: 2.3,
-  copsPerStar: [1, 2, 3, 4, 6, 8], searchTime: [0, 10, 14, 18, 23, 28], copRange: 70, copFire: 38,
+  copsPerStar: [1, 2, 3, 5, 7, 9], searchTime: [0, 10, 14, 18, 23, 30], copRange: 75, copFire: 55,
   weapons: [
     { de: "Pistole", en: "Pistol", mag: 12, reserve: 60, rate: 0.24, dmg: 34, spread: 0.008, auto: false, reload: 1.3 },
     { de: "MP", en: "SMG", mag: 30, reserve: 150, rate: 0.085, dmg: 19, spread: 0.022, auto: true, reload: 1.7 },
@@ -177,22 +177,62 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
 
   // ── character model ─────────────────────────────────────────────────
   progress(0.65, tt("Lade Spielfigur …", "Loading character …"));
-  const gltf = await new GLTFLoader().loadAsync("/southbeach/player.glb");
+  const loader = new GLTFLoader();
+  const [gltf, manG, womanG] = await Promise.all([
+    loader.loadAsync("/southbeach/player.glb"),
+    loader.loadAsync("/southbeach/man.glb").catch(() => null),
+    loader.loadAsync("/southbeach/woman.glb").catch(() => null),
+  ]);
   if (!alive) return () => {};
-  const clips = Object.fromEntries(gltf.animations.map((a) => [a.name, a]));
-  function makePerson(tint?: THREE.Color) {
-    const obj = SkeletonUtils.clone(gltf.scene);
-    obj.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (m.isMesh) {
-        m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false;
-        if (tint) { const mat = (m.material as THREE.MeshStandardMaterial).clone(); mat.color.multiply(tint); m.material = mat; }
-        if (m.name.includes("visor") && tint) m.visible = false;
+  // Idle / Walk / Run come from the Mixamo rig of the soldier model. The human models have other rest poses,
+  // so the clips are retargeted bone by bone (SkeletonUtils.retargetClip). Root motion is dropped.
+  const baseClips = gltf.animations.filter((a) => ["Idle", "Walk", "Run"].includes(a.name));
+  const skinOf = (o: THREE.Object3D) => { let f: THREE.SkinnedMesh | null = null; o.traverse((c) => { if (!f && (c as THREE.SkinnedMesh).isSkinnedMesh) f = c as THREE.SkinnedMesh; }); return f as THREE.SkinnedMesh | null; };
+  const srcSkin = skinOf(gltf.scene);
+  gltf.scene.updateMatrixWorld(true);
+  type Body = { scene: THREE.Object3D; clips: Record<string, THREE.AnimationClip>; scale: number };
+  const bodyOf = (sc: THREE.Object3D, prefix: string, height: number): Body => {
+    sc.updateMatrixWorld(true);
+    const bb = new THREE.Box3().setFromObject(sc), h = bb.max.y - bb.min.y || height;
+    const tgt = skinOf(sc), clips: Record<string, THREE.AnimationClip> = {};
+    if (tgt && srcSkin) {
+      for (const c of baseClips) {
+        try {
+          const rc = SkeletonUtils.retargetClip(tgt, srcSkin, c, { hip: "mixamorigHips", getBoneName: (b: THREE.Bone) => prefix + b.name, fps: 30 } as never);
+          rc.tracks = rc.tracks.filter((t) => !t.name.endsWith(".position")).map((t) => { t.name = t.name.replace(/^\.bones\[(.+)\]\./, "$1."); return t; });
+          clips[c.name] = rc;
+        } catch { /* keep going without this clip */ }
       }
+      tgt.skeleton.pose(); sc.updateMatrixWorld(true);
+    }
+    return { scene: sc, clips, scale: height / h };
+  };
+  const soldier: Body = { scene: gltf.scene, clips: Object.fromEntries(baseClips.map((c) => [c.name, c])), scale: 1 };
+  const MAN = manG ? bodyOf(manG.scene, "mixamorig", 1.8) : soldier, WOMAN = womanG ? bodyOf(womanG.scene, "", 1.68) : MAN;
+  const SKIN = ["#f3d2b8", "#e8b896", "#c98e66", "#a8714c", "#7a4f33", "#5a3a26"];
+  const TOPS = ["#ffffff", "#f25f5c", "#ffe066", "#247ba0", "#70c1b3", "#ff9f1c", "#2b2d42", "#e76f51", "#8338ec", "#06d6a0", "#ef476f", "#bde0fe"];
+  const BOTTOMS = ["#2f3e5c", "#4a5568", "#c2b280", "#1b1b1f", "#6b705c", "#e9e4d8", "#3a6ea5"];
+  type Look = { woman?: boolean; top?: string; bottom?: string; skin?: string; shoes?: string };
+  function randomLook(): Look { return { woman: rnd() < 0.45, top: pick(TOPS), bottom: pick(BOTTOMS), skin: pick(SKIN), shoes: rnd() < 0.5 ? "#f4f4f4" : "#222" }; }
+  function makePerson(look: Look = {}) {
+    const B = look.woman ? WOMAN : MAN;
+    const inner = SkeletonUtils.clone(B.scene);
+    inner.scale.setScalar(B.scale);
+    const obj = new THREE.Group(); obj.add(inner);
+    const tintOf = (name: string) => /Outfit_Top/.test(name) ? look.top : /Outfit_Bottom/.test(name) ? look.bottom : /Footwear/.test(name) ? look.shoes : /Skin|Body$/.test(name) && !/Ch03/.test(name) ? look.skin : undefined;
+    inner.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false;
+      if (/Teeth/.test(m.name)) { m.visible = false; return; }
+      const mat = m.material as THREE.MeshStandardMaterial;
+      const t = tintOf(mat.name);
+      if (t) { const c = mat.clone(); c.color.set(t); if (/Outfit/.test(mat.name)) c.color.multiplyScalar(1.4); m.material = c; }
+      else if (look.woman && look.top && /Ch03/.test(mat.name)) { const c = mat.clone(); c.color.lerp(new THREE.Color(look.top), 0.18); m.material = c; }
     });
     const mixer = new THREE.AnimationMixer(obj);
     const act: Record<string, THREE.AnimationAction> = {};
-    for (const k of ["Idle", "Walk", "Run"]) if (clips[k]) act[k] = mixer.clipAction(clips[k]);
+    for (const k of ["Idle", "Walk", "Run"]) if (B.clips[k]) act[k] = mixer.clipAction(B.clips[k]);
     act.Idle?.play();
     return { obj, mixer, act };
   }
@@ -205,9 +245,9 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     toast: [] as { t: number; txt: string; col: string }[], banner: null as null | { t: number; big: string; small: string; col: string },
     yaw: 0, pitch: 0.18, camDist: 4.6, mouseIdle: 0, street: "", streetT: 0, spawnT: 0, shake: 0,
     inside: null as null | { shop: Shop; out: { x: number; z: number } }, deck: null as null | Yacht, deckBoat: null as null | Car,
-    jetOwned: !!saved.jetOwned, berthUntil: +saved.berthUntil || 0, rentUntil: 0, rentWarned: false, boatSpawnT: 0,
+    heliT: 0, swim: false, mapOpen: false, jetOwned: !!saved.jetOwned, berthUntil: +saved.berthUntil || 0, rentUntil: 0, rentWarned: false, boatSpawnT: 0,
   };
-  const P = makePerson();
+  const P = makePerson({ top: "#f4f1ea", bottom: "#2f3e5c", skin: "#e8b896", shoes: "#f4f4f4" });
   scene.add(P.obj);
   const player = { x: world.spawn.x, z: world.spawn.z, y: 0, vy: 0, a: world.spawn.a, vx: 0, vz: 0, car: null as Car | null, anim: "Idle", grounded: true, strafe: false };
   S.yaw = player.a;
@@ -287,13 +327,13 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       if (!g.adj[i].length) continue;
       const d = dist(g.x[i], g.z[i], pp.x, pp.z);
       if (d < minD || d > maxD || !world.onLand(g.x[i], g.z[i])) continue;
-      const tint = new THREE.Color().setHSL(rnd(), 0.35 + rnd() * 0.4, 0.45 + rnd() * 0.35);
-      const m = makePerson(tint);
-      const sc = 0.92 + rnd() * 0.14; m.obj.scale.setScalar(sc);
+      const m = makePerson(randomLook());
+      const sc = 0.94 + rnd() * 0.1; m.obj.scale.setScalar(sc);
       scene.add(m.obj);
       m.act.Walk?.play(); m.act.Idle?.stop();
       if (m.act.Walk) m.act.Walk.time = rnd() * 2;
       const p: Ped = { obj: m.obj, mixer: m.mixer, act: m.act, cur: "Walk", x: g.x[i], z: g.z[i], a: 0, mode: "walk", from: i, to: pick(g.adj[i]), hp: 60, t: 0, deadT: 0, fallT: 0, witness: 0, wealth: walletOf(), tough: toughRoll(), atkT: 0, aggro: 0 };
+      if (p.wealth >= 110) p.tough = 2;
       peds.push(p);
       return p;
     }
@@ -382,6 +422,9 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       yachts.push({ g: Y.group, x, z, a, sc: sz, deckY: Y.deckY - 0.8, walk: Y.walk, block: Y.block, stern: Y.stern, spots: Y.spots, crew: [], name: NAMES[k], cool: 0 });
     }
   }
+  // police helicopters (5 stars)
+  type Heli = ReturnType<typeof makeHeli> & { x: number; y: number; z: number; a: number; vx: number; vz: number; vy: number; hp: number; fireT: number; dead: boolean; leaving: boolean; ang: number; gone: boolean };
+  const helis: Heli[] = [];
   const yToWorld = (y: Yacht, lx: number, lz: number) => ({ x: y.x + lx * Math.cos(y.a) + lz * Math.sin(y.a), z: y.z - lx * Math.sin(y.a) + lz * Math.cos(y.a) });
   const yToLocal = (y: Yacht, wx: number, wz: number) => { const dx = wx - y.x, dz = wz - y.z; return { x: dx * Math.cos(y.a) - dz * Math.sin(y.a), z: dx * Math.sin(y.a) + dz * Math.cos(y.a) }; };
   function makeSign(text: string, color: string, w: number) {
@@ -502,7 +545,10 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   const hud = document.createElement("div"); hud.className = "sb-hud";
   hud.innerHTML = `
     <div class="sb-tr"><div class="sb-money"></div><div class="sb-stars"></div><div class="sb-bars"><i class="hp"></i><i class="ar"></i></div><div class="sb-weap"></div></div>
-    <div class="sb-mm"><canvas width="220" height="220"></canvas></div>
+    <div class="sb-mm" data-b="map" title="${tt("Karte öffnen", "Open map")}"><canvas width="220" height="220"></canvas><i class="sb-mmhint">${tt("KARTE", "MAP")}</i></div>
+    <div class="sb-big" style="display:none"><canvas></canvas><div class="sb-bighead"><b>${tt("KARTE", "MAP")} · SOUTH BEACH</b><span>${isTouch ? tt("Wischen zum Verschieben · + / − zoomen", "Drag to pan · + / − to zoom") : tt("Ziehen zum Verschieben · Mausrad zoomen · M oder Esc schließt", "Drag to pan · wheel to zoom · M or Esc closes")}</span></div>
+      <div class="sb-bigbtns"><button data-b="mapin">+</button><button data-b="mapout">−</button><button data-b="mapme">◎</button><button data-b="mapclose">✕</button></div>
+      <div class="sb-legend"><i style="background:#fff"></i>${tt("Du", "You")}<i style="background:#ffcc33"></i>${tt("Läden", "Stores")}<i style="background:#38e6ff"></i>${tt("Autohaus", "Dealer")}<i style="background:#b46bff"></i>${tt("Unternehmen", "Businesses")}<i style="background:#ff3b5c"></i>${tt("Versteck", "Hideout")}<i style="background:#ff7a1f"></i>${tt("Jetski-Verleih", "Jet ski rental")}<i style="background:#f3f5f7;border-radius:2px"></i>${tt("Yachten", "Yachts")}<i style="background:#e07bff"></i>${tt("Auftrag", "Job")}<i style="background:#2050ff"></i>${tt("Polizei", "Police")}</div></div>
     <div class="sb-street"></div>
     <div class="sb-cross"></div>
     <div class="sb-prompt"></div>
@@ -541,6 +587,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     <b>R</b><span>${tt("nachladen", "reload")}</span>
     <b>${tt("Leertaste", "Space")}</b><span>${tt("springen · Handbremse", "jump · handbrake")}</span>
     <b>T</b><span>${tt("Tageszeit: Sonnenuntergang / Nacht / Tag", "time of day: sunset / night / day")}</span>
+    <b>M</b><span>${tt("große Karte (oder auf die Minimap klicken)", "big map (or click the minimap)")}</span>
     <b>H</b><span>${tt("Hupe", "horn")}</span><b>Esc</b><span>${tt("Pause", "pause")}</span></div>`;
   const touch = isTouch;
   const touchHelp = `<div class="sb-keys">
@@ -553,6 +600,8 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     <b>🪙</b><span>${tt("Gold: Passanten und Läden ausrauben, im Autohaus Autos kaufen", "gold: rob people and stores, buy cars at the dealership")}</span>
     <b>🛒</b><span>${tt("Laden betreten, Waffe auf den Kassierer richten, bis er zahlt", "enter a store, point your weapon at the cashier until he pays")}</span>
     <b>🚤</b><span>${tt("Jetski-Verleih am Strand: mieten, kaufen, Stellplatz", "jet ski rental at the beach: rent, buy, berth")}</span>
+    <b>🗺️</b><span>${tt("Minimap antippen: große Karte", "tap the minimap: big map")}</span>
+    <b>🌊</b><span>${tt("vom Jetski ins Meer springen, schwimmen, auf Yachten klettern", "jump off the jet ski, swim, climb onto yachts")}</span>
     <b>⛶</b><span>${tt("Vollbild", "fullscreen")}</span></div>`;
   function showStart() {
     ov.style.display = "flex";
@@ -614,6 +663,10 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     sound.unlock();
     const k = b.dataset.b;
     if (k === "fs") { toggleFs(); return; }
+    if (k === "map") { if (S.started && !S.paused && !S.menu) openMap(); return; }
+    if (k === "mapclose") { closeMap(); return; }
+    if (k === "mapin" || k === "mapout") { bigView.zoom = Math.max(0.15, Math.min(4, bigView.zoom * (k === "mapin" ? 1.5 : 1 / 1.5))); return; }
+    if (k === "mapme") { const w = wpos(); bigView.x = w.x; bigView.z = w.z; return; }
     if (k === "pause") { if (S.started) { S.paused = true; showPause(); } return; }
     if (!S.started || S.paused) return;
     b.classList.add("on");
@@ -685,7 +738,9 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     if (e.repeat) return;
     keys.add(e.code);
     if (!S.started || S.paused) return;
+    if (S.mapOpen) { if (e.code === "Escape" || e.code === "KeyM") closeMap(); return; }
     if (S.menu) { if (e.code === "Escape" || e.code === "KeyF") closeShop(); return; }
+    if (e.code === "KeyM") { openMap(); return; }
     if (e.code === "KeyF" || e.code === "KeyE") { const a = acts[0]; if (a && a.enabled !== false) a.run(); else if (player.car) exitCar(); }
     if (e.code === "Digit1") equip(0);
     if (e.code === "Digit2") equip(1);
@@ -731,6 +786,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       x = S.inside.out.x; z = S.inside.out.z;
     }
     if (!S.inside) for (const c of cars) if (!c.dead && c.kind === "cop" && c.driver && dist(c.x, c.z, x, z) < CFG.copRange && los(c.x, c.z, x, z)) { witnessed = true; c.lock = 3; }
+    if (!S.inside) for (const p of peds) if (p.cop && p.mode !== "dead" && p.deadT >= 0 && dist(p.x, p.z, x, z) < CFG.copRange && los(p.x, p.z, x, z)) witnessed = true;
     if (!S.inside) for (const c of cars) if (!c.dead && c.kind === "civ" && c.driver && dist(c.x, c.z, x, z) < 28 && los(c.x, c.z, x, z)) { witnessed = true; c.ai.panic = 6; }
     if (!S.inside) for (const p of peds) {
       if (p === victim || p.deadT < 0 || p.mode === "dead" || p.room === "shop") continue;
@@ -776,15 +832,16 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     if (Math.hypot(best.vx, best.vz) > 4) { toast(tt("Zu schnell – stell dich davor.", "Too fast – step in front of it.")); return; }
     if (best.kind === "civ" && best.driver) pullDriver(best); else enterCar(best);
   }
-  function dropCoin(x: number, z: number, v: number) {
+  function dropCoin(x: number, z: number, v: number, y = 0) {
     const mesh = new THREE.Mesh(pickupGeo.cash, pickupMat.cash);
-    mesh.position.set(x, 0.6, z); mesh.castShadow = true; scene.add(mesh);
-    pickups.push({ mesh, x, z, kind: "drop", t: 0, v });
+    mesh.position.set(x, y + 0.6, z); mesh.castShadow = true; scene.add(mesh);
+    pickups.push({ mesh, x, z, kind: "drop", t: 0, v, y });
   }
   function knockOut(p: Ped, gold = true) {
     p.mode = "dead"; p.ko = true; p.deadT = 6; p.fallT = 0; p.hp = 0;
     p.mixer.stopAllAction();
-    if (gold && !p.robbed) { p.robbed = true; dropCoin(p.x + 0.6, p.z, p.wealth); }
+    if (gold && !p.robbed) { p.robbed = true; dropCoin(p.x + 0.6, p.z, p.wealth, p.y || 0); }
+    if (p.yacht && p.yacht.crew.every((q) => q.robbed || q.mode === "dead")) p.yacht.cool = 600;
   }
   function punch() {
     if (S.fireT > 0) return;
@@ -818,7 +875,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     }
     const v = S.armed ? p.wealth : Math.round(p.wealth * 0.6);
     S.gold += v; p.robbed = true; p.mode = "flee"; p.t = 10;
-    if (p.yacht && p.yacht.crew.every((q) => q.robbed || q.guard || q.mode === "dead")) p.yacht.cool = 600;
+    if (p.yacht && p.yacht.crew.every((q) => q.robbed || q.mode === "dead")) p.yacht.cool = 600;
     sound.cash(); toast(tt(`Ausgeraubt: +${v} Gold`, `Robbed: +${v} gold`) + (S.armed ? "" : tt(" (mit Waffe gibt's mehr)", " (more with a weapon)")), "#ffd24a");
     crime(1, p.x, p.z, p);
     saveGame();
@@ -829,10 +886,14 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     const d = doorPos(c);
     c.driver = false; c.kind = "parked"; c.vx = 0; c.vz = 0;
     const p = spawnPedAt(d.x + Math.cos(c.a) * 0.9, d.z - Math.sin(c.a) * 0.9);
-    if (p) { p.wealth = c.wealth ?? walletOf(); knockOut(p, true); }
+    const rich = (c.wealth ?? 0) >= 120;
+    p.wealth = c.wealth ?? walletOf();
+    // rich people in sports cars carry a gun and shoot back
+    if (rich) { p.tough = 2; startFight(p); p.x += Math.cos(c.a) * 1.5; p.z -= Math.sin(c.a) * 1.5; }
+    else knockOut(p, true);
     crime(1, c.x, c.z, p);
     enterCar(c);
-    toast(tt("Fahrer rausgezerrt – das Auto gehört dir!", "Driver dragged out – the car is yours!"), "#ff5c7a");
+    toast(rich ? tt("Der reiche Fahrer zieht eine Waffe!", "The rich driver pulls a gun!") : tt("Fahrer rausgezerrt – das Auto gehört dir!", "Driver dragged out – the car is yours!"), "#ff5c7a");
   }
   // ── missions (heists, deliveries) ─────────────────────────────
   function startMission(title: string, steps: HStep[], done: () => void, van: Car | null = null) {
@@ -945,9 +1006,9 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     if (p.gun) p.gun.visible = true;
   }
   function calmDown(p: Ped) { p.mode = p.fix ? "idle" : "walk"; if (p.gun) p.gun.visible = false; }
-  function pedShoot(p: Ped, d: number) {
+  function pedShoot(p: Ped, d: number, bonus = 0) {
     const pp = ppos(), sp = Math.hypot(pp.vx || 0, pp.vz || 0);
-    const hit = rnd() < 0.55 - Math.min(0.25, sp / 40) - d / 110;
+    const hit = rnd() < 0.55 + bonus - Math.min(0.25, sp / 40) - d / 110;
     tmpV.set(p.x, (p.y || 0) + 1.4, p.z); tmpV2.set(pp.x + (hit ? 0 : (rnd() - 0.5) * 2.5), player.y + 1.2, pp.z + (hit ? 0 : (rnd() - 0.5) * 2.5));
     addTracer(tmpV, tmpV2, "#ffe7b0"); sound.shot(false, d); p.t = 0.15;
     if (hit) { if (player.car) player.car.hp -= 6; else hurt(7 + rnd() * 4); }
@@ -955,10 +1016,21 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   /** One step of a ped that fights back. Returns its speed (for the animation). */
   function fightStep(p: Ped, dt: number) {
     const pp = ppos(), d = dist(p.x, p.z, pp.x, pp.z);
-    const sameZone = p.room === "shop" ? !!S.inside : p.room === "yacht" ? S.deck === p.yacht || (!!player.car?.boat && d < 35) : !S.inside && !S.deck;
+    if (p.cop) {
+      // officers: close in to about 8 m and keep shooting; back to the car when you drive off or the search ends
+      if (S.stars === 0 || S.inside || S.deck || S.wasted > 0 || (player.car && d > 22)) { officerReturn(p, dt); return 3.4; }
+      p.a = Math.atan2(pp.x - p.x, pp.z - p.z);
+      p.atkT -= dt; p.t = Math.max(0, p.t - dt);
+      let sp = 0;
+      if (d > 9) sp = d > 25 ? 5 : 4; else if (d < 4) sp = -1.5;
+      if (p.atkT <= 0 && d < 45 && los(p.x, p.z, pp.x, pp.z)) { p.atkT = 0.75 + rnd() * 0.6; pedShoot(p, d, 0.02); }
+      if (sp) { p.x += Math.sin(p.a) * sp * dt; p.z += Math.cos(p.a) * sp * dt; }
+      return Math.abs(sp);
+    }
+    const sameZone = p.room === "shop" ? !!S.inside : p.room === "yacht" ? S.deck === p.yacht || ((!!player.car?.boat || S.swim) && d < 35) : !S.inside && !S.deck;
     p.aggro -= dt * (d > 35 || !sameZone ? 3 : 0.35);
     if (p.aggro <= 0 || S.hp <= 0 || S.wasted > 0 || !sameZone) { calmDown(p); return 0; }
-    if (player.car && !player.car.boat) { calmDown(p); if (!p.fix) { p.mode = "flee"; p.t = 6; } return 0; }
+    if (player.car && !player.car.boat && (p.tough !== 2 || d > 30)) { calmDown(p); if (!p.fix) { p.mode = "flee"; p.t = 6; } return 0; }
     p.a = Math.atan2(pp.x - p.x, pp.z - p.z);
     p.atkT -= dt; p.t = Math.max(0, p.t - dt);
     let speed = 0;
@@ -977,9 +1049,8 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     if (speed) { p.x += Math.sin(p.a) * speed * dt; p.z += Math.cos(p.a) * speed * dt; }
     return Math.abs(speed);
   }
-  function spawnFixedPed(x: number, z: number, a: number, y = 0) {
-    const tint = new THREE.Color().setHSL(rnd(), 0.35 + rnd() * 0.4, 0.45 + rnd() * 0.35);
-    const m = makePerson(tint); m.obj.scale.setScalar(0.92 + rnd() * 0.14); scene.add(m.obj);
+  function spawnFixedPed(x: number, z: number, a: number, y = 0, look?: Look) {
+    const m = makePerson(look || randomLook()); m.obj.scale.setScalar(0.94 + rnd() * 0.1); scene.add(m.obj);
     if (m.act.Idle) m.act.Idle.time = rnd() * 3;
     m.obj.position.set(x, y, z); m.obj.rotation.y = a + Math.PI;
     const p: Ped = { obj: m.obj, mixer: m.mixer, act: m.act, cur: "Idle", x, z, a, mode: "idle", from: 0, to: 0, hp: 60, t: 0, deadT: 0, fallT: 0, witness: 0, wealth: walletOf(), tough: toughRoll(), atkT: 0, aggro: 0, y, fix: { x, z, a } };
@@ -1098,11 +1169,76 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     for (let i = 0; i < y.spots.length - (rnd() < 0.5 ? 1 : 0); i++) {
       const w = yToWorld(y, y.spots[i].x, y.spots[i].z);
       const p = spawnFixedPed(w.x, w.z, rnd() * 6, y.deckY);
-      p.room = "yacht"; p.yacht = y; p.wealth = 150 + Math.floor(rnd() * 750); p.tough = rnd() < 0.2 ? 1 : 0;
-      if (i === 0) { p.guard = true; p.tough = 2; p.wealth = 60 + Math.floor(rnd() * 80); }
+      // everybody on a yacht is rich – and armed
+      p.room = "yacht"; p.yacht = y; p.wealth = 400 + Math.floor(rnd() * 1100); p.tough = 2; p.guard = true; p.hp = 80;
       if (y.cool > 0) p.robbed = true;
       y.crew.push(p);
     }
+  }
+
+  /** Yacht hulls are solid for boats and swimmers. Returns the yacht that was hit. */
+  function pushOutOfYachts(o: { x: number; z: number }, br: number) {
+    let hit: Yacht | null = null;
+    for (const y of yachts) {
+      if (Math.abs(y.x - o.x) > 40 || Math.abs(y.z - o.z) > 40) continue;
+      const l = yToLocal(y, o.x, o.z), hx = 4.6 * y.sc + br, z0 = -21.3 * y.sc - br, z1 = 24 * y.sc + br;
+      if (Math.abs(l.x) < hx && l.z > z0 && l.z < z1) {
+        const opts: [number, number, number][] = [[hx - l.x, 1, 0], [l.x + hx, -1, 0], [z1 - l.z, 0, 1], [l.z - z0, 0, -1]];
+        opts.sort((a, b) => a[0] - b[0]);
+        l.x += opts[0][1] * opts[0][0]; l.z += opts[0][2] * opts[0][0];
+        const w = yToWorld(y, l.x, l.z); o.x = w.x; o.z = w.z; hit = y;
+      }
+    }
+    return hit;
+  }
+  /** Is this point inside a yacht's hull or cabin? (keeps the camera out) */
+  function yachtSolid(x: number, y: number, z: number) {
+    for (const yt of yachts) {
+      if (Math.abs(yt.x - x) > 30 || Math.abs(yt.z - z) > 30) continue;
+      const l = yToLocal(yt, x, z), s2 = yt.sc;
+      if (Math.abs(l.x) < 4.7 * s2 && l.z > -21.4 * s2 && l.z < 24 * s2 && y < yt.deckY + 0.2) return true;
+      if (Math.abs(l.x) < 3.2 * s2 && l.z > -14.3 * s2 && l.z < 8.3 * s2 && y < yt.deckY + 5.1 * s2) return true;
+    }
+    return false;
+  }
+  /** Yacht whose hull is right next to the swimmer. */
+  function yachtAlongside() {
+    for (const y of yachts) {
+      if (Math.abs(y.x - player.x) > 40 || Math.abs(y.z - player.z) > 40) continue;
+      const l = yToLocal(y, player.x, player.z);
+      if (Math.abs(l.x) < 4.6 * y.sc + 2 && l.z > -21.3 * y.sc - 2 && l.z < 24 * y.sc + 2) return y;
+    }
+    return null;
+  }
+  function splash(x: number, z: number, n: number) {
+    for (let i = 0; i < n; i++) {
+      smoke(x + (rnd() - 0.5) * 1.2, -0.3, z + (rnd() - 0.5) * 1.2, false, true);
+      const f = fx[fx.length - 1]; if (f) { f.life = f.max = 0.6 + rnd() * 0.3; f.obj.scale.setScalar(0.18 + rnd() * 0.15); f.vy = 0.8 + rnd(); }
+    }
+  }
+  function jumpOffBoat() {
+    const c = player.car; if (!c || !c.boat) return;
+    c.kind = "parked"; c.driver = false; c.inp.th = 0; c.inp.st = 0; c.inp.hb = true; c.vx *= 0.3; c.vz *= 0.3;
+    player.car = null; P.obj.visible = true;
+    player.x = c.x + Math.cos(c.a) * 1.9; player.z = c.z - Math.sin(c.a) * 1.9; player.y = 0.7; player.vy = 2.5; player.a = c.a;
+    sound.burst(0.25, 400, 0.2); splash(player.x, player.z, 8);
+  }
+  function climbYacht(y: Yacht) {
+    const l = yToLocal(y, player.x, player.z), w = y.walk;
+    l.x = Math.max(w.x0 + 0.5, Math.min(w.x1 - 0.5, l.x)); l.z = Math.max(w.z0 + 0.5, Math.min(w.z1 - 0.5, l.z));
+    S.deck = y; S.deckBoat = null; S.swim = false;
+    const g = yToWorld(y, l.x, l.z); player.x = g.x; player.z = g.z; player.y = y.deckY; player.vy = 0;
+    clampDeck(y, player, CFG.pr);
+    sound.tone(420, 0.1, 0.05, "square");
+    toast(tt(`Du kletterst auf die „${y.name}“ – alle an Bord sind bewaffnet!`, `You climb onto the “${y.name}” – everyone aboard is armed!`), "#ffb84d");
+  }
+  function jumpOffYacht() {
+    const y = S.deck; if (!y) return;
+    const l = yToLocal(y, player.x, player.z);
+    if (l.z < y.walk.z0 + 3) l.z = -21.3 * y.sc - 1.6; else l.x = (Math.sign(l.x) || 1) * (4.6 * y.sc + 1.5);
+    const g = yToWorld(y, l.x, l.z);
+    S.deck = null; S.deckBoat = null; player.x = g.x; player.z = g.z; player.y = y.deckY + 0.3; player.vy = 3;
+    sound.burst(0.25, 400, 0.2);
   }
 
   // ── water police ─────────────────────────────────────────────────
@@ -1123,8 +1259,8 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     const pp = ppos();
     c.fireT -= dt;
     if (!S.inside && sees && d < CFG.copFire && c.fireT <= 0 && S.hp > 0 && S.wasted <= 0) {
-      c.fireT = 0.8 + rnd() * 0.9;
-      const hit = rnd() < 0.42 - Math.min(0.25, Math.hypot(pp.vx || 0, pp.vz || 0) / 60) - (player.car ? 0.12 : 0);
+      c.fireT = 0.45 + rnd() * 0.6;
+      const hit = rnd() < 0.5 - Math.min(0.25, Math.hypot(pp.vx || 0, pp.vz || 0) / 60) - (player.car ? 0.15 : 0) - d / 250;
       tmpV.set(c.x, c.boat ? 1.7 : 1.3, c.z); tmpV2.set(pp.x + (hit ? 0 : (rnd() - 0.5) * 3), player.y + 1.1, pp.z + (hit ? 0 : (rnd() - 0.5) * 3));
       addTracer(tmpV, tmpV2, "#ffe7b0");
       sound.shot(false, d);
@@ -1171,9 +1307,8 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     removeCar(c); S.rentUntil = 0; S.rentWarned = false;
   }
 
-  function spawnPedAt(x: number, z: number) {
-    const tint = new THREE.Color().setHSL(rnd(), 0.4, 0.6);
-    const m = makePerson(tint); scene.add(m.obj); m.act.Run?.play();
+  function spawnPedAt(x: number, z: number, look?: Look) {
+    const m = makePerson(look || randomLook()); scene.add(m.obj); m.act.Run?.play();
     const n = world.nearestNode(world.walks, x, z);
     const p: Ped = { obj: m.obj, mixer: m.mixer, act: m.act, cur: "Run", x, z, a: 0, mode: "flee", from: n, to: n, hp: 60, t: 8, deadT: 0, fallT: 0, witness: 0, wealth: walletOf(), tough: 0, atkT: 0, aggro: 0 };
     peds.push(p);
@@ -1213,12 +1348,17 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     for (const o of cars) if (o !== c && !o.dead && o.kind !== "wreck" && dist(o.x, o.z, c.x, c.z) < 6) { o.hp -= 80; }
     c.vx *= 0.3; c.vz *= 0.3;
   }
-  function killPed(p: Ped) {
+  function killPed(p: Ped, byPlayer = true) {
     if (p.mode === "dead" && !p.ko) return;
     p.mode = "dead"; p.deadT = 25; p.fallT = 0; p.ko = false;
     p.mixer.stopAllAction();
+    if (p.gun) p.gun.visible = false;
     S.kills++;
-    crime(2, p.x, p.z);
+    // the wallet falls out
+    if (!p.robbed && p.wealth > 0) { p.robbed = true; dropCoin(p.x + 0.5, p.z, p.wealth, p.y || 0); }
+    if (p.yacht && p.yacht.crew.every((q) => q.robbed || q.mode === "dead")) p.yacht.cool = 600;
+    if (p.cop && byPlayer) { if (p.copCar) p.copCar.crew = Math.max(0, (p.copCar.crew ?? 1) - 1); S.stars = Math.max(S.stars, 3); S.searchT = 0; S.lastSeen = { x: p.x, z: p.z }; }
+    if (byPlayer) crime(p.cop ? 3 : 2, p.x, p.z);
   }
   function hurt(d: number) {
     if (S.hp <= 0) return;
@@ -1247,7 +1387,8 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     S.hp = 100; S.armor = 0; S.stars = 0; S.searchT = 0;
     if (S.inside) { for (const p of peds) if (p.room === "shop") removePed(p); S.inside = null; shopRoom.group.visible = false; }
     S.deck = null; S.deckBoat = null; S.rob = null;
-    for (const p of peds) if (p.mode === "fight") calmDown(p);
+    for (const h of helis) if (!h.dead) h.leaving = true;
+    for (const p of peds) if (p.cop) removePed(p); else if (p.mode === "fight") calmDown(p);
     if (player.car) { player.car.kind = "parked"; player.car.driver = false; player.car = null; }
     player.x = world.spawn.x; player.z = world.spawn.z; player.y = 0; P.obj.visible = true; player.vx = player.vz = 0;
     for (const c of cars) if (c.kind === "cop") removeCar(c);
@@ -1270,6 +1411,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       const cand: [number, number, number][] = [];
       for (const p of peds) if (p.mode !== "dead") cand.push([p.x, (p.y || 0) + 1.1, p.z]);
       for (const c of cars) if (!c.dead && c !== player.car && c.kind !== "wreck") cand.push([c.x, 0.8, c.z]);
+      for (const h of helis) if (!h.dead) cand.push([h.x, h.y, h.z]);
       for (const [x, y, z] of cand) {
         const dx = x - cp.x, dy = y - cp.y, dz = z - cp.z, d = Math.hypot(dx, dy, dz);
         if (d > 70 || d < 1) continue;
@@ -1316,6 +1458,17 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       // oriented box test in the car's frame
       const dx = px - c.x, dz = pz - c.z, f = dx * Math.sin(c.a) + dz * Math.cos(c.a), s = dx * Math.cos(c.a) - dz * Math.sin(c.a);
       if (Math.abs(f) < c.len / 2 && Math.abs(s) < 1.0) { hitT = t; hitCar = c; hitPed = null; }
+    }
+    let hitHeli: Heli | null = null;
+    for (const h of helis) {
+      if (h.dead || h.gone) continue;
+      const ox = h.x - o.x, oy = h.y - o.y, oz = h.z - o.z, t = ox * aimDir.x + oy * aimDir.y + oz * aimDir.z;
+      if (t < 0 || t > hitT) continue;
+      if (ox * ox + oy * oy + oz * oz - t * t < 2.8 * 2.8) { hitT = t; hitHeli = h; hitPed = null; hitCar = null; }
+    }
+    if (hitHeli) {
+      hitHeli.hp -= W.dmg;
+      if (hitHeli.hp <= 0) { hitHeli.dead = true; hitHeli.vy = 0; banner(tt("HELIKOPTER ABGESCHOSSEN", "CHOPPER DOWN"), "", "#ff8a2a"); }
     }
     const end = o.clone().addScaledVector(aimDir, hitT);
     muzzle.getWorldPosition(tmpV);
@@ -1395,12 +1548,16 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     const pp = wpos();
     if (S.stars === 0) { c.lock = 0; aiCiv(c, dt); return; }
     const d = dist(c.x, c.z, pp.x, pp.z);
+    // stuck somewhere far away? take it off the map, a new unit spawns closer
+    c.progT = (c.progT ?? 0) + dt;
+    if (c.progT > 4) { const d0 = c.prog || 1e9; c.progT = 0; c.prog = d; if (d > 55 && d > d0 - 8) { removeCar(c); return; } }
     const sees = d < CFG.copRange && los(c.x, c.z, pp.x, pp.z);
     if (sees) { c.lock = 3; S.seen = true; S.lastSeen = { x: pp.x, z: pp.z }; }
     c.lock = Math.max(0, c.lock - dt);
     const tx = c.lock > 0 ? pp.x : S.lastSeen.x, tz = c.lock > 0 ? pp.z : S.lastSeen.z;
-    if (c.lock > 0 && d < 13 && !player.car) { c.inp.th = -1; c.inp.st = 0; c.inp.hb = false; }
-    else if (d < 220 && los(c.x, c.z, tx, tz, 0.5)) driveTo(c, tx, tz, c.lock > 0 ? 40 : 18, dt, true);
+    const onFoot = !player.car && !S.inside;
+    if (c.lock > 0 && d < 11 && onFoot) { c.inp.th = -1; c.inp.st = 0; c.inp.hb = false; }
+    else if (d < 220 && los(c.x, c.z, tx, tz, 0.5)) driveTo(c, tx, tz, c.lock > 0 ? (onFoot && d < 40 ? 16 : 46) : 18, dt, true);
     else {
       c.pathT -= dt;
       if (c.pathT <= 0 || !c.path.length) { c.pathT = 1.2; c.path = bfs(world.roads, world.nearestNode(world.roads, c.x, c.z), world.nearestNode(world.roads, tx, tz)); }
@@ -1409,6 +1566,100 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       driveTo(c, n.x, n.z, 30, dt, true);
     }
     copShoot(c, dt, d, sees);
+    // on foot: stop next to the player, driver and partner jump out and fight
+    if (onFoot && c.lock > 0 && d < 32 && !(c.crew ?? 0) && Math.hypot(c.vx, c.vz) < 5 && S.wasted <= 0 && peds.filter((q) => q.cop && q.deadT >= 0 && q.mode !== "dead").length < 6) deployOfficers(c);
+  }
+  const COP_LOOK = { top: "#1d2c4d", bottom: "#1d2c4d", shoes: "#111111" };
+  function deployOfficers(c: Car) {
+    c.driver = false; c.inp.th = 0; c.inp.st = 0; c.inp.hb = true; c.crew = 0;
+    for (const side of [1, -1]) {
+      const x = c.x + Math.cos(c.a) * 1.3 * side, z = c.z - Math.sin(c.a) * 1.3 * side;
+      const p = spawnPedAt(x, z, { ...COP_LOOK, skin: pick(SKIN) });
+      p.cop = true; p.copCar = c; p.tough = 2; p.hp = 90; p.wealth = 20 + Math.floor(rnd() * 40);
+      startFight(p); p.aggro = 1e9; p.atkT = 0.4 + rnd() * 0.5;
+      c.crew++;
+    }
+    sound.tone(330, 0.12, 0.05, "square");
+  }
+  /** Officer walks back to the patrol car and gets in again. Returns true when he is gone. */
+  function officerReturn(p: Ped, dt: number) {
+    const c = p.copCar;
+    if (!c || c.dead || c.kind === "wreck") { if (dist(p.x, p.z, wpos().x, wpos().z) > 40) { removePed(p); return true; } return false; }
+    const d = dist(p.x, p.z, c.x, c.z);
+    p.a = Math.atan2(c.x - p.x, c.z - p.z); p.x += Math.sin(p.a) * 3.4 * dt; p.z += Math.cos(p.a) * 3.4 * dt;
+    if (p.gun) p.gun.visible = false;
+    if (d < 2.2) { removePed(p); c.crew = Math.max(0, (c.crew ?? 1) - 1); if (!c.crew) c.driver = true; return true; }
+    return false;
+  }
+
+  // ── police helicopter ─────────────────────────────────────────
+  function spawnHeli() {
+    const pp = wpos(), ang = rnd() * Math.PI * 2;
+    const m = makeHeli();
+    const h: Heli = { ...m, x: pp.x + Math.cos(ang) * 280, y: 70, z: pp.z + Math.sin(ang) * 280, a: 0, vx: 0, vz: 0, vy: 0, hp: 260, fireT: 2, dead: false, leaving: false, ang, gone: false };
+    scene.add(m.group, m.beam);
+    helis.push(h);
+    toast(tt("Polizei-Helikopter im Anflug!", "Police helicopter incoming!"), "#ff5c7a");
+  }
+  function heliSees(h: Heli, px: number, py: number, pz: number) {
+    const n = 18;
+    for (let i = 1; i < n; i++) { const t = i / n, x = h.x + (px - h.x) * t, y = h.y + (py - h.y) * t, z = h.z + (pz - h.z) * t; if (world.heightAt(x, z) > y) return false; }
+    return true;
+  }
+  function updateHelis(dt: number) {
+    const live = helis.filter((h) => !h.dead && !h.leaving).length;
+    S.heliT -= dt;
+    if (S.stars >= 5 && S.wasted <= 0 && !S.inside && live < (isTouch ? 1 : 2) && S.heliT <= 0) { spawnHeli(); S.heliT = 12; }
+    const pp = wpos(), py = S.deck ? S.deck.deckY : Math.max(0, player.y);
+    for (const h of helis) {
+      if (h.gone) continue;
+      if (h.dead) {
+        h.vy -= 9.8 * dt; h.y += h.vy * dt; h.x += h.vx * dt; h.z += h.vz * dt; h.a += dt * 4;
+        if (rnd() < 0.5) smoke(h.x, h.y, h.z, rnd() < 0.5);
+        if (h.y <= Math.max(world.heightAt(h.x, h.z), -0.3) + 0.8) {
+          h.gone = true; scene.remove(h.group, h.beam);
+          for (let i = 0; i < 26; i++) smoke(h.x + (rnd() - 0.5) * 5, h.y + rnd() * 2, h.z + (rnd() - 0.5) * 5, i % 2 === 0);
+          sound.boom(); if (dist(h.x, h.z, ppos().x, ppos().z) < 9) hurt(70);
+        }
+      } else {
+        if (S.stars < 5 || S.wasted > 0 || S.inside) h.leaving = true;
+        let tx: number, tz: number, ty: number;
+        if (h.leaving) { const d = dist(h.x, h.z, pp.x, pp.z) || 1; tx = h.x + ((h.x - pp.x) / d) * 200; tz = h.z + ((h.z - pp.z) / d) * 200; ty = 110; if (d > 650) { h.gone = true; scene.remove(h.group, h.beam); continue; } }
+        else {
+          h.ang += dt * 0.22;
+          tx = pp.x + Math.cos(h.ang) * 40; tz = pp.z + Math.sin(h.ang) * 40;
+          let ground = 0; for (const [ox, oz] of [[0, 0], [15, 0], [-15, 0], [0, 15], [0, -15]]) ground = Math.max(ground, world.heightAt(tx + ox, tz + oz));
+          ty = Math.max(30, ground + 16);
+        }
+        const dx = tx - h.x, dz = tz - h.z, dl = Math.hypot(dx, dz) || 1, vmax = h.leaving ? 35 : Math.min(38, dl * 0.8);
+        h.vx += ((dx / dl) * vmax - h.vx) * Math.min(1, 1.2 * dt); h.vz += ((dz / dl) * vmax - h.vz) * Math.min(1, 1.2 * dt);
+        h.x += h.vx * dt; h.z += h.vz * dt; h.y += (ty - h.y) * Math.min(1, 0.7 * dt);
+        // nose towards the player while hunting
+        const want = h.leaving ? Math.atan2(h.vx, h.vz) : Math.atan2(pp.x - h.x, pp.z - h.z);
+        let da = want - h.a; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2; h.a += da * Math.min(1, 1.5 * dt);
+        // sniper in the open door
+        h.fireT -= dt;
+        const d3 = Math.hypot(pp.x - h.x, py - h.y, pp.z - h.z);
+        if (!h.leaving && h.fireT <= 0 && d3 < 120 && S.hp > 0 && heliSees(h, pp.x, py + 1, pp.z)) {
+          h.fireT = 0.85 + rnd() * 0.6;
+          const sp = Math.hypot(pp.vx || 0, pp.vz || 0), hit = rnd() < 0.5 - Math.min(0.3, sp / 50) - (player.car ? 0.12 : 0);
+          tmpV.set(h.x, h.y - 1, h.z); tmpV2.set(pp.x + (hit ? 0 : (rnd() - 0.5) * 3), py + 1.1, pp.z + (hit ? 0 : (rnd() - 0.5) * 3));
+          addTracer(tmpV, tmpV2, "#ffe7b0"); sound.shot(false, d3);
+          if (hit) { if (player.car) player.car.hp -= 8; else hurt(9 + rnd() * 4); }
+        }
+      }
+      // pose
+      const fwd = h.vx * Math.sin(h.a) + h.vz * Math.cos(h.a), side = h.vx * Math.cos(h.a) - h.vz * Math.sin(h.a);
+      h.group.position.set(h.x, h.y, h.z); h.group.rotation.set(Math.min(0.3, fwd / 120), h.a, -side / 140, "YXZ");
+      h.rotor.rotation.y += dt * 32; h.tail.rotation.x += dt * 45;
+      h.red.visible = Math.floor(S.t * 2.5) % 2 === 0;
+      h.beam.visible = tod !== "day" && !h.dead && !h.leaving;
+      if (h.beam.visible) {
+        tmpV.set(pp.x - h.x, py - (h.y - 1.2), pp.z - h.z); const L = tmpV.length(); tmpV.normalize();
+        h.beam.position.set(h.x, h.y - 1.2, h.z); h.beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), tmpV); h.beam.scale.set(1, L / 40, 1);
+      }
+    }
+    for (let i = helis.length - 1; i >= 0; i--) if (helis[i].gone) helis.splice(i, 1);
   }
 
   // ── simulation ───────────────────────────────────────────────────────
@@ -1444,20 +1695,23 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       const strafe = alive2 && S.armed && !(sprintKey && l > 0);
       player.strafe = strafe;
       const indoor = !!S.inside || !!S.deck;
-      const speed = (S.aim ? CFG.walk * 1.3 : jm > 0.12 ? (jm < 0.55 ? CFG.walk : jm > 0.97 ? CFG.run * (strafe ? 0.85 : 1.15) : CFG.run * (strafe ? 0.8 : 1)) : sprintKey ? CFG.sprint : held("KeyC", "ControlLeft") ? CFG.walk : strafe ? CFG.run * 0.8 : CFG.run) * (indoor ? 0.75 : 1);
+      const shN = world.shore(player.z);
+      S.swim = !indoor && (player.x > shN.e + 1.5 || player.x < shN.w - 1.5);
+      const speed = S.swim ? (sprintKey ? 3.3 : 2.3) : (S.aim ? CFG.walk * 1.3 : jm > 0.12 ? (jm < 0.55 ? CFG.walk : jm > 0.97 ? CFG.run * (strafe ? 0.85 : 1.15) : CFG.run * (strafe ? 0.8 : 1)) : sprintKey ? CFG.sprint : held("KeyC", "ControlLeft") ? CFG.walk : strafe ? CFG.run * 0.8 : CFG.run) * (indoor ? 0.75 : 1);
       if (l > 0) { mx /= l; mz /= l; player.vx = mx * speed; player.vz = mz * speed; }
       else { player.vx = 0; player.vz = 0; }
       const faceA = strafe || S.aim || (trig && alive2) ? S.yaw : l > 0 ? Math.atan2(mx, mz) : player.a;
       let da = faceA - player.a; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2;
       player.a += da * Math.min(1, (strafe ? 20 : CFG.turnFoot) * dt);
-      if (alive2 && (keys.has("Space") || pad.jump) && player.grounded) { player.vy = CFG.jump; player.grounded = false; }
-      const floorY = S.deck ? S.deck.deckY : 0;
+      if (alive2 && (keys.has("Space") || pad.jump) && player.grounded && !S.swim) { player.vy = CFG.jump; player.grounded = false; }
+      const floorY = S.deck ? S.deck.deckY : S.swim ? -1.15 : 0;
       player.vy -= CFG.gravity * dt; player.y += player.vy * dt;
-      if (player.y <= floorY) { player.y = floorY; player.vy = 0; player.grounded = true; }
+      if (player.y <= floorY) { if (S.swim && player.vy < -4) splash(player.x, player.z, 10); player.y = floorY; player.vy = 0; player.grounded = true; }
+      if (S.swim && l > 0 && rnd() < 0.12) splash(player.x - Math.sin(player.a) * 0.4, player.z - Math.cos(player.a) * 0.4, 1);
       player.x += player.vx * dt; player.z += player.vz * dt;
       if (S.inside) clampRoom(player, CFG.pr);
       else if (S.deck) clampDeck(S.deck, player, CFG.pr);
-      else world.pushCircle(player, CFG.pr);
+      else { world.pushCircle(player, CFG.pr, false); pushOutOfYachts(player, 0.6); }
       if (!indoor) for (const c of cars) {
         if (c.dead || Math.abs(c.x - player.x) > 4 || Math.abs(c.z - player.z) > 4) continue;
         for (const s of [-1, 1]) {
@@ -1473,7 +1727,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       // walking backwards with the gun raised plays the cycle in reverse
       const back = strafe && l > 0 && mx * Math.sin(player.a) + mz * Math.cos(player.a) < -0.35;
       if (P.act.Run) P.act.Run.timeScale = (back ? -0.85 : 1) * (speed > CFG.run ? 1.3 : 1);
-      if (P.act.Walk) P.act.Walk.timeScale = back ? -1 : 1;
+      if (P.act.Walk) P.act.Walk.timeScale = (back ? -1 : 1) * (S.swim ? 0.7 : 1);
     } else {
       const c = pc;
       c.inp.th = alive2 ? (held("KeyW", "ArrowUp") ? 1 : 0) - (held("KeyS", "ArrowDown") ? 1 : 0) : 0;
@@ -1499,18 +1753,9 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
         if (inOcean && c.x < sh.e + 2) { c.x = sh.e + 2; if (c.vx < 0) c.vx *= -0.3; }
         if (!inOcean && c.x > sh.w - 2) { c.x = sh.w - 2; if (c.vx > 0) c.vx *= -0.3; }
         // yachts are solid
-        const br = c.len * 0.4;
-        for (const y of yachts) {
-          if (Math.abs(y.x - c.x) > 40 || Math.abs(y.z - c.z) > 40) continue;
-          const l = yToLocal(y, c.x, c.z), hx = 4.6 * y.sc + br, z0 = -21.3 * y.sc - br, z1 = 24 * y.sc + br;
-          if (Math.abs(l.x) < hx && l.z > z0 && l.z < z1) {
-            const opts: [number, number, number][] = [[hx - l.x, 1, 0], [l.x + hx, -1, 0], [z1 - l.z, 0, 1], [l.z - z0, 0, -1]];
-            opts.sort((a, b) => a[0] - b[0]);
-            l.x += opts[0][1] * opts[0][0]; l.z += opts[0][2] * opts[0][0];
-            const w = yToWorld(y, l.x, l.z); c.x = w.x; c.z = w.z;
-            const sp = Math.hypot(c.vx, c.vz); if (c === pc && sp > 8) { sound.crash(sp); S.shake = Math.max(S.shake, sp / 40); c.hp -= sp; }
-            c.vx *= -0.2; c.vz *= -0.2;
-          }
+        if (pushOutOfYachts(c, c.len * 0.4)) {
+          const sp = Math.hypot(c.vx, c.vz); if (c === pc && sp > 8) { sound.crash(sp); S.shake = Math.max(S.shake, sp / 40); c.hp -= sp; }
+          c.vx *= -0.2; c.vz *= -0.2;
         }
         for (const o of cars) {
           if (o === c || !o.boat || o.dead || Math.abs(o.x - c.x) > 8 || Math.abs(o.z - c.z) > 8) continue;
@@ -1569,7 +1814,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
         p.obj.rotation.x = -p.fallT * Math.PI / 2; p.obj.position.y = (p.y || 0) + p.fallT * 0.15;
         p.deadT -= dt;
         if (p.deadT <= 0) {
-          if (p.ko) { p.ko = false; p.mode = "flee"; p.t = 8; p.hp = 40; p.obj.rotation.x = 0; p.obj.position.y = p.y || 0; p.act.Run?.reset().play(); p.cur = "Run"; }
+          if (p.ko) { p.ko = false; p.mode = "flee"; p.t = 8; p.hp = 40; p.obj.rotation.x = 0; p.obj.position.y = p.y || 0; p.act.Run?.reset().play(); p.cur = "Run"; if (p.cop || p.tough === 2) startFight(p); }
           else if (p.fix) { p.deadT = 60; }
           else removePed(p);
         }
@@ -1593,6 +1838,9 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
           p.a = Math.atan2(dx / l, dz / l);
           p.x += Math.sin(p.a) * speed * dt; p.z += Math.cos(p.a) * speed * dt;
         }
+      } else if (p.mode === "idle" && p.yacht && S.deck === p.yacht && S.armed && dist(p.x, p.z, player.x, player.z) < 16) {
+        // an armed stranger on deck: the crew draws
+        startFight(p); speed = 0;
       } else if (p.mode === "idle" && p.fix) {
         // stand at the post; walk back when pushed away
         const f = p.fix, dd = dist(p.x, p.z, f.x, f.z);
@@ -1623,7 +1871,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
         const sp = Math.hypot(c.vx, c.vz);
         const dx = p.x - c.x, dz = p.z - c.z, f = dx * Math.sin(c.a) + dz * Math.cos(c.a), s = dx * Math.cos(c.a) - dz * Math.sin(c.a);
         if (Math.abs(f) < c.len / 2 + 0.3 && Math.abs(s) < 1.25) {
-          if (sp > 7) { p.hp = 0; killPed(p); if (c === pc) crime(2, p.x, p.z); }
+          if (sp > 7) { p.hp = 0; killPed(p, c === pc); }
           else { const l = Math.hypot(dx, dz) || 1; p.x += (dx / l) * 0.3; p.z += (dz / l) * 0.3; }
         }
       }
@@ -1634,6 +1882,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       const pp2 = ppos(), sp2 = Math.hypot(pp2.vx || 0, pp2.vz || 0);
       let near = false;
       for (const c of cars) if (!c.dead && c.kind === "cop" && c.driver && dist(c.x, c.z, pp2.x, pp2.z) < (player.car ? 7 : 6)) { near = true; break; }
+      if (!player.car) for (const p of peds) if (p.cop && p.mode === "fight" && dist(p.x, p.z, pp2.x, pp2.z) < 2.6) { near = true; break; }
       if (near && sp2 < 2.2) { S.bustT += dt; if (S.bustT >= 2.5) busted(); }
       else S.bustT = Math.max(0, S.bustT - dt * 1.5);
     } else S.bustT = 0;
@@ -1641,6 +1890,9 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     S.seen = false;
     if (S.stars > 0) {
       for (const c of cars) if (c.kind === "cop" && c.driver && !c.dead && c.lock > 0) S.seen = true;
+      const wp = wpos();
+      for (const p of peds) if (p.cop && p.mode === "fight" && dist(p.x, p.z, wp.x, wp.z) < CFG.copRange && !S.inside && los(p.x, p.z, wp.x, wp.z)) { S.seen = true; S.lastSeen = { x: wp.x, z: wp.z }; break; }
+      for (const h of helis) if (!h.dead && !h.leaving && dist(h.x, h.z, wp.x, wp.z) < 140 && !S.inside) { S.seen = true; S.lastSeen = { x: wp.x, z: wp.z }; }
       if (!S.seen) { S.searchT += dt; if (S.searchT >= CFG.searchTime[S.stars]) { S.stars = 0; S.searchT = 0; banner(tt("ENTKOMMEN", "LOST THEM"), tt("Die Polizei hat deine Spur verloren.", "The police lost your trail."), "#3be3ff"); } }
       else S.searchT = 0;
     }
@@ -1681,18 +1933,19 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     if (civN < CFG.civCars && S.civSpawnT <= 0) { spawnCiv(S.started ? 110 : 30, 230); S.civSpawnT = 0.25; }
     const copWant = S.stars ? CFG.copsPerStar[S.stars] : 2;
     S.spawnT -= dt;
-    if (copN < copWant && S.spawnT <= 0) { if (spawnCiv(S.stars ? 120 : 150, 240, "cop")) S.spawnT = S.stars ? 2.5 : 10; }
+    if (copN < copWant && S.spawnT <= 0) { if (spawnCiv(S.stars ? 80 : 150, S.stars ? 170 : 240, "cop")) S.spawnT = S.stars ? 1.5 : 10; }
     if (pedN < CFG.peds && S.pedSpawnT <= 0) { spawnPed(S.started ? 60 : 10, 140); S.pedSpawnT = 0.35; }
     for (let i = cars.length - 1; i >= 0; i--) if (cars[i].dead) cars.splice(i, 1);
     for (let i = peds.length - 1; i >= 0; i--) if (peds[i].deadT < 0) peds.splice(i, 1);
     for (const y of yachts) if (y.crew.some((p) => p.deadT < 0)) y.crew = y.crew.filter((p) => p.deadT >= 0);
     tickRental();
+    updateHelis(dt);
 
     // pickups
     const pk = ppos();
     for (const k of pickups) {
       if (k.t > 0) { k.t -= dt; if (k.t <= 0) k.mesh.visible = true; continue; }
-      if (dist(k.x, k.z, pk.x, pk.z) < 1.6 && !S.deck) {
+      if (dist(k.x, k.z, pk.x, pk.z) < 1.6 && Math.abs((k.y || 0) - (player.car ? 0 : Math.max(0, player.y))) < 1.6) {
         k.t = 60; k.mesh.visible = false;
         if (k.kind === "cash" || k.kind === "drop") { const v = k.v ?? 15 + Math.floor(rnd() * 30); S.gold += v; sound.cash(); toast(`+${v} Gold`, "#ffd24a"); saveGame(); if (k.kind === "drop") { k.t = 1e9; scene.remove(k.mesh); } }
         else if (k.kind === "ammo") { S.reserve[0] += 24; S.reserve[1] += 60; sound.tone(700, 0.1, 0.06, "square"); toast(tt("Munition", "Ammo"), "#ffcc4d"); }
@@ -1755,9 +2008,9 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     const steps = 12;
     for (let i = 1; i <= steps; i++) {
       const t = i / steps, x = target.x + (want.x - target.x) * t, y = target.y + (want.y - target.y) * t, z = target.z + (want.z - target.z) * t;
-      if (world.heightAt(x, z) > y - 0.3) { const t2 = Math.max(0.15, (i - 1) / steps); want = new THREE.Vector3(target.x + (want.x - target.x) * t2, target.y + (want.y - target.y) * t2, target.z + (want.z - target.z) * t2); break; }
+      if (world.heightAt(x, z) > y - 0.3 || yachtSolid(x, y, z)) { const t2 = Math.max(S.swim || S.deck ? 0.03 : 0.15, (i - 1) / steps); want = new THREE.Vector3(target.x + (want.x - target.x) * t2, target.y + (want.y - target.y) * t2, target.z + (want.z - target.z) * t2); break; }
     }
-    want.y = Math.max(S.deck ? S.deck.deckY + 0.5 : 0.4, want.y);
+    want.y = Math.max(S.deck ? S.deck.deckY + 0.5 : S.swim ? 0.9 : 0.4, want.y);
     const inRoom = (v: THREE.Vector3) => {
       if (!S.inside) return;
       const m = 0.25, hw = shopRoom.W / 2 - m, hd = shopRoom.D / 2 - m;
@@ -1818,7 +2071,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       }
     }
     beach.update(S.t, wpos().x, wpos().z);
-    for (const k of pickups) if (k.mesh.visible) { k.mesh.rotation.y += dt * 1.6; k.mesh.position.y = 0.8 + Math.sin(S.t * 3 + k.x) * 0.12; }
+    for (const k of pickups) if (k.mesh.visible) { k.mesh.rotation.y += dt * 1.6; k.mesh.position.y = (k.y || 0) + 0.8 + Math.sin(S.t * 3 + k.x) * 0.12; }
     let siren = 0;
     if (S.stars > 0) for (const c of cars) if (c.kind === "cop" && !c.dead) siren = Math.max(siren, Math.max(0, 1 - dist(c.x, c.z, ppos().x, ppos().z) / 160));
     sound.update(pc ? Math.hypot(pc.vx, pc.vz) : 0, pc ? Math.max(0, pc.inp.th) : 0, pc ? pc.slip : 0, siren, !!pc && S.started && !S.paused);
@@ -1842,7 +2095,8 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
         const st = yToWorld(y, 0, y.stern.z), dd = dist(st.x, st.z, c.x, c.z);
         if (dd < 9) acts.push({ key: "board" + y.name, label: fk + "⛵ " + tt(`An Bord der „${y.name}“`, `Board the “${y.name}”`), x: st.x, y: y.deckY + 1.2, z: st.z, run: () => boardYacht(y), d: -1 });
       }
-      if (Math.hypot(c.vx, c.vz) < 4 && !acts.length) { const d = doorPos(c); acts.push({ key: "exit", label: fk + (c.boat ? "🏖️ " + tt("Zum Strand", "Back to the beach") : "🚪 " + tt("Aussteigen", "Get out")), x: d.x, y: 1.4, z: d.z, run: exitCar, d: 0 }); }
+      if (c.boat && Math.hypot(c.vx, c.vz) < 6) acts.push({ key: "dive", label: fk + "🌊 " + tt("Ins Meer springen", "Jump into the sea"), x: c.x, y: 2.0, z: c.z, run: jumpOffBoat, d: 0.2 });
+      if (Math.hypot(c.vx, c.vz) < 4 && !acts.some((a) => a.key.startsWith("board"))) { const d = doorPos(c); acts.push({ key: "exit", label: fk + (c.boat ? "🏖️ " + tt("Zum Strand", "Back to the beach") : "🚪 " + tt("Aussteigen", "Get out")), x: d.x, y: 1.4, z: d.z, run: exitCar, d: 0 }); }
       acts.sort((a, b) => a.d - b.d);
       return;
     }
@@ -1864,7 +2118,8 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     }
     if (S.deck) {
       const y = S.deck, l = yToLocal(y, player.x, player.z);
-      if (l.z < y.walk.z0 + 2.6) { const st = yToWorld(y, 0, y.walk.z0); acts.push({ key: "unboard", label: fk + "🚤 " + tt("Zurück zum Jetski", "Back to the jet ski"), x: st.x, y: y.deckY + 1.6, z: st.z, run: leaveYacht, d: 0.4 }); }
+      acts.push({ key: "dive", label: fk + "🌊 " + tt("Ins Wasser springen", "Jump into the water"), x: player.x, y: y.deckY + 2.5, z: player.z, run: jumpOffYacht, d: 1.5 });
+      if (l.z < y.walk.z0 + 2.6 && S.deckBoat) { const st = yToWorld(y, 0, y.walk.z0); acts.push({ key: "unboard", label: fk + "🚤 " + tt("Zurück zum Jetski", "Back to the jet ski"), x: st.x, y: y.deckY + 1.6, z: st.z, run: leaveYacht, d: 0.4 }); }
       pedActs();
       if (S.mission && S.mission.steps[S.mission.i].deck && S.mission.steps[S.mission.i].kind === "hold") { const sf = yachtSafe(); if (y === yacht && dist(sf.x, sf.z, player.x, player.z) < 6) acts.push({ key: "safe", label: S.armed ? "🔐 " + tt("Safe: Waffe ziehen und bleib hier", "Safe: weapon drawn, stay here") : "🔫 " + tt("Waffe ausrüsten (2 oder 3)", "Equip a weapon (2 or 3)"), x: sf.x, y: y.deckY + 1.4, z: sf.z, run: () => {}, enabled: false, d: 2 }); }
       acts.sort((a, b) => a.d - b.d); acts = acts.slice(0, 3);
@@ -1879,6 +2134,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       acts.push({ key: "car" + c.id, label: fk + (c.boat ? "🚤 " + tt("Aufsteigen", "Hop on") : jack ? "👊 " + tt("Fahrer rauszerren", "Drag driver out") + " " + richLabel(c.wealth ?? 0) : "🚪 " + tt("Einsteigen", "Get in")), x: d.x, y: 1.25, z: d.z, run: () => (jack && c.driver ? pullDriver(c) : enterCar(c)), d: dd });
     }
     pedActs();
+    if (S.swim) { const y = yachtAlongside(); if (y) acts.push({ key: "climb", label: fk + "🧗 " + tt(`Auf die „${y.name}“ klettern`, `Climb onto the “${y.name}”`), x: player.x, y: 1.4, z: player.z, run: () => climbYacht(y), d: -1 }); }
     for (const k of beach.kiosks) { const dd = dist(k.x, k.z, player.x, player.z); if (dd < 4.5) acts.push({ key: "jet", label: fk + "🚤 " + tt("Jetski-Verleih", "Jet ski rental"), x: k.x, y: 1.8, z: k.z, run: () => openPanel("jet"), d: dd }); }
     for (const sh of shops) {
       const dd = dist(sh.x, sh.z, player.x, player.z);
@@ -1951,12 +2207,18 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       h += `<div class="sb-carrow"><div class="sb-cn"><b>⚓ ${tt("Stellplatz mieten", "Rent a berth")} · 24 h</b><small>${bl > 0 ? tt(`Aktiv – noch ${fmtLeft(bl)}`, `Active – ${fmtLeft(bl)} left`) : tt("Ohne Stellplatz darf dein eigener Jetski nicht ins Wasser.", "Without a berth your own jet ski can't go in the water.")}</small></div><button data-shop="berth" ${S.gold < 100 ? "disabled" : ""}><i class="sb-coin"></i>100</button></div>`;
       if (S.jetOwned) h += `<div class="sb-carrow"><div class="sb-cn"><b>${tt("Eigenen Jetski zu Wasser lassen", "Launch your jet ski")}</b><small>${bl > 0 ? (mineJ ? tt("Liegt schon im Wasser – nochmal holen setzt ihn an den Steg.", "Already in the water – fetching it puts it back at the jetty.") : tt("Kostenlos mit Stellplatz.", "Free with a berth.")) : tt("Erst Stellplatz mieten.", "Rent a berth first.")}</small></div><button data-shop="jetget" class="own" ${bl > 0 ? "" : "disabled"}>${tt("Holen", "Fetch")}</button></div>`;
     } else if (S.panel === "heists") {
-      h = head(tt("HEIST-PLANUNG", "HEIST PLANNING"), tt("Erst die Vorbereitungen, dann das Finale", "Setups first, then the finale"));
+      h = head(tt("HEIST-PLANUNG", "HEIST PLANNING"), tt("Wähle einen Coup", "Pick a heist"));
+      h += `<div class="sb-howto"><span>① ${tt("Vorbereitungen nacheinander erledigen", "Do the setups in order")}</span><span>② ${tt("Finale starten", "Start the finale")}</span><span>③ ${tt("Beute ins Ziel bringen", "Bring the loot home")}</span></div>`;
       for (const x of HEISTS) {
         const hs = heistState(x.id), cd = hs.cool - Date.now();
-        const stepsTxt = x.preps.map((_, i) => (i < hs.prep ? "✅" : "⬜")).join(" ") + " " + (hs.prep >= x.preps.length ? "🎯" : "");
-        const btn = cd > 0 ? `<button disabled>${tt("wieder in", "again in")} ${Math.ceil(cd / 60000)} min</button>` : `<button data-shop="heist:${x.id}" ${S.mission ? "disabled" : ""}>${hs.prep < x.preps.length ? tt(`Vorbereitung ${hs.prep + 1}`, `Setup ${hs.prep + 1}`) : tt("Finale starten", "Start finale")}</button>`;
-        h += `<div class="sb-carrow"><div class="sb-cn"><b>${tt(x.de, x.en)} · <i class="sb-coin"></i>${fmt(x.reward)}</b><small>${tt(x.info[0], x.info[1])}</small><small>${stepsTxt}</small></div>${btn}</div>`;
+        const stages = [...x.preps.map((st, i) => ({ name: tt(`Vorbereitung ${i + 1}`, `Setup ${i + 1}`), st, k: i })), { name: tt("Finale", "Finale"), st: x.finale, k: x.preps.length }];
+        h += `<div class="sb-heist"><h3>${tt(x.de, x.en)}<span><i class="sb-coin"></i> ${fmt(x.reward)}</span></h3><p>${tt(x.info[0], x.info[1])}</p>`;
+        for (const g of stages) {
+          const state = cd > 0 ? "done" : g.k < hs.prep ? "done" : g.k === hs.prep ? "now" : "todo";
+          h += `<div class="sb-stage ${state}"><i>${state === "done" ? "✓" : g.k === x.preps.length ? "★" : g.k + 1}</i><div><b>${g.name}${state === "now" ? tt(" · als Nächstes", " · next") : ""}</b><ol>${g.st.filter((q) => q.kind !== "lose" || g.k === x.preps.length).map((q) => `<li>${tt(q.de, q.en)}${q.timer ? ` <small>(${tt("Zeitlimit", "time limit")} ${Math.round(q.timer / 60)} min)</small>` : ""}${q.stars ? ` <small>(${"★".repeat(q.stars)})</small>` : ""}</li>`).join("")}</ol></div></div>`;
+        }
+        const label = hs.prep < x.preps.length ? tt(`Vorbereitung ${hs.prep + 1} starten`, `Start setup ${hs.prep + 1}`) : tt("Finale starten", "Start the finale");
+        h += `<div class="sb-hbtn"><small>${cd > 0 ? tt(`Abklingzeit: noch ${Math.ceil(cd / 60000)} min`, `Cooldown: ${Math.ceil(cd / 60000)} min left`) : S.mission ? tt("Erst den laufenden Auftrag beenden.", "Finish your current job first.") : tt(`Fortschritt: ${hs.prep} / ${x.preps.length} Vorbereitungen`, `Progress: ${hs.prep} / ${x.preps.length} setups`)}</small><button data-shop="heist:${x.id}" ${cd > 0 || S.mission ? "disabled" : ""}>${label}</button></div></div>`;
       }
     }
     shopEl.innerHTML = h + "</div></div>";
@@ -2002,6 +2264,69 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     } else if (cmd === "get") { spawnOwned(sp); closeShop(); toast(sp.name + tt(" steht bereit.", " is ready."), "#ffd24a"); }
   }
 
+  // ── big map ───────────────────────────────────────────────────
+  const bigEl = hud.querySelector(".sb-big") as HTMLElement, bigCv = bigEl.querySelector("canvas") as HTMLCanvasElement, bg = bigCv.getContext("2d")!;
+  const bigView = { x: 0, z: 0, zoom: 0.5 };
+  function openMap() {
+    S.mapOpen = true; S.menu = true; releaseAll();
+    if (document.pointerLockElement) document.exitPointerLock();
+    const w = wpos(); bigView.x = w.x; bigView.z = w.z;
+    const r = root.getBoundingClientRect(); bigView.zoom = Math.min(r.width, r.height) / 1100;
+    bigEl.style.display = "block";
+  }
+  function closeMap() { S.mapOpen = false; S.menu = false; bigEl.style.display = "none"; lockPointer(); }
+  {
+    let drag = -1, lx2 = 0, ly2 = 0, moved = 0;
+    on(bigCv, "pointerdown", (e: PointerEvent) => { e.preventDefault(); e.stopPropagation(); drag = e.pointerId; lx2 = e.clientX; ly2 = e.clientY; moved = 0; try { bigCv.setPointerCapture(e.pointerId); } catch { /* ignore */ } });
+    on(bigCv, "pointermove", (e: PointerEvent) => {
+      if (e.pointerId !== drag) return;
+      const dx = e.clientX - lx2, dy = e.clientY - ly2; moved += Math.abs(dx) + Math.abs(dy);
+      bigView.x -= dx / bigView.zoom; bigView.z -= dy / bigView.zoom; lx2 = e.clientX; ly2 = e.clientY;
+    });
+    const up = (e: PointerEvent) => { if (e.pointerId === drag) drag = -1; };
+    on(bigCv, "pointerup", up); on(bigCv, "pointercancel", up);
+    on(bigCv, "wheel", (e: WheelEvent) => { e.preventDefault(); bigView.zoom = Math.max(0.15, Math.min(4, bigView.zoom * (e.deltaY < 0 ? 1.15 : 1 / 1.15))); }, { passive: false });
+  }
+  function drawBigMap() {
+    const dpr = Math.min(2, devicePixelRatio || 1), W = bigCv.clientWidth, H = bigCv.clientHeight;
+    if (bigCv.width !== Math.round(W * dpr) || bigCv.height !== Math.round(H * dpr)) { bigCv.width = Math.round(W * dpr); bigCv.height = Math.round(H * dpr); }
+    const g = bg, Z = bigView.zoom, mmI = world.minimap as HTMLCanvasElement & { ox: number; oz: number };
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.fillStyle = "#2a7f9c"; g.fillRect(0, 0, W, H);
+    const sx = (x: number) => (x - bigView.x) * Z + W / 2, sz = (z: number) => (z - bigView.z) * Z + H / 2;
+    g.imageSmoothingEnabled = true;
+    g.drawImage(mmI, sx(mmI.ox), sz(mmI.oz), (mmI.width / world.mmScale) * Z, (mmI.height / world.mmScale) * Z);
+    const dot = (x: number, z: number, r: number, col: string, label?: string) => {
+      const X = sx(x), Y = sz(z); if (X < -40 || Y < -40 || X > W + 40 || Y > H + 40) return;
+      g.fillStyle = col; g.strokeStyle = "rgba(0,0,0,.65)"; g.lineWidth = 2; g.beginPath(); g.arc(X, Y, r, 0, Math.PI * 2); g.fill(); g.stroke();
+      if (label && Z > 0.35) { g.font = "700 12px Arial, sans-serif"; g.textAlign = "center"; g.lineWidth = 3; g.strokeStyle = "rgba(0,0,0,.75)"; g.strokeText(label, X, Y - r - 5); g.fillStyle = "#fff"; g.fillText(label, X, Y - r - 5); }
+    };
+    for (const sh of shops) if (!sh.dealer) dot(sh.x, sh.z, 4, sh.cool > 0 ? "#7a6a3a" : "#ffcc33", Z > 0.9 ? sh.name : undefined);
+    if (dealerShop) dot(dealerShop.x, dealerShop.z, 7, "#38e6ff", "SOUTH BEACH MOTORS");
+    for (const b of bizSpots) dot(b.x, b.z, 6.5, S.biz[b.biz.id] ? "#d08bff" : "#7b5a99", tt(b.biz.de, b.biz.en));
+    if (hideout) dot(hideout.x, hideout.z, 7, "#ff3b5c", tt("Versteck", "Hideout"));
+    for (const k of beach.kiosks) dot(k.x, k.z, 6, "#ff7a1f", tt("Jetski-Verleih", "Jet ski rental"));
+    for (const y of yachts) {
+      g.save(); g.translate(sx(y.x), sz(y.z)); g.rotate(-y.a); g.fillStyle = "#f3f5f7"; g.strokeStyle = "rgba(0,0,0,.6)"; g.lineWidth = 1.5;
+      const w = Math.max(5, 9 * y.sc * Z), h = Math.max(14, 42 * y.sc * Z); g.fillRect(-w / 2, -h / 2, w, h); g.strokeRect(-w / 2, -h / 2, w, h); g.restore();
+      if (Z > 0.25) { g.font = "italic 700 11px Georgia, serif"; g.textAlign = "center"; g.fillStyle = "#fff"; g.fillText(y.name, sx(y.x), sz(y.z) - Math.max(10, 24 * Z)); }
+    }
+    for (const c of cars) if (!c.dead && c.owned && c !== player.car) dot(c.x, c.z, 4.5, "#ff9df0");
+    for (const c of cars) if (!c.dead && c.kind === "cop") dot(c.x, c.z, 4.5, Math.floor(S.t * 6) % 2 ? "#ff2040" : "#2050ff");
+    for (const h of helis) if (!h.dead) dot(h.x, h.z, 6, "#2050ff", "🚁");
+    if (beacon.visible) dot(beacon.position.x, beacon.position.z, 8, "#e07bff", S.mission ? tt(S.mission.steps[S.mission.i].de, S.mission.steps[S.mission.i].en).slice(0, 40) : undefined);
+    // player arrow
+    const w = wpos(), a = player.car ? player.car.a : player.a;
+    g.save(); g.translate(sx(w.x), sz(w.z)); g.rotate(Math.PI - a);
+    g.fillStyle = "#fff"; g.strokeStyle = "#000"; g.lineWidth = 2; g.beginPath(); g.moveTo(0, -12); g.lineTo(8, 9); g.lineTo(0, 4); g.lineTo(-8, 9); g.closePath(); g.fill(); g.stroke(); g.restore();
+    // street names when zoomed in
+    if (Z > 1.2) {
+      g.font = "600 11px Arial, sans-serif"; g.fillStyle = "rgba(40,40,50,.85)"; g.textAlign = "center";
+      const seen = new Set<string>();
+      for (const r of world.roadNames) { const X = sx(r.x), Y = sz(r.z); if (X < 0 || Y < 0 || X > W || Y > H || seen.has(r.n)) continue; seen.add(r.n); g.fillText(r.n, X, Y); }
+    }
+  }
+
   // ── HUD update ─────────────────────────────────────────────────────
   let hudT = 0;
   function drawHud(dt: number) {
@@ -2028,7 +2353,8 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       if (m) {
         const st = m.steps[m.i];
         const extra = st.kind === "hold" ? ` · ${Math.round((m.hold / (st.hold || 1)) * 100)} %` : st.timer ? ` · ${Math.max(0, Math.ceil(st.timer - m.t))} s` : "";
-        gl.innerHTML = `<b>${m.title}</b>${tt(st.de, st.en)}${extra}`; gl.style.display = "block";
+        const nx = m.steps[m.i + 1];
+        gl.innerHTML = `<b>${m.title}</b><span class="sb-gstep">${tt("Schritt", "Step")} ${m.i + 1}/${m.steps.length}</span>${tt(st.de, st.en)}${extra}${nx ? `<small>${tt("Danach", "Then")}: ${tt(nx.de, nx.en)}</small>` : ""}`; gl.style.display = "block";
       } else gl.style.display = "none";
       hud.querySelectorAll(".sb-hot button").forEach((b, i) => b.classList.toggle("on", i === 0 ? !S.armed : S.armed && S.weapon === i - 1));
       const sb = hud.querySelector(".sb-shoot span"); if (sb) sb.textContent = S.armed || player.car ? "✸" : "👊";
@@ -2042,6 +2368,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       $(".sb-hint").textContent = S.started && S.t < 25 ? tt("Tipp: T wechselt Sonnenuntergang / Nacht / Tag", "Tip: T switches sunset / night / day") : "";
     }
     drawActs();
+    if (S.mapOpen) drawBigMap();
     // minimap (rotates with the camera)
     const mmS = 220, mmI = world.minimap as HTMLCanvasElement & { ox: number; oz: number };
     mm.save();
@@ -2110,7 +2437,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     raf = requestAnimationFrame(loop);
     const dt = Math.min(CFG.dtMax, Math.max(0, (now - last) / 1000));
     last = now;
-    if (!S.paused) {
+    if (!S.paused && !S.mapOpen) {
       acc += dt;
       let n = 0;
       while (acc >= CFG.dtFixed && n < 6) { update(CFG.dtFixed); acc -= CFG.dtFixed; n++; }
@@ -2125,7 +2452,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   };
   raf = requestAnimationFrame(loop);
 
-  (root as unknown as { __sb: unknown }).__sb = { S, player, cars, peds, world, update, shoot, crime, keys, mouse, applyTod, camera, enterExit, scene, renderer, shops, busted, jetSpots, bizSpots, hideout, HEISTS, runHeist, openPanel, tickMission, yacht, yachts, equip, punch, openShop, shopAction, pullDriver, enterShop, leaveShop, boardYacht, leaveYacht, startFight, spawnJet, spawnBoatCop, beach, INT, shopRoom, yToWorld, cashier, mug, acts: () => acts, pad, enterCar };
+  (root as unknown as { __sb: unknown }).__sb = { S, player, cars, peds, world, update, shoot, crime, keys, mouse, applyTod, camera, enterExit, scene, renderer, shops, busted, jetSpots, bizSpots, hideout, HEISTS, runHeist, openPanel, tickMission, yacht, yachts, equip, punch, openShop, shopAction, pullDriver, enterShop, leaveShop, boardYacht, leaveYacht, startFight, spawnJet, spawnBoatCop, beach, INT, shopRoom, yToWorld, cashier, mug, acts: () => acts, pad, enterCar, helis, spawnHeli, openMap, closeMap, jumpOffBoat, climbYacht, jumpOffYacht, deployOfficers, killPed };
 
   return () => {
     alive = false;

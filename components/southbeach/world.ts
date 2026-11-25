@@ -9,7 +9,7 @@ export type World = {
   near: (x: number, z: number, r: number) => Poly[];
   heightAt: (x: number, z: number) => number;
   onLand: (x: number, z: number) => boolean;
-  pushCircle: (o: { x: number; z: number; vx?: number; vz?: number }, r: number) => number;
+  pushCircle: (o: { x: number; z: number; vx?: number; vz?: number }, r: number, sea?: boolean) => number;
   shore: (z: number) => { e: number; w: number };
   roads: Graph;
   walks: Graph;
@@ -281,7 +281,7 @@ export function buildWorld(map: SBMap, scene: THREE.Scene, aniso: number): World
     return out;
   };
   const heightAt = (x: number, z: number) => { for (const q of near(x, z, 0)) if (pointInPoly(q.p, x, z)) return q.h; return 0; };
-  const pushCircle = (o: { x: number; z: number; vx?: number; vz?: number }, rad: number) => {
+  const pushCircle = (o: { x: number; z: number; vx?: number; vz?: number }, rad: number, sea = true) => {
     let imp = 0;
     for (let it = 0; it < 2; it++)
       for (const q of near(o.x, o.z, rad)) {
@@ -309,6 +309,7 @@ export function buildWorld(map: SBMap, scene: THREE.Scene, aniso: number): World
       }
     // the sea is a wall too
     const k = rowOf(o.z);
+    if (!sea) { o.x = Math.max(west[k] - 900, Math.min(east[k] + 900, o.x)); o.z = Math.max(B.z0 - 100, Math.min(B.z1 + 100, o.z)); return imp; }
     if (o.x > east[k] - rad - 1) { o.x = east[k] - rad - 1; if (o.vx !== undefined && o.vx > 0) { imp = Math.max(imp, o.vx); o.vx *= -0.3; } }
     if (o.x < west[k] + rad + 1) { o.x = west[k] + rad + 1; if (o.vx !== undefined && o.vx < 0) { imp = Math.max(imp, -o.vx); o.vx *= -0.3; } }
     o.z = Math.max(B.z0 - 100, Math.min(B.z1 + 100, o.z));

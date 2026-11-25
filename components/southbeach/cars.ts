@@ -8,7 +8,7 @@ export type Car = {
   kind: CarKind; model: number; driver: boolean; hp: number; dead: boolean; burnT: number;
   ph: Phys; inp: { th: number; st: number; hb: boolean };
   ai: { from: number; to: number; panic: number }; stuck: number; rev: number; revSt: number; block: number; ignore: number;
-  path: number[]; pathT: number; fireT: number; lock: number; len: number; owned?: string; boat?: boolean; wealth?: number;
+  path: number[]; pathT: number; fireT: number; lock: number; len: number; owned?: string; boat?: boolean; wealth?: number; crew?: number; prog?: number; progT?: number;
 };
 
 export const PHYS = {
