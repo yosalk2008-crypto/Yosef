@@ -18,6 +18,9 @@ type Lang = "de" | "en";
 type Ped = { obj: THREE.Object3D; mixer: THREE.AnimationMixer; act: Record<string, THREE.AnimationAction>; cur: string; x: number; z: number; a: number; mode: "walk" | "flee" | "dead" | "idle"; from: number; to: number; hp: number; t: number; deadT: number; fallT: number; witness: number; ko?: boolean; robbed?: boolean; wealth: number };
 type Pickup = { mesh: THREE.Object3D; x: number; z: number; kind: "cash" | "ammo" | "health" | "drop"; t: number; v?: number };
 type Shop = { x: number; z: number; nx: number; nz: number; name: string; cool: number; dealer?: boolean; rx: number; rz: number };
+type HStep = { de: string; en: string; kind: "goto" | "hold" | "car" | "lose" | "van"; at: () => { x: number; z: number }; r: number; hold?: number; stars?: number; timer?: number; models?: number[]; boat?: boolean; van?: boolean };
+type Mission = { title: string; steps: HStep[]; i: number; hold: number; t: number; done: () => void; van: Car | null; alarmed: boolean };
+type BizState = { t: number; stock: number; safe: number };
 type Fx = { obj: THREE.Object3D; life: number; max: number; kind: "tracer" | "spark" | "smoke" | "fire" | "flash"; vx: number; vy: number; vz: number };
 
 const CFG = {
@@ -191,7 +194,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   // ── state ────────────────────────────────────────────────────────────
   const saved = (() => { try { return JSON.parse(localStorage.getItem(CFG.save) || "{}"); } catch { return {}; } })();
   const S = {
-    t: 0, started: false, paused: false, menu: false, gold: Number.isFinite(+saved.gold) && saved.gold !== undefined ? +saved.gold : 60, owned: (Array.isArray(saved.owned) ? saved.owned : []) as string[], armed: false, punchT: 0, rob: null as null | { shop: Shop; t: number }, bustT: 0, civSpawnT: 0, pedSpawnT: 0, hp: 100, armor: 0, stars: 0, searchT: 0, seen: false, lastSeen: { x: 0, z: 0 },
+    t: 0, started: false, paused: false, menu: false, gold: Number.isFinite(+saved.gold) && saved.gold !== undefined ? +saved.gold : 60, owned: (Array.isArray(saved.owned) ? saved.owned : []) as string[], armed: false, punchT: 0, rob: null as null | { shop: Shop; t: number }, bustT: 0, civSpawnT: 0, pedSpawnT: 0, mission: null as Mission | null, panel: "" as string, biz: (saved.biz && typeof saved.biz === "object" ? saved.biz : {}) as Record<string, BizState>, heist: (saved.heist && typeof saved.heist === "object" ? saved.heist : {}) as Record<string, { prep: number; cool: number }>, hp: 100, armor: 0, stars: 0, searchT: 0, seen: false, lastSeen: { x: 0, z: 0 },
     weapon: 0, mag: [12, 30], reserve: [60, 150], fireT: 0, reloadT: 0, aim: false, firing: false, kills: +saved.kills || 0, wasted: 0,
     toast: [] as { t: number; txt: string; col: string }[], banner: null as null | { t: number; big: string; small: string; col: string },
     yaw: 0, pitch: 0.18, camDist: 4.6, mouseIdle: 0, street: "", streetT: 0, spawnT: 0, shake: 0,
@@ -374,6 +377,107 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     scene.add(ring);
   }
 
+  // ── businesses, hideout, heist targets ─────────────────────────────
+  const BIZ = [
+    { id: "scrap", de: "Schrottplatz", en: "Scrapyard", price: 800, rate: 40, cap: 10, value: 30, good: ["Ersatzteile", "spare parts"], sign: lang === "en" ? "SCRAP & PARTS" : "SCHROTT & TEILE" },
+    { id: "club", de: "Nachtclub", en: "Nightclub", price: 2500, rate: 60, cap: 10, value: 70, good: ["Kisten", "crates"], sign: "CLUB FLAMINGO", club: true },
+    { id: "office", de: "Büro", en: "Office", price: 3500, rate: 55, cap: 12, value: 90, good: ["Fracht", "cargo"], sign: "BAYFRONT TRADING" },
+    { id: "lab", de: "Labor", en: "Lab", price: 5000, rate: 45, cap: 15, value: 95, good: ["Ware", "product"], sign: "OCEAN LABS" },
+    { id: "bunker", de: "Bunker", en: "Bunker", price: 8000, rate: 50, cap: 15, value: 150, good: ["Waffenteile", "weapon parts"], sign: "BUNKER 305" },
+  ];
+  type BizDef = (typeof BIZ)[number] & { club?: boolean };
+  const bizSpots: (Shop & { biz: BizDef })[] = [];
+  let hideout: Shop | null = null;
+  {
+    const taken = (x: number, z: number, d: number) => shops.some((sh) => dist(sh.x, sh.z, x, z) < d) || bizSpots.some((b) => dist(b.x, b.z, x, z) < d);
+    const pts = world.roadNames;
+    for (let i = 0; i < pts.length && !hideout; i += 5) {
+      const r = pts[(i * 4099) % pts.length];
+      const d = dist(r.x, r.z, world.spawn.x, world.spawn.z);
+      if (d < 90 || d > 320 || taken(r.x, r.z, 45)) continue;
+      const f = frontOf(r.x, r.z); if (f) hideout = { ...f, name: "", cool: 0, rx: r.x, rz: r.z };
+    }
+    let bi = 0;
+    for (let i = 0; i < pts.length && bi < BIZ.length; i++) {
+      const r = pts[(i * 6007 + 13) % pts.length];
+      if (taken(r.x, r.z, 90) || bizSpots.some((b) => dist(b.x, b.z, r.x, r.z) < 380) || (hideout && dist(hideout.x, hideout.z, r.x, r.z) < 150)) continue;
+      const f = frontOf(r.x, r.z); if (!f) continue;
+      bizSpots.push({ ...f, name: BIZ[bi].sign, cool: 0, rx: r.x, rz: r.z, biz: BIZ[bi] }); bi++;
+    }
+  }
+  const neonSpot = (sp: Shop, text: string, color: string, w: number) => {
+    const sign = makeSign(text, color, w); sign.position.set(sp.x + sp.nx * 0.1, 4.6, sp.z + sp.nz * 0.1); sign.rotation.y = Math.atan2(sp.nx, sp.nz); scene.add(sign);
+    const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(2), toneMapped: false, transparent: true, opacity: 0.85 }));
+    ring.position.set(sp.x + sp.nx * 0.6, 0.1, sp.z + sp.nz * 0.6); scene.add(ring);
+  };
+  for (const b of bizSpots) neonSpot(b, b.name, "#b46bff", 5.2);
+  if (hideout) neonSpot(hideout, lang === "en" ? "HIDEOUT" : "VERSTECK", "#ff3b5c", 4);
+  const pickShop = (re: RegExp) => shops.find((x) => !x.dealer && re.test(x.name)) || shops.find((x) => !x.dealer) || hideout!;
+  const jeweler = pickShop(/JUWELIER|JEWELER|SCHMUCK|JEWELRY/), bank = pickShop(/BANK/);
+  const walkPt = (from: { x: number; z: number }, minD: number, maxD: number, salt: number) => {
+    const g = world.walks;
+    for (let k = 0; k < 400; k++) { const i = Math.floor(((k * 2654435761 + salt * 97) >>> 0) % g.count); if (!g.adj[i].length) continue; const d = dist(g.x[i], g.z[i], from.x, from.z); if (d > minD && d < maxD && world.onLand(g.x[i], g.z[i])) return { x: g.x[i], z: g.z[i] }; }
+    return { x: from.x + minD, z: from.z };
+  };
+  const base = hideout || { x: world.spawn.x, z: world.spawn.z };
+  const gearSpot = walkPt(base, 450, 900, 1), lap1 = walkPt(base, 300, 700, 2), lap2 = walkPt(lap1, 350, 800, 3), lap3 = walkPt(lap2, 350, 800, 4);
+  // the yacht lies off the beach
+  const yz = (world.bounds.z0 + world.bounds.z1) / 2 - 200, yacht = { x: world.shore(yz).e + 420, z: yz };
+  const beachDrop = jetSpots[3] || { x: world.shore(0).e + 4, z: 0 };
+  {
+    const white = new THREE.MeshStandardMaterial({ color: "#f3f5f7", roughness: 0.35, metalness: 0.1 });
+    const glassY = new THREE.MeshPhysicalMaterial({ color: "#0b1620", roughness: 0.05, metalness: 0.5 });
+    const grpY = new THREE.Group();
+    const hull = new THREE.Mesh(new THREE.BoxGeometry(9, 3.4, 38), white); hull.position.y = 0.6;
+    const bow = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 4.5, 10, 4, 1).rotateX(Math.PI / 2).rotateZ(Math.PI / 4), white); bow.scale.set(1, 0.75, 1); bow.position.set(0, 0.8, 23.5);
+    const deck1 = new THREE.Mesh(new THREE.BoxGeometry(7.5, 2.6, 22), white); deck1.position.set(0, 3.6, -3);
+    const win1 = new THREE.Mesh(new THREE.BoxGeometry(7.6, 1.2, 20), glassY); win1.position.set(0, 3.7, -3);
+    const deck2 = new THREE.Mesh(new THREE.BoxGeometry(6, 2.2, 13), white); deck2.position.set(0, 6, -5);
+    const win2 = new THREE.Mesh(new THREE.BoxGeometry(6.1, 1, 11), glassY); win2.position.set(0, 6.1, -5);
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 5), white); mast.position.set(0, 9, -6);
+    grpY.add(hull, bow, deck1, win1, deck2, win2, mast);
+    grpY.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
+    grpY.position.set(yacht.x, -0.8, yacht.z); grpY.rotation.y = 0.4;
+    scene.add(grpY);
+  }
+  // beacon for the current mission target
+  const beacon = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 80, 24, 1, true), new THREE.MeshBasicMaterial({ color: new THREE.Color(2.4, 0.6, 2.6), transparent: true, opacity: 0.14, depthWrite: false, toneMapped: false, side: THREE.DoubleSide }));
+  beacon.visible = false; scene.add(beacon);
+  const HEISTS: { id: string; de: string; en: string; reward: number; cool: number; preps: HStep[][]; finale: HStep[]; info: [string, string] }[] = [
+    { id: "jewel", de: "Juwelen-Coup am Ocean Drive", en: "Ocean Drive jewel heist", reward: 1600, cool: 600, info: ["Fluchtwagen besorgen, Ausrüstung holen, dann die Vitrinen ausräumen.", "Get a getaway car, pick up gear, then clean out the display cases."],
+      preps: [
+        [{ de: "Besorg einen schnellen Sportwagen als Fluchtwagen und bring ihn ins Versteck", en: "Get a fast sports car as the getaway car and bring it to the hideout", kind: "car", at: () => base, r: 12, models: [0, 3, 4, 6, 7] }],
+        [{ de: "Hol die Ausrüstung ab", en: "Pick up the gear", kind: "goto", at: () => gearSpot, r: 4 }, { de: "Bring die Ausrüstung ins Versteck", en: "Bring the gear to the hideout", kind: "goto", at: () => base, r: 8, timer: 240 }],
+      ],
+      finale: [
+        { de: "Fahr zum Juwelier", en: "Go to the jeweler", kind: "goto", at: () => jeweler, r: 5 },
+        { de: "Räum die Vitrinen aus – mit gezogener Waffe", en: "Clean out the display cases – weapon drawn", kind: "hold", at: () => jeweler, r: 6, hold: 8, stars: 3 },
+        { de: "Häng die Polizei ab", en: "Lose the cops", kind: "lose", at: () => base, r: 1e9 },
+        { de: "Bring die Beute ins Versteck", en: "Bring the loot to the hideout", kind: "goto", at: () => base, r: 8 },
+      ] },
+    { id: "bank", de: "Bayfront-Bank-Coup", en: "Bayfront bank heist", reward: 4200, cool: 900, info: ["Drei Terminals hacken, einen schweren SUV besorgen, dann den Tresor knacken.", "Hack three terminals, get a heavy SUV, then crack the vault."],
+      preps: [
+        [{ de: "Hack Terminal 1", en: "Hack terminal 1", kind: "hold", at: () => lap1, r: 3, hold: 3, timer: 300 }, { de: "Hack Terminal 2", en: "Hack terminal 2", kind: "hold", at: () => lap2, r: 3, hold: 3, timer: 240 }, { de: "Hack Terminal 3", en: "Hack terminal 3", kind: "hold", at: () => lap3, r: 3, hold: 3, timer: 240 }],
+        [{ de: "Besorg einen schweren SUV und bring ihn ins Versteck", en: "Get a heavy SUV and bring it to the hideout", kind: "car", at: () => base, r: 12, models: [2, 5] }],
+      ],
+      finale: [
+        { de: "Fahr zur Bank", en: "Go to the bank", kind: "goto", at: () => bank, r: 5 },
+        { de: "Knack den Tresor – mit gezogener Waffe", en: "Crack the vault – weapon drawn", kind: "hold", at: () => bank, r: 6, hold: 12, stars: 4 },
+        { de: "Häng die Polizei ab", en: "Lose the cops", kind: "lose", at: () => base, r: 1e9 },
+        { de: "Bring das Geld ins Versteck", en: "Bring the money to the hideout", kind: "goto", at: () => base, r: 8 },
+      ] },
+    { id: "yacht", de: "Yacht-Coup", en: "Yacht heist", reward: 6500, cool: 1200, info: ["Die Luxusyacht vor dem Strand mit dem Jetski auskundschaften, dann den Safe an Bord leeren.", "Scout the luxury yacht off the beach by jet ski, then empty the safe on board."],
+      preps: [
+        [{ de: "Erkunde die Yacht mit einem Jetski (Jetskis liegen am Strand)", en: "Scout the yacht on a jet ski (jet skis are at the beach)", kind: "goto", at: () => yacht, r: 60, boat: true }, { de: "Zurück zum Strand", en: "Back to the beach", kind: "goto", at: () => beachDrop, r: 14, boat: true }],
+      ],
+      finale: [
+        { de: "Fahr mit dem Jetski zur Yacht", en: "Ride a jet ski to the yacht", kind: "goto", at: () => yacht, r: 26, boat: true },
+        { de: "Leer den Safe – bleib längsseits der Yacht", en: "Empty the safe – stay alongside the yacht", kind: "hold", at: () => yacht, r: 30, hold: 10, stars: 3, boat: true },
+        { de: "Zurück zum Strand", en: "Back to the beach", kind: "goto", at: () => beachDrop, r: 16, boat: true },
+        { de: "Häng die Polizei ab", en: "Lose the cops", kind: "lose", at: () => base, r: 1e9 },
+      ] },
+  ];
+
   progress(0.8, tt("Verkehr und Passanten …", "Traffic and people …"));
   await frame();
   for (let i = 0; i < CFG.civCars; i++) spawnCiv(15, 220);
@@ -387,6 +491,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     <div class="sb-street"></div>
     <div class="sb-cross"></div>
     <div class="sb-prompt"></div>
+    <div class="sb-goal"></div>
     <div class="sb-toasts"></div>
     <div class="sb-banner"><b></b><span></span></div>
     <div class="sb-hint"></div>
@@ -590,7 +695,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   const held = (...c: string[]) => c.some((k) => keys.has(k));
 
   // ── gameplay helpers ─────────────────────────────────────────────────
-  function saveGame() { try { localStorage.setItem(CFG.save, JSON.stringify({ gold: S.gold, owned: S.owned, kills: S.kills })); } catch { /* ignore */ } }
+  function saveGame() { try { localStorage.setItem(CFG.save, JSON.stringify({ gold: S.gold, owned: S.owned, kills: S.kills, biz: S.biz, heist: S.heist })); } catch { /* ignore */ } }
   function los(ax: number, az: number, bx: number, bz: number, y = 1.4) {
     const d = dist(ax, az, bx, bz), n = Math.ceil(d / 2.5);
     for (let i = 1; i < n; i++) { const t = i / n; if (world.heightAt(ax + (bx - ax) * t, az + (bz - az) * t) > y) return false; }
@@ -698,6 +803,93 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     sound.tone(980, 0.25, 0.06, "sawtooth", 500);
     toast(tt("Überfall! Bleib in der Nähe, bis die Kasse leer ist.", "Hold-up! Stay close until the register is empty."), "#ff5c7a");
   }
+  // ── missions (heists, deliveries) ─────────────────────────────
+  function startMission(title: string, steps: HStep[], done: () => void, van: Car | null = null) {
+    if (S.mission) { toast(tt("Du hast schon einen Auftrag.", "You already have a job running.")); return false; }
+    S.mission = { title, steps, i: 0, hold: 0, t: 0, done, van, alarmed: false };
+    banner(title, tt(steps[0].de, steps[0].en), "#b46bff");
+    sound.tone(523, 0.12, 0.07); sound.tone(784, 0.2, 0.07, "sine", 0, 0.12);
+    return true;
+  }
+  function endMission(ok: boolean, why = "") {
+    const m = S.mission; if (!m) return;
+    if (m.van && !m.van.dead && m.van !== player.car) removeCar(m.van);
+    S.mission = null;
+    if (ok) { m.done(); saveGame(); }
+    else banner(tt("AUFTRAG GESCHEITERT", "JOB FAILED"), why, "#ff3b5c");
+  }
+  function tickMission(dt: number) {
+    const m = S.mission; if (!m) return;
+    const st = m.steps[m.i];
+    m.t += dt;
+    if (st.timer && m.t > st.timer) { endMission(false, tt("Die Zeit ist abgelaufen.", "Time ran out.")); return; }
+    if (m.van && (m.van.dead || m.van.kind === "wreck" || m.van.hp <= 0)) { endMission(false, tt("Das Fahrzeug ist zerstört.", "The vehicle was destroyed.")); return; }
+    const tg = st.at(), pp = ppos(), d = dist(tg.x, tg.z, pp.x, pp.z), sp = Math.hypot(pp.vx || 0, pp.vz || 0);
+    const onBoat = !!player.car?.boat;
+    let next = false;
+    if (st.kind === "goto") next = d < st.r && (!st.boat || onBoat) && (!st.van || player.car === m.van);
+    else if (st.kind === "van") next = !!m.van && player.car === m.van;
+    else if (st.kind === "car") next = !!player.car && !player.car.boat && (st.models || []).includes(player.car.model) && d < st.r;
+    else if (st.kind === "lose") next = S.stars === 0;
+    else if (st.kind === "hold") {
+      const ok = d < st.r && sp < 3 && (st.boat ? onBoat : !player.car && (st.stars ? S.armed : true));
+      if (ok) {
+        if (!m.alarmed && st.stars) { m.alarmed = true; S.stars = Math.max(S.stars, st.stars); S.searchT = 0; S.lastSeen = { x: pp.x, z: pp.z }; toast(tt("Alarm ausgelöst!", "Alarm triggered!"), "#ff5c7a"); sound.tone(980, 0.3, 0.07, "sawtooth", 500); }
+        m.hold += dt; if (m.hold >= (st.hold || 1)) next = true;
+      } else m.hold = Math.max(0, m.hold - dt * 0.5);
+    }
+    if (next) {
+      m.i++; m.hold = 0; m.t = 0; m.alarmed = false;
+      sound.tone(880, 0.1, 0.07);
+      if (m.i >= m.steps.length) { endMission(true); return; }
+      toast(tt(m.steps[m.i].de, m.steps[m.i].en), "#d9b8ff");
+    }
+  }
+  // passive production in real time (also while the game is closed)
+  const bizDef = (id: string) => BIZ.find((b) => b.id === id) as BizDef | undefined;
+  let prodT = 0;
+  function tickBusiness(dt: number) {
+    prodT -= dt; if (prodT > 0) return; prodT = 1;
+    const now = Date.now();
+    for (const id in S.biz) {
+      const b = S.biz[id], d = bizDef(id); if (!d) continue;
+      const n = Math.floor((now - b.t) / (d.rate * 1000));
+      if (n > 0) { b.stock = Math.min(d.cap, b.stock + n); b.t = b.stock >= d.cap ? now : b.t + n * d.rate * 1000; }
+      if (d.club) b.safe = Math.min(900, (b.safe || 0) + dt * 0.25 * 60 / 60 * 1);
+    }
+  }
+  function sellGoods(spot: Shop & { biz: BizDef }) {
+    const st = S.biz[spot.biz.id]; if (!st || st.stock <= 0) return;
+    const units = st.stock, pay = units * spot.biz.value;
+    const van = addCar(makeCar("parked", spot.rx - spot.nx * 3.2, spot.rz - spot.nz * 3.2, Math.atan2(spot.nz, -spot.nx), "#2b2f36", 2));
+    van.owned = "mission"; van.driver = false; van.inp.hb = true;
+    const dest = walkPt(spot, 700, 1400, units + Math.floor(S.t));
+    const ok = startMission(tt(`${spot.biz.de}: Lieferung`, `${spot.biz.en}: delivery`), [
+      { de: "Steig in den Lieferwagen", en: "Get into the delivery van", kind: "van", at: () => ({ x: van.x, z: van.z }), r: 1 },
+      { de: `Liefere ${units} × ${spot.biz.good[0]} zum Käufer (Schäden vermeiden!)`, en: `Deliver ${units} × ${spot.biz.good[1]} to the buyer (avoid damage!)`, kind: "goto", at: () => dest, r: 10, van: true, timer: 300 },
+    ], () => {
+      const dmg = Math.max(0.4, Math.min(1, van.hp / 160));
+      const v = Math.round(pay * dmg);
+      S.gold += v; sound.cash();
+      banner(`+${v} GOLD`, tt(`${units} × ${spot.biz.good[0]} verkauft`, `${units} × ${spot.biz.good[1]} sold`), "#ffd24a");
+    }, van);
+    if (ok) { st.stock = 0; closeShop(); } else removeCar(van);
+  }
+  function heistState(id: string) { return (S.heist[id] ||= { prep: 0, cool: 0 }); }
+  function runHeist(id: string) {
+    const h = HEISTS.find((x) => x.id === id); if (!h) return;
+    const hs = heistState(id);
+    if (hs.cool > Date.now()) return;
+    if (hs.prep < h.preps.length) {
+      const k = hs.prep;
+      if (startMission(tt(`${h.de} – Vorbereitung ${k + 1}/${h.preps.length}`, `${h.en} – setup ${k + 1}/${h.preps.length}`), h.preps[k], () => {
+        hs.prep = k + 1; banner(tt("VORBEREITUNG ERLEDIGT", "SETUP DONE"), tt(h.de, h.en), "#b46bff");
+      })) closeShop();
+    } else if (startMission(tt(`${h.de} – Finale`, `${h.en} – finale`), h.finale, () => {
+      hs.prep = 0; hs.cool = Date.now() + h.cool * 1000; S.gold += h.reward; sound.cash();
+      banner(`+${h.reward} GOLD`, tt(`${h.de} geschafft!`, `${h.en} complete!`), "#ffd24a");
+    })) closeShop();
+  }
   function updateRobbery(dt: number) {
     for (const sh of shops) sh.cool = Math.max(0, sh.cool - dt);
     if (!S.rob) return;
@@ -773,11 +965,13 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     S.hp = 0; S.wasted = 4;
     const loss = Math.min(S.gold, Math.round(S.gold * 0.1) + 10);
     S.gold -= loss; S.rob = null;
+    if (S.mission) endMission(false, "");
     banner(tt("AUSGESCHALTET", "KNOCKED OUT"), tt(`Krankenhausrechnung: ${loss} Gold`, `Hospital bill: ${loss} gold`), "#ff3b5c");
   }
   function busted() {
     if (S.wasted > 0) return;
     S.wasted = 3; S.bustT = 0; S.rob = null;
+    if (S.mission) endMission(false, "");
     const loss = Math.min(S.gold, Math.round(S.gold * 0.25) + 25);
     S.gold -= loss;
     banner(tt("VERHAFTET", "BUSTED"), tt(`Kaution und Strafe: ${loss} Gold`, `Bail and fine: ${loss} gold`), "#3b8bff");
@@ -956,6 +1150,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     else if (alive2 && trig && S.armed && (CFG.weapons[S.weapon].auto || !S.firing)) shoot();
     S.punchT = Math.max(0, S.punchT - dt);
     updateRobbery(dt);
+    if (active) { tickMission(dt); tickBusiness(dt); }
     S.firing = trig;
 
     // player on foot
@@ -1224,6 +1419,10 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       pointBone(bones.RightArm, bones.RightForeArm, aimDir);
       pointBone(bones.RightForeArm, bones.RightHand, aimDir);
     }
+    if (S.mission && S.mission.steps[S.mission.i].kind !== "lose" && S.mission.steps[S.mission.i].kind !== "van") { const tg = S.mission.steps[S.mission.i].at(); beacon.visible = true; beacon.position.set(tg.x, 30, tg.z); }
+    else if (S.mission && S.mission.van && S.mission.steps[S.mission.i].kind === "van") { beacon.visible = true; beacon.position.set(S.mission.van.x, 30, S.mission.van.z); }
+    else beacon.visible = false;
+    if (beacon.visible && dist(beacon.position.x, beacon.position.z, camera.position.x, camera.position.z) < 9) beacon.visible = false;
     flash.intensity *= 0.6; (flashSprite.material as THREE.MeshBasicMaterial).opacity *= 0.5;
     // sun & shadows follow the player
     sun.position.set(player.x + sunDir.x * 300, Math.max(30, sunDir.y * 300), player.z + sunDir.z * 300);
@@ -1276,6 +1475,12 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       if (sh.dealer) { if (dd < 5) acts.push({ key: "dealer", label: fk + "🏎️ " + tt("Autohaus", "Dealership"), x: sh.x, y: 1.6, z: sh.z, run: openShop, d: dd }); continue; }
       if (dd < 3.5 && sh.cool <= 0 && !S.rob) acts.push({ key: "shop" + shops.indexOf(sh), label: S.armed ? fk + "💰 " + tt("Laden ausrauben", "Rob the store") : "🔫 " + tt("Waffe ausrüsten zum Ausrauben", "Equip a weapon to rob"), x: sh.x, y: 1.6, z: sh.z, run: () => startRobbery(sh), enabled: S.armed, d: dd });
     }
+    for (const b of bizSpots) {
+      const dd = dist(b.x, b.z, player.x, player.z);
+      if (dd < 5) acts.push({ key: "biz" + b.biz.id, label: fk + "🏢 " + (S.biz[b.biz.id] ? tt(`${b.biz.de} verwalten`, `Manage ${b.biz.en}`) : tt(`${b.biz.de} kaufen`, `Buy ${b.biz.en}`)), x: b.x, y: 1.6, z: b.z, run: () => openPanel("biz:" + b.biz.id), d: dd });
+    }
+    if (hideout && dist(hideout.x, hideout.z, player.x, player.z) < 5) acts.push({ key: "hideout", label: fk + "🗺️ " + tt("Heist-Planung", "Heist planning"), x: hideout.x, y: 1.6, z: hideout.z, run: () => openPanel("heists"), d: dist(hideout.x, hideout.z, player.x, player.z) });
+    if (S.mission && !player.car) acts.push({ key: "abort", label: "✖ " + tt("Auftrag abbrechen", "Abort job"), x: player.x, y: 2.6, z: player.z, run: () => endMission(false, tt("Abgebrochen.", "Aborted.")), d: 99 });
     acts.sort((a, b) => a.d - b.d);
     acts = acts.slice(0, 3);
   }
@@ -1305,7 +1510,39 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     if (document.pointerLockElement) document.exitPointerLock();
     renderShop(); shopEl.style.display = "flex";
   }
-  function closeShop() { S.menu = false; shopEl.style.display = "none"; lockPointer(); }
+  function closeShop() { S.menu = false; S.panel = ""; shopEl.style.display = "none"; lockPointer(); }
+  function openPanel(kind: string) {
+    S.menu = true; S.panel = kind; releaseAll();
+    if (document.pointerLockElement) document.exitPointerLock();
+    renderPanel(); shopEl.style.display = "flex";
+  }
+  const fmt = (n: number) => Math.round(n).toLocaleString("de-DE");
+  function renderPanel() {
+    const head = (t: string, sub: string) => `<div class="sb-shopcard"><div class="sb-shophead"><div><b>${t}</b><small>${sub}</small></div><span class="sb-gold"><i class="sb-coin"></i>${fmt(S.gold)}</span><button data-shop="close" aria-label="close">✕</button></div><div class="sb-shoplist">`;
+    let h = "";
+    if (S.panel.startsWith("biz:")) {
+      const d = bizDef(S.panel.slice(4))!, st = S.biz[d.id];
+      h = head(d.sign, tt(d.de, d.en));
+      if (!st) {
+        h += `<p>${tt(`Produziert alle ${d.rate} s eine Einheit ${d.good[0]} (bis ${d.cap}), auch wenn du nicht spielst. Verkauf bringt ${d.value} Gold pro Einheit.`, `Produces one unit of ${d.good[1]} every ${d.rate}s (up to ${d.cap}), even while you're away. Selling pays ${d.value} gold per unit.`)}${d.club ? tt(" Dazu füllt der Club seinen Tresor mit Eintrittsgeld.", " The club also fills its safe with door money.") : ""}</p>
+        <div class="sb-carrow"><div class="sb-cn"><b>${tt("Kaufpreis", "Price")}</b></div><button data-shop="bizbuy:${d.id}" ${S.gold < d.price ? "disabled" : ""}><i class="sb-coin"></i>${fmt(d.price)}</button></div>`;
+      } else {
+        const pct = Math.round((st.stock / d.cap) * 100);
+        h += `<div class="sb-carrow"><div class="sb-cn"><b>${tt("Lager", "Stock")}: ${st.stock} / ${d.cap} ${tt(d.good[0], d.good[1])}</b><small>${tt("Wert", "Value")} ${fmt(st.stock * d.value)} Gold · ${tt(`+1 alle ${d.rate} s`, `+1 every ${d.rate}s`)}</small><div class="sb-meter"><i style="width:${pct}%"></i></div></div><button data-shop="bizsell:${d.id}" ${st.stock > 0 && !S.mission ? "" : "disabled"}>${tt("Verkaufen", "Sell")}</button></div>`;
+        if (d.club) h += `<div class="sb-carrow"><div class="sb-cn"><b>${tt("Club-Tresor", "Club safe")}: ${fmt(st.safe || 0)} Gold</b><small>${tt("Eintrittsgeld, max. 900", "Door money, max 900")}</small></div><button data-shop="bizsafe:${d.id}" ${(st.safe || 0) >= 1 ? "" : "disabled"}>${tt("Leeren", "Collect")}</button></div>`;
+        h += `<p class="sb-small">${tt("Beim Verkaufen fährst du einen Lieferwagen zum Käufer. Schäden am Wagen senken den Preis.", "Selling means driving a van to the buyer. Damage to the van lowers the price.")}</p>`;
+      }
+    } else if (S.panel === "heists") {
+      h = head(tt("HEIST-PLANUNG", "HEIST PLANNING"), tt("Erst die Vorbereitungen, dann das Finale", "Setups first, then the finale"));
+      for (const x of HEISTS) {
+        const hs = heistState(x.id), cd = hs.cool - Date.now();
+        const stepsTxt = x.preps.map((_, i) => (i < hs.prep ? "✅" : "⬜")).join(" ") + " " + (hs.prep >= x.preps.length ? "🎯" : "");
+        const btn = cd > 0 ? `<button disabled>${tt("wieder in", "again in")} ${Math.ceil(cd / 60000)} min</button>` : `<button data-shop="heist:${x.id}" ${S.mission ? "disabled" : ""}>${hs.prep < x.preps.length ? tt(`Vorbereitung ${hs.prep + 1}`, `Setup ${hs.prep + 1}`) : tt("Finale starten", "Start finale")}</button>`;
+        h += `<div class="sb-carrow"><div class="sb-cn"><b>${tt(x.de, x.en)} · <i class="sb-coin"></i>${fmt(x.reward)}</b><small>${tt(x.info[0], x.info[1])}</small><small>${stepsTxt}</small></div>${btn}</div>`;
+      }
+    }
+    shopEl.innerHTML = h + "</div></div>";
+  }
   function renderShop() {
     let h = `<div class="sb-shopcard"><div class="sb-shophead"><div><b>SOUTH BEACH MOTORS</b><small>${tt("Neu- und Sportwagen · Bezahlung in Gold", "New & sports cars · paid in gold")}</small></div><span class="sb-gold"><i class="sb-coin"></i>${S.gold.toLocaleString("de-DE")}</span><button data-shop="close" aria-label="close">✕</button></div><div class="sb-shoplist">`;
     TIERS.forEach((T, ti) => {
@@ -1329,6 +1566,10 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   function shopAction(a: string) {
     if (a === "close") { closeShop(); return; }
     const [cmd, id] = a.split(":");
+    if (cmd === "bizbuy") { const d = bizDef(id); if (d && S.gold >= d.price && !S.biz[id]) { S.gold -= d.price; S.biz[id] = { t: Date.now(), stock: 0, safe: 0 }; sound.cash(); saveGame(); banner(tt("GEKAUFT", "PURCHASED"), d.sign, "#b46bff"); renderPanel(); } return; }
+    if (cmd === "bizsell") { const sp = bizSpots.find((b) => b.biz.id === id); if (sp) sellGoods(sp); return; }
+    if (cmd === "bizsafe") { const st = S.biz[id]; if (st && st.safe >= 1) { const v = Math.floor(st.safe); S.gold += v; st.safe -= v; sound.cash(); toast(`+${v} Gold`, "#ffd24a"); saveGame(); renderPanel(); } return; }
+    if (cmd === "heist") { runHeist(id); return; }
     const sp = CATALOG.find((c) => c.id === id);
     if (!sp) return;
     if (cmd === "buy") {
@@ -1361,6 +1602,12 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       }
       const prompt = S.bustT > 0.2 ? tt(`Festnahme! Weg hier! ${Math.round((S.bustT / 2.5) * 100)} %`, `Getting arrested! Move! ${Math.round((S.bustT / 2.5) * 100)}%`) : S.rob ? tt(`Kasse wird geleert … ${Math.round((S.rob.t / 4) * 100)} %`, `Emptying the register … ${Math.round((S.rob.t / 4) * 100)}%`) : "";
       $(".sb-prompt").textContent = prompt;
+      const m = S.mission, gl = $(".sb-goal");
+      if (m) {
+        const st = m.steps[m.i];
+        const extra = st.kind === "hold" ? ` · ${Math.round((m.hold / (st.hold || 1)) * 100)} %` : st.timer ? ` · ${Math.max(0, Math.ceil(st.timer - m.t))} s` : "";
+        gl.innerHTML = `<b>${m.title}</b>${tt(st.de, st.en)}${extra}`; gl.style.display = "block";
+      } else gl.style.display = "none";
       hud.querySelectorAll(".sb-hot button").forEach((b, i) => b.classList.toggle("on", i === 0 ? !S.armed : S.armed && S.weapon === i - 1));
       const sb = hud.querySelector(".sb-shoot span"); if (sb) sb.textContent = S.armed || player.car ? "✸" : "👊";
       $(".sb-cross").style.display = S.aim || (!player.car && (mouse.l || pad.shoot)) ? "block" : "none";
@@ -1388,6 +1635,15 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     for (const sh of shops) { const ok = sh.dealer || sh.cool <= 0; dot(sh.x, sh.z, sh.dealer ? 5 : 3.6, sh.dealer ? "#38e6ff" : ok ? "#ffcc33" : "#7a6a3a"); }
     for (const c of cars) if (!c.dead && c.owned && c !== player.car) dot(c.x, c.z, 3.6, "#ff9df0");
     for (const c of cars) if (!c.dead && c.boat && c !== player.car) dot(c.x, c.z, 3, "#ffffff");
+    for (const b of bizSpots) dot(b.x, b.z, 4.2, S.biz[b.biz.id] ? "#d08bff" : "#7b5a99");
+    if (hideout) dot(hideout.x, hideout.z, 4.6, "#ff3b5c");
+    if (beacon.visible) {
+      // mission target, pinned to the minimap edge when far away
+      let dx = (beacon.position.x - pp.x) * world.mmScale, dz = (beacon.position.z - pp.z) * world.mmScale;
+      const L = Math.hypot(dx, dz), R = 92 / 1.1;
+      if (L > R) { dx *= R / L; dz *= R / L; }
+      mm.fillStyle = "#e07bff"; mm.strokeStyle = "#fff"; mm.lineWidth = 2; mm.beginPath(); mm.arc(dx, dz, 6, 0, Math.PI * 2); mm.fill(); mm.stroke();
+    }
     for (const c of cars) if (!c.dead && c.kind === "cop") dot(c.x, c.z, 3.4, Math.floor(S.t * 6) % 2 ? "#ff2040" : "#2050ff");
     if (!mine.dead && player.car !== mine) dot(mine.x, mine.z, 3.4, "#ff2f7a");
     if (S.stars > 0 && !S.seen) { mm.strokeStyle = "rgba(255,40,70,0.8)"; mm.lineWidth = 2; mm.beginPath(); mm.arc((S.lastSeen.x - pp.x) * world.mmScale, (S.lastSeen.z - pp.z) * world.mmScale, 20 + S.searchT * 2, 0, Math.PI * 2); mm.stroke(); }
@@ -1444,7 +1700,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   };
   raf = requestAnimationFrame(loop);
 
-  (root as unknown as { __sb: unknown }).__sb = { S, player, cars, peds, world, update, shoot, crime, keys, mouse, applyTod, camera, enterExit, scene, renderer, shops, busted, jetSpots, equip, punch, openShop, shopAction, pullDriver, startRobbery, acts: () => acts, pad };
+  (root as unknown as { __sb: unknown }).__sb = { S, player, cars, peds, world, update, shoot, crime, keys, mouse, applyTod, camera, enterExit, scene, renderer, shops, busted, jetSpots, bizSpots, hideout, HEISTS, runHeist, openPanel, tickMission, yacht, equip, punch, openShop, shopAction, pullDriver, startRobbery, acts: () => acts, pad };
 
   return () => {
     alive = false;

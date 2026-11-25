@@ -93,6 +93,11 @@ export const CSS = `
 .sb-carrow button.own{background:rgba(56,230,255,.3)}
 .sb-shopcard .sb-small{padding:0 18px 12px;margin:6px 0 0}
 .sb-touch .sb-hot{bottom:10px}.sb-touch .sb-hot button{width:58px;height:58px}.sb-touch .sb-hot button i{font-size:22px}.sb-touch .sb-hot button b{display:none}
+.sb-goal{display:none;position:absolute;left:50%;top:14px;transform:translateX(-50%);max-width:min(560px,70%);text-align:center;background:rgba(40,10,60,.72);border:1px solid rgba(214,150,255,.55);border-radius:10px;padding:8px 16px;font:700 15px Arial,sans-serif;text-shadow:0 1px 3px #000}
+.sb-goal b{display:block;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#e0a8ff;margin-bottom:2px}
+.sb-touch .sb-goal{top:auto;bottom:84px;font-size:13px;padding:6px 12px}
+.sb-meter{height:6px;margin-top:6px;background:rgba(255,255,255,.12);border-radius:3px;overflow:hidden}.sb-meter i{display:block;height:100%;background:linear-gradient(90deg,#b46bff,#ff2f8e)}
+.sb-shoplist p{color:#d8d2e6;font-size:14px;line-height:1.5}
 .sb-rot{display:none}
 @media (orientation:portrait){.sb-touch .sb-rot{display:block;position:absolute;left:50%;top:64px;transform:translateX(-50%);background:rgba(255,47,142,.85);padding:6px 14px;border-radius:20px;font-weight:800;font-size:13px;white-space:nowrap}}
 @media (max-width:700px){.sb-mm{width:130px;height:130px;left:12px;bottom:12px}.sb-street{left:150px;bottom:16px;font-size:15px}.sb-money{font-size:22px}.sb-tr{right:12px;top:10px}}
