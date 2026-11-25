@@ -278,5 +278,25 @@
    "NPL",
    "AFG"
   ]
+ },
+ "2026-12-02": {
+  "qs": [
+   "nachbarn5",
+   "x-formel1-gastgeber",
+   "kont-Asien+gdppc>30000",
+   "kont-Asien+grenze-RUS",
+   "kont-Asien+grenze-KAZ",
+   "sub-Eastern Asia+coast>3000",
+   "sub-Eastern Asia+grenze-VNM"
+  ],
+  "path": [
+   "AFG",
+   "ARG",
+   "BHR",
+   "AZE",
+   "KGZ",
+   "JPN",
+   "CHN"
+  ]
  }
 }
