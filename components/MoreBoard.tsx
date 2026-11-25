@@ -14,6 +14,7 @@ import { SOUTHBEACH_ENABLED } from "@/lib/southbeach/flag";
 type Tile = { key: MoreKey; href: string; de: string; en: string; subDe: string; subEn: string; bg: string; edge: string; daily?: GameKey; dark?: boolean };
 
 const ALL_TILES: Tile[] = [
+  { key: "turboball", href: "/turboball", de: "Turboball", en: "Turboball", subDe: "Auto-Fußball online", subEn: "Car soccer online", bg: "linear-gradient(160deg, #1f6fff 0%, #12204a 55%, #ff6a10 130%)", edge: "#0a1230", dark: true },
   { key: "koscher", href: "/koscher", de: "Ist das koscher?", en: "Is it kosher?", subDe: "Erlaubt im Judentum?", subEn: "Allowed in Judaism?", bg: "linear-gradient(160deg, #2f62e0 0%, #16307a 100%)", edge: "#0b1a45", dark: true },
   { key: "halal", href: "/halal", de: "Ist das halal?", en: "Is it halal?", subDe: "Erlaubt im Islam?", subEn: "Allowed in Islam?", bg: "linear-gradient(160deg, #18b07a 0%, #0c5a40 100%)", edge: "#063322", dark: true },
   { key: "tiefgang", href: "/tiefgang", de: "Tiefgang", en: "Deep Dive", subDe: "Je seltener, desto tiefer", subEn: "The rarer, the deeper", bg: "linear-gradient(160deg, #46a4e4 0%, #1a5aa0 100%)", edge: "#0b2f5e", dark: true },

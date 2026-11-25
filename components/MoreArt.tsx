@@ -1,7 +1,7 @@
 /** Sticker-style illustrations for the other games (same style as GameArt: ink outline, soft shadow). */
 const S = { stroke: "#2c2a35", strokeWidth: 3, strokeLinejoin: "round" as const, strokeLinecap: "round" as const };
 
-export type MoreKey = "koscher" | "halal" | "tiefgang" | "gipfelsturm" | "fernweh" | "sunstate";
+export type MoreKey = "koscher" | "halal" | "tiefgang" | "gipfelsturm" | "fernweh" | "sunstate" | "turboball";
 
 export function MoreArt({ game, className = "h-24 w-32" }: { game: MoreKey; className?: string }) {
   return (
@@ -90,6 +90,18 @@ function Art({ game, shadow = false }: { game: MoreKey; shadow?: boolean }) {
           <path d="M48 60h12v6H43zM64 60h9l10 6H64z" fill={f("#9ff3ff")} />
           <circle cx="50" cy="75" r="6" fill={f("#2c2a35")} />
           <circle cx="92" cy="75" r="6" fill={f("#2c2a35")} />
+        </g>
+      );
+    case "turboball": // a boosting car hitting a big ball
+      return (
+        <g {...s}>
+          <circle cx="78" cy="34" r="22" fill={f("#e8edf5")} />
+          <path d="M66 18l12 6 12-6M62 40l10-4 6 10M94 40l-10-4-6 10M78 24v12" fill="none" stroke={shadow ? "#000" : "#2a2f3a"} strokeWidth={3} />
+          <path d="M22 74v-8l8-8h26l12 8h8c3 0 4 2 4 4v4z" fill={f("#1f6fff")} />
+          <path d="M34 60h12v6H29zM50 60h8l8 6H50z" fill={f("#9ff3ff")} />
+          <path d="M22 64l-16-4 4 6-6 4 18 0" fill={f("#ffb020")} />
+          <circle cx="34" cy="75" r="6" fill={f("#2c2a35")} />
+          <circle cx="68" cy="75" r="6" fill={f("#2c2a35")} />
         </g>
       );
   }
