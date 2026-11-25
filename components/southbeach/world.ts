@@ -120,7 +120,18 @@ export function buildWorld(map: SBMap, scene: THREE.Scene, aniso: number): World
   grp.add(land);
 
   // ── areas: beach, parks, parking ────────────────────────────────────────
-  const sandTex = canvasTex(512, 512, (g) => noiseFill(g, 512, 512, [232, 214, 178], 22, 5));
+  const sandTex = canvasTex(512, 512, (g) => {
+    noiseFill(g, 512, 512, [236, 219, 184], 26, 5);
+    const rr = rnd(77);
+    // soft colour patches, wind ripples, footprints and shell specks
+    for (let i = 0; i < 60; i++) { g.globalAlpha = 0.06; g.fillStyle = rr() < 0.5 ? "#c9ad7c" : "#fff6e0"; g.beginPath(); g.ellipse(rr() * 512, rr() * 512, 30 + rr() * 80, 20 + rr() * 50, rr() * 3, 0, 7); g.fill(); }
+    g.globalAlpha = 0.09; g.strokeStyle = "#8a7048"; g.lineWidth = 1.4;
+    for (let y = 0; y < 512; y += 7 + rr() * 5) { g.beginPath(); for (let x = 0; x <= 512; x += 16) g.lineTo(x, y + Math.sin(x * 0.03 + y * 0.7) * 3); g.stroke(); }
+    g.globalAlpha = 0.13; g.fillStyle = "#9c8058";
+    for (let i = 0; i < 70; i++) { const x = rr() * 512, y = rr() * 512, a = rr() * 6; for (let k = 0; k < 4; k++) { g.beginPath(); g.ellipse(x + Math.cos(a) * k * 16 + (k % 2 ? 4 : -4) * Math.sin(a), y + Math.sin(a) * k * 16 - (k % 2 ? 4 : -4) * Math.cos(a), 3.2, 1.8, a, 0, 7); g.fill(); } }
+    g.globalAlpha = 0.5; for (let i = 0; i < 500; i++) { g.fillStyle = rr() < 0.5 ? "#fffaf0" : "#8d7650"; g.fillRect(rr() * 512, rr() * 512, 1.3, 1.3); }
+    g.globalAlpha = 1;
+  });
   const grassTex = canvasTex(512, 512, (g) => { noiseFill(g, 512, 512, [86, 122, 62], 40, 7); });
   sandTex.repeat.set(1 / 6, 1 / 6); grassTex.repeat.set(1 / 5, 1 / 5);
   const areaMat: Record<string, THREE.Material> = {

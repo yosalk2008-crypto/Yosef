@@ -315,7 +315,7 @@ export function makeJetski(x: number, z: number, a: number, color?: string): Car
   const hull = new THREE.Mesh(loft(rings), paint); hull.castShadow = true;
   const white = new THREE.MeshStandardMaterial({ color: "#eef2f5", roughness: 0.4 });
   const blackM = new THREE.MeshStandardMaterial({ color: "#121316", roughness: 0.6 });
-  const stripe = new THREE.Mesh(new THREE.BoxGeometry(1.14, 0.08, 2.6), white); stripe.position.set(0, 0.32, 0);
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.07, 2.3), white); stripe.position.set(0, 0.36, -0.05);
   const seat = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.16, 1.15), blackM); seat.position.set(0, 0.66, -0.35);
   const cowl = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.22, 0.6), paint); cowl.position.set(0, 0.72, 0.55); cowl.rotation.x = -0.25;
   const bar = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.04, 0.04), blackM); bar.position.set(0, 0.95, 0.4);
@@ -326,5 +326,59 @@ export function makeJetski(x: number, z: number, a: number, color?: string): Car
   // replace the car mesh with the jet ski
   c.mesh = grp; c.wheels = []; c.front = []; c.lightbar = []; c.brake = null; c.paint = paint;
   c.boat = true; c.len = L; c.hp = 120; c.ph = PHYS_JETSKI; c.driver = false;
+  return c;
+}
+
+function lightbar(grp: THREE.Group, w: number, y: number, z: number) {
+  const out: THREE.Mesh[] = [];
+  for (const s of [-1, 1]) {
+    const lb = new THREE.Mesh(new THREE.BoxGeometry(w / 2, 0.1, 0.16), new THREE.MeshBasicMaterial({ color: s < 0 ? "#600" : "#006", toneMapped: false }));
+    lb.position.set((s * w) / 4, y, z); grp.add(lb); out.push(lb);
+  }
+  return out;
+}
+export const PHYS_COPSKI: Phys = { accel: 12, brake: 9, rev: 4, vmax: 30, turn: 2.6, grip: 2.6, drift: 0.8, drag: 0.32, roll: 2.5 };
+export const PHYS_SPEEDBOAT: Phys = { accel: 11, brake: 7, rev: 4, vmax: 33, turn: 1.6, grip: 2, drift: 0.7, drag: 0.28, roll: 2 };
+/** Police jet ski: white/blue with a small light bar. */
+export function makeCopJetski(x: number, z: number, a: number): Car {
+  const c = makeJetski(x, z, a, "#f4f6fa");
+  const blue = new THREE.MeshStandardMaterial({ color: "#1739b8", roughness: 0.4 });
+  const band = new THREE.Mesh(new THREE.BoxGeometry(1.16, 0.12, 2.4), blue); band.position.set(0, 0.42, 0); c.mesh.add(band);
+  c.lightbar = lightbar(c.mesh, 0.5, 1.12, 0.42);
+  c.kind = "cop"; c.driver = true; c.ph = PHYS_COPSKI; c.hp = 140;
+  return c;
+}
+/** Police speedboat (two officers, light bar, POLICE on the sides). */
+export function makeSpeedboat(x: number, z: number, a: number, police = true): Car {
+  const grp = new THREE.Group();
+  const paint = new THREE.MeshPhysicalMaterial({ color: police ? "#f4f6fa" : "#d8dde3", metalness: 0.2, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.08 });
+  const L = 8.2, rings: { z: number; p: [number, number][] }[] = [];
+  for (let i = 0; i <= 32; i++) {
+    const t = i / 32, zz = (t - 0.5) * L;
+    const w = 1.35 * (t < 0.65 ? 1 : Math.cos(((t - 0.65) / 0.35) * Math.PI * 0.5) * 0.92 + 0.08), keel = 0.05 + (t > 0.6 ? (t - 0.6) * 0.9 : 0), top = 1.05 + (t > 0.7 ? (t - 0.7) * 0.6 : 0);
+    rings.push({ z: zz, p: [[0, keel], [-w * 0.8, keel + 0.25], [-w, 0.6], [-w, top], [0, top + 0.02], [w, top], [w, 0.6], [w * 0.8, keel + 0.25]] });
+  }
+  const hull = new THREE.Mesh(loft(rings), paint); hull.castShadow = true; grp.add(hull);
+  const blue = new THREE.MeshStandardMaterial({ color: "#1739b8", roughness: 0.4 });
+  const band = new THREE.Mesh(new THREE.BoxGeometry(2.74, 0.22, 5.6), blue); band.position.set(0, 0.55, -0.6); grp.add(band);
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.06, 6), new THREE.MeshStandardMaterial({ color: "#9aa3ad", roughness: 0.8 })); deck.position.set(0, 0.95, -0.4); grp.add(deck);
+  const con = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.9, 0.9), paint); con.position.set(0, 1.4, 0.6); grp.add(con);
+  const ws = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.55, 0.06), glass); ws.position.set(0, 1.9, 1.15); ws.rotation.x = -0.5; grp.add(ws);
+  const tower = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.08, 1.4), paint); tower.position.set(0, 2.55, 0.4); grp.add(tower);
+  for (const sx of [-0.9, 0.9]) for (const sz of [-0.2, 1.0]) { const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.4), chrome); pole.position.set(sx, 1.85, sz); grp.add(pole); }
+  const motor = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.9, 0.5), black); motor.position.set(0, 0.95, -4.2); grp.add(motor);
+  if (police) {
+    const dm = new THREE.MeshBasicMaterial({ map: policeDecal(), transparent: true });
+    for (const s of [-1, 1]) { const d = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.5), dm); d.position.set(s * 1.37, 0.85, 0.6); d.rotation.y = s * Math.PI / 2; grp.add(d); }
+  }
+  // two officers (simple figures)
+  const uni = new THREE.MeshStandardMaterial({ color: "#13213f", roughness: 0.7 }), skin = new THREE.MeshStandardMaterial({ color: "#c98d6a", roughness: 0.7 });
+  for (const sx of [-0.4, 0.45]) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.75, 0.28), uni); b.position.set(sx, 1.4, -0.2); const h = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), skin); h.position.set(sx, 1.92, -0.2); grp.add(b, h); }
+  grp.position.set(x, -0.3, z); grp.rotation.y = a;
+  const c = makeCar("parked", x, z, a);
+  c.mesh = grp; c.wheels = []; c.front = []; c.brake = null; c.paint = paint;
+  c.lightbar = police ? lightbar(grp, 1.4, 2.66, 0.4) : [];
+  c.boat = true; c.len = L; c.hp = 260; c.ph = PHYS_SPEEDBOAT;
+  c.kind = police ? "cop" : "parked"; c.driver = police;
   return c;
 }

@@ -20,6 +20,8 @@ export const CSS = `
 .sb-mm canvas{width:100%;height:100%;border-radius:50%}
 .sb-street{position:absolute;left:258px;bottom:28px;font-size:20px;font-weight:700;font-style:italic;text-shadow:0 2px 6px #000;color:#fff}
 .sb-cross{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;display:none;border-radius:50%;border:2px solid rgba(255,255,255,.9);box-shadow:0 0 4px #000}
+.sb-cross:after{content:"";position:absolute;left:50%;top:50%;width:3px;height:3px;margin:-1.5px 0 0 -1.5px;border-radius:50%;background:#fff}
+.sb-cross.aim{width:10px;height:10px;margin:-5px 0 0 -5px;border-color:#ff5c7a}
 .sb-prompt{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);font-size:17px;font-weight:700;padding:6px 14px;background:rgba(0,0,0,.55);border-radius:4px}
 .sb-prompt:empty{display:none}
 .sb-toasts{position:absolute;left:22px;top:18px;font-size:15px;font-weight:700;text-shadow:0 2px 5px #000;line-height:1.7}
