@@ -9,13 +9,13 @@ import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { OVERPASS, overpassQuery, processOverpass, type SBMap } from "@/lib/southbeach/osm.mjs";
 import { buildWorld, type World, type Graph } from "./world";
-import { makeCar, stepCar, syncCar, PHYS, headMat, CATALOG, TIERS, specPhys, type Car, type Spec } from "./cars";
+import { makeCar, makeJetski, stepCar, syncCar, PHYS, headMat, CATALOG, TIERS, specPhys, type Car, type Spec } from "./cars";
 import { Sound } from "./audio";
 import { syntheticMap } from "./synthetic";
 import { CSS, paintLoading } from "./ui";
 
 type Lang = "de" | "en";
-type Ped = { obj: THREE.Object3D; mixer: THREE.AnimationMixer; act: Record<string, THREE.AnimationAction>; cur: string; x: number; z: number; a: number; mode: "walk" | "flee" | "dead" | "idle"; from: number; to: number; hp: number; t: number; deadT: number; fallT: number; witness: number; ko?: boolean; robbed?: boolean };
+type Ped = { obj: THREE.Object3D; mixer: THREE.AnimationMixer; act: Record<string, THREE.AnimationAction>; cur: string; x: number; z: number; a: number; mode: "walk" | "flee" | "dead" | "idle"; from: number; to: number; hp: number; t: number; deadT: number; fallT: number; witness: number; ko?: boolean; robbed?: boolean; wealth: number };
 type Pickup = { mesh: THREE.Object3D; x: number; z: number; kind: "cash" | "ammo" | "health" | "drop"; t: number; v?: number };
 type Shop = { x: number; z: number; nx: number; nz: number; name: string; cool: number; dealer?: boolean; rx: number; rz: number };
 type Fx = { obj: THREE.Object3D; life: number; max: number; kind: "tracer" | "spark" | "smoke" | "fire" | "flash"; vx: number; vy: number; vz: number };
@@ -191,7 +191,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   // ── state ────────────────────────────────────────────────────────────
   const saved = (() => { try { return JSON.parse(localStorage.getItem(CFG.save) || "{}"); } catch { return {}; } })();
   const S = {
-    t: 0, started: false, paused: false, menu: false, gold: Number.isFinite(+saved.gold) && saved.gold !== undefined ? +saved.gold : 60, owned: (Array.isArray(saved.owned) ? saved.owned : []) as string[], armed: false, punchT: 0, rob: null as null | { shop: Shop; t: number }, hp: 100, armor: 0, stars: 0, searchT: 0, seen: false, lastSeen: { x: 0, z: 0 },
+    t: 0, started: false, paused: false, menu: false, gold: Number.isFinite(+saved.gold) && saved.gold !== undefined ? +saved.gold : 60, owned: (Array.isArray(saved.owned) ? saved.owned : []) as string[], armed: false, punchT: 0, rob: null as null | { shop: Shop; t: number }, bustT: 0, civSpawnT: 0, pedSpawnT: 0, hp: 100, armor: 0, stars: 0, searchT: 0, seen: false, lastSeen: { x: 0, z: 0 },
     weapon: 0, mag: [12, 30], reserve: [60, 150], fireT: 0, reloadT: 0, aim: false, firing: false, kills: +saved.kills || 0, wasted: 0,
     toast: [] as { t: number; txt: string; col: string }[], banner: null as null | { t: number; big: string; small: string; col: string },
     yaw: 0, pitch: 0.18, camDist: 4.6, mouseIdle: 0, street: "", streetT: 0, spawnT: 0, shake: 0,
@@ -234,12 +234,15 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   // ── entities ─────────────────────────────────────────────────────────
   const cars: Car[] = [], peds: Ped[] = [], pickups: Pickup[] = [], fx: Fx[] = [];
   const addCar = (c: Car) => { cars.push(c); scene.add(c.mesh); return c; };
-  const removeCar = (c: Car) => { c.dead = true; scene.remove(c.mesh); c.mesh.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh) m.geometry.dispose(); }); };
+  const removeCar = (c: Car) => { c.dead = true; scene.remove(c.mesh); c.mesh.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh && !m.geometry.userData.shared) m.geometry.dispose(); }); };
   // your car next to the start
   const mine = addCar(makeCar("parked", player.x - Math.cos(player.a) * 3.2, player.z + Math.sin(player.a) * 3.2, player.a, "#ff2f7a", 0));
   mine.driver = false;
   const rnd = Math.random;
   const pick = <T,>(a: T[]) => a[Math.floor(rnd() * a.length)];
+  const walletOf = () => { const r = rnd(); return r < 0.55 ? 5 + Math.floor(rnd() * 30) : r < 0.85 ? 35 + Math.floor(rnd() * 70) : r < 0.97 ? 110 + Math.floor(rnd() * 140) : 300 + Math.floor(rnd() * 300); };
+  const walletOfCar = (m: number) => (m === 4 || m === 7 ? 350 + Math.floor(rnd() * 550) : m === 5 || m === 6 || m === 3 ? 120 + Math.floor(rnd() * 200) : 10 + Math.floor(rnd() * 80));
+  const richLabel = (v: number) => (v >= 300 ? "💰💰💰" : v >= 110 ? "💰💰" : "💰");
   const dist = (ax: number, az: number, bx: number, bz: number) => Math.hypot(ax - bx, az - bz);
   const ppos = () => (player.car ? player.car : player);
   const graphNode = (g: Graph, i: number) => ({ x: g.x[i], z: g.z[i] });
@@ -257,6 +260,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       if (cars.some((c) => !c.dead && dist(c.x, c.z, x, z) < 7)) continue;
       const c = addCar(makeCar(kind, x, z, Math.atan2(dx, dz)));
       c.ai.from = i; c.ai.to = j;
+      c.wealth = walletOfCar(c.model);
       c.vx = (dx / L) * 6; c.vz = (dz / L) * 6;
       return c;
     }
@@ -275,7 +279,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       scene.add(m.obj);
       m.act.Walk?.play(); m.act.Idle?.stop();
       if (m.act.Walk) m.act.Walk.time = rnd() * 2;
-      const p: Ped = { obj: m.obj, mixer: m.mixer, act: m.act, cur: "Walk", x: g.x[i], z: g.z[i], a: 0, mode: "walk", from: i, to: pick(g.adj[i]), hp: 60, t: 0, deadT: 0, fallT: 0, witness: 0 };
+      const p: Ped = { obj: m.obj, mixer: m.mixer, act: m.act, cur: "Walk", x: g.x[i], z: g.z[i], a: 0, mode: "walk", from: i, to: pick(g.adj[i]), hp: 60, t: 0, deadT: 0, fallT: 0, witness: 0, wealth: walletOf() };
       peds.push(p);
       return p;
     }
@@ -300,7 +304,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
 
   // ── stores to rob and the car dealership ────────────────────────────
   const shops: Shop[] = [];
-  const SHOP_NAMES: [string, string][] = [["MINI MARKET", "MINI MARKET"], ["SCHMUCK", "JEWELRY"], ["APOTHEKE", "PHARMACY"], ["SURF SHOP", "SURF SHOP"], ["SOUVENIRS", "SOUVENIRS"], ["SPIRITUOSEN", "LIQUOR"], ["PFANDHAUS", "PAWN SHOP"], ["ZIGARREN", "CIGARS"], ["BOUTIQUE", "BOUTIQUE"], ["ELEKTRONIK", "ELECTRONICS"], ["DELI", "DELI"], ["KIOSK", "NEWSSTAND"]];
+  const SHOP_NAMES: [string, string][] = [["MINI MARKET", "MINI MARKET"], ["SCHMUCK", "JEWELRY"], ["APOTHEKE", "PHARMACY"], ["SURF SHOP", "SURF SHOP"], ["SOUVENIRS", "SOUVENIRS"], ["SPIRITUOSEN", "LIQUOR"], ["PFANDHAUS", "PAWN SHOP"], ["ZIGARREN", "CIGARS"], ["BOUTIQUE", "BOUTIQUE"], ["ELEKTRONIK", "ELECTRONICS"], ["DELI", "DELI"], ["KIOSK", "NEWSSTAND"], ["BÄCKEREI", "BAKERY"], ["CAFÉ", "CAFÉ"], ["SPORTSHOP", "SPORTS"], ["JUWELIER", "JEWELER"], ["TANKSTELLE", "GAS STATION"], ["BURGER", "BURGERS"], ["UHREN", "WATCHES"], ["BANK", "BANK"], ["SNEAKER", "SNEAKERS"], ["HANDYLADEN", "PHONES"]];
   function frontOf(rx: number, rz: number) {
     let best: { bx: number; bz: number; d: number } | null = null;
     for (const q of world.near(rx, rz, 24)) {
@@ -320,12 +324,11 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     return { x, z, nx, nz };
   }
   {
-    const streets = new Set(["Washington Avenue", "Collins Avenue", "Lincoln Road", "Española Way", "Ocean Drive", "Alton Road", "Meridian Avenue", "5th Street", "Lincoln Road Mall"]);
-    const samples = world.roadNames.filter((r) => streets.has(r.n));
+    const samples = world.roadNames;
     let k = 0;
-    for (let i = 0; i < samples.length && shops.length < 16; i += 3) {
+    for (let i = 0; i < samples.length && shops.length < 70; i++) {
       const r = samples[(i * 7919) % samples.length];
-      if (shops.some((sh) => dist(sh.x, sh.z, r.x, r.z) < 140)) continue;
+      if (shops.some((sh) => dist(sh.x, sh.z, r.x, r.z) < 60)) continue;
       const f = frontOf(r.x, r.z);
       if (!f) continue;
       const nm = SHOP_NAMES[k++ % SHOP_NAMES.length];
@@ -338,6 +341,17 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     if (dealer) shops.push(dealer);
   }
   const dealerShop = shops.find((x) => x.dealer) || null;
+  // jet skis along the Atlantic beach
+  const jetSpots: { x: number; z: number }[] = [];
+  {
+    const B = world.bounds;
+    for (let k = 0; k < 7; k++) {
+      const z = B.z0 + 120 + ((B.z1 - B.z0 - 240) * k) / 6;
+      const sh = world.shore(z);
+      jetSpots.push({ x: sh.e + 4, z });
+    }
+    for (const j of jetSpots) { const c = makeJetski(j.x, j.z, Math.PI / 2 + (rnd() - 0.5)); c.vx = 0; c.vz = 0; addCar(c); }
+  }
   function makeSign(text: string, color: string, w: number) {
     const c = document.createElement("canvas"); c.width = 1024; c.height = 256;
     const g = c.getContext("2d")!;
@@ -582,16 +596,21 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     for (let i = 1; i < n; i++) { const t = i / n; if (world.heightAt(ax + (bx - ax) * t, az + (bz - az) * t) > y) return false; }
     return true;
   }
-  function crime(sev: number, x: number, z: number) {
-    // only witnessed crimes count: peds nearby or police with line of sight
+  /** A crime only counts if police or other people see it (line of sight). The victim is not a witness. */
+  function crime(sev: number, x: number, z: number, victim?: Ped | null) {
     let witnessed = false;
     for (const c of cars) if (!c.dead && c.kind === "cop" && c.driver && dist(c.x, c.z, x, z) < CFG.copRange && los(c.x, c.z, x, z)) { witnessed = true; c.lock = 3; }
-    for (const p of peds) if (p.mode !== "dead" && dist(p.x, p.z, x, z) < 45) { witnessed = true; p.mode = "flee"; p.t = 8; }
-    if (!witnessed && dist(x, z, ppos().x, ppos().z) > 0 && sev < 2) return;
+    for (const c of cars) if (!c.dead && c.kind === "civ" && c.driver && dist(c.x, c.z, x, z) < 28 && los(c.x, c.z, x, z)) { witnessed = true; c.ai.panic = 6; }
+    for (const p of peds) {
+      if (p === victim || p.deadT < 0 || p.mode === "dead") continue;
+      if (dist(p.x, p.z, x, z) < 38 && los(p.x, p.z, x, z)) { witnessed = true; p.mode = "flee"; p.t = 8; }
+    }
+    if (!witnessed) return false;
     const before = S.stars;
     S.stars = Math.min(5, Math.max(S.stars + (S.stars > 0 && sev >= 2 ? 1 : 0), sev));
     S.searchT = 0; S.lastSeen = { x, z };
-    if (S.stars > before) { toast(tt("Fahndungsstufe erhöht!", "Wanted level up!"), "#ff5c7a"); sound.tone(660, 0.12, 0.06, "square"); }
+    if (S.stars > before) { toast(tt("Zeugen haben dich gesehen – Fahndung!", "Witnesses saw you – you're wanted!"), "#ff5c7a"); sound.tone(660, 0.12, 0.06, "square"); }
+    return true;
   }
   const doorPos = (c: Car) => ({ x: c.x + Math.cos(c.a) * 1.2 + Math.sin(c.a) * 0.25, z: c.z - Math.sin(c.a) * 1.2 + Math.cos(c.a) * 0.25 });
   function exitCar() {
@@ -600,15 +619,16 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     if (Math.hypot(c.vx, c.vz) > 6) { toast(tt("Erst langsamer werden.", "Slow down first.")); return; }
     const d = doorPos(c);
     player.x = d.x + Math.cos(c.a) * 0.5; player.z = d.z - Math.sin(c.a) * 0.5;
+    if (c.boat) { const sh = world.shore(c.z); player.x = c.x > (sh.e + sh.w) / 2 ? sh.e - 2 : sh.w + 2; player.z = c.z; c.inp.th = 0; c.inp.st = 0; }
     world.pushCircle(player, CFG.pr);
     player.a = c.a;
-    c.kind = "parked"; c.driver = false; c.inp.th = 0; c.inp.st = 0; c.inp.hb = true; c.ph = PHYS.civ;
+    c.kind = "parked"; c.driver = false; c.inp.th = 0; c.inp.st = 0; c.inp.hb = true; if (!c.boat) c.ph = PHYS.civ;
     player.car = null;
     P.obj.visible = true;
   }
   function enterCar(c: Car) {
     const sp = c.owned ? CATALOG.find((x) => x.id === c.owned) : undefined;
-    player.car = c; c.kind = "player"; c.driver = false; c.ph = sp ? specPhys(sp) : PHYS.player;
+    player.car = c; c.kind = "player"; c.driver = false; if (!c.boat) c.ph = sp ? specPhys(sp) : PHYS.player;
     P.obj.visible = false; S.mouseIdle = 2; S.rob = null;
     if (sp) toast(sp.name, "#ffd24a");
   }
@@ -628,7 +648,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   function knockOut(p: Ped, gold = true) {
     p.mode = "dead"; p.ko = true; p.deadT = 6; p.fallT = 0; p.hp = 0;
     p.mixer.stopAllAction();
-    if (gold && !p.robbed) { p.robbed = true; dropCoin(p.x + 0.6, p.z, 8 + Math.floor(rnd() * 25)); }
+    if (gold && !p.robbed) { p.robbed = true; dropCoin(p.x + 0.6, p.z, p.wealth); }
   }
   function punch() {
     if (S.fireT > 0) return;
@@ -650,14 +670,14 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     best.x += ((best.x - player.x) / l) * 0.5; best.z += ((best.z - player.z) / l) * 0.5;
     best.mode = "flee"; best.t = 6;
     if (best.hp <= 0) knockOut(best);
-    crime(1, best.x, best.z);
+    crime(1, best.x, best.z, best);
   }
   function mug(p: Ped) {
     if (p.robbed || p.mode === "dead") return;
-    const v = 15 + Math.floor(rnd() * 30);
+    const v = S.armed ? p.wealth : Math.round(p.wealth * 0.6);
     S.gold += v; p.robbed = true; p.mode = "flee"; p.t = 10;
-    sound.cash(); toast(tt(`Ausgeraubt: +${v} Gold`, `Robbed: +${v} gold`), "#ffd24a");
-    crime(1, p.x, p.z);
+    sound.cash(); toast(tt(`Ausgeraubt: +${v} Gold`, `Robbed: +${v} gold`) + (S.armed ? "" : tt(" (mit Waffe gibt's mehr)", " (more with a weapon)")), "#ffd24a");
+    crime(1, p.x, p.z, p);
     saveGame();
   }
   function pullDriver(c: Car) {
@@ -666,15 +686,15 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     const d = doorPos(c);
     c.driver = false; c.kind = "parked"; c.vx = 0; c.vz = 0;
     const p = spawnPedAt(d.x + Math.cos(c.a) * 0.9, d.z - Math.sin(c.a) * 0.9);
-    if (p) knockOut(p, false);
-    crime(1, c.x, c.z);
+    if (p) { p.wealth = c.wealth ?? walletOf(); knockOut(p, true); }
+    crime(1, c.x, c.z, p);
     enterCar(c);
     toast(tt("Fahrer rausgezerrt – das Auto gehört dir!", "Driver dragged out – the car is yours!"), "#ff5c7a");
   }
   function startRobbery(sh: Shop) {
     if (!S.armed) { toast(tt("Rüste unten eine Waffe aus (2 oder 3).", "Equip a weapon in the bar (2 or 3).")); return; }
     S.rob = { shop: sh, t: 0 };
-    S.stars = Math.max(S.stars, 1); S.searchT = 0; S.lastSeen = { x: sh.x, z: sh.z };
+    crime(1, sh.x, sh.z);
     sound.tone(980, 0.25, 0.06, "sawtooth", 500);
     toast(tt("Überfall! Bleib in der Nähe, bis die Kasse leer ist.", "Hold-up! Stay close until the register is empty."), "#ff5c7a");
   }
@@ -685,11 +705,12 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     if (!S.armed || player.car || S.hp <= 0 || dist(player.x, player.z, sh.x, sh.z) > 7) { S.rob = null; toast(tt("Überfall abgebrochen.", "Robbery aborted.")); return; }
     S.rob.t += dt;
     if (S.rob.t >= 4) {
-      const v = 120 + Math.floor(rnd() * 140);
+      const big = /BANK|JUWELIER|JEWELER|SCHMUCK|JEWELRY|UHREN|WATCHES/.test(sh.name);
+      const v = Math.round((120 + Math.floor(rnd() * 140)) * (big ? 2.2 : 1));
       S.gold += v; sh.cool = 240; S.rob = null;
       sound.cash();
       banner(`+${v} GOLD`, tt("Kasse geleert – jetzt weg hier!", "Register emptied – now get out of here!"), "#ffd24a");
-      crime(2, sh.x, sh.z); S.stars = Math.max(S.stars, 2);
+      if (!crime(2, sh.x, sh.z)) toast(tt("Niemand hat dich gesehen.", "Nobody saw you."), "#7dffa0");
       saveGame();
     }
   }
@@ -697,7 +718,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     const tint = new THREE.Color().setHSL(rnd(), 0.4, 0.6);
     const m = makePerson(tint); scene.add(m.obj); m.act.Run?.play();
     const n = world.nearestNode(world.walks, x, z);
-    const p: Ped = { obj: m.obj, mixer: m.mixer, act: m.act, cur: "Run", x, z, a: 0, mode: "flee", from: n, to: n, hp: 60, t: 8, deadT: 0, fallT: 0, witness: 0 };
+    const p: Ped = { obj: m.obj, mixer: m.mixer, act: m.act, cur: "Run", x, z, a: 0, mode: "flee", from: n, to: n, hp: 60, t: 8, deadT: 0, fallT: 0, witness: 0, wealth: walletOf() };
     peds.push(p);
     return p;
   }
@@ -716,9 +737,9 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   const sparkGeo = new THREE.SphereGeometry(0.04, 4, 3), sparkMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(5, 3, 1), toneMapped: false });
   const smokeGeo = new THREE.SphereGeometry(1, 8, 6);
   function sparks(p: THREE.Vector3, n: number) { for (let i = 0; i < n && fx.length < 400; i++) { const m = new THREE.Mesh(sparkGeo, sparkMat); m.position.copy(p); scene.add(m); fx.push({ obj: m, life: 0.35, max: 0.35, kind: "spark", vx: (rnd() - 0.5) * 8, vy: rnd() * 5, vz: (rnd() - 0.5) * 8 }); } }
-  function smoke(x: number, y: number, z: number, fire: boolean) {
+  function smoke(x: number, y: number, z: number, fire: boolean, foam = false) {
     if (fx.length > 400) return;
-    const m = new THREE.Mesh(smokeGeo, new THREE.MeshBasicMaterial({ color: fire ? new THREE.Color(4, 1.6, 0.4) : new THREE.Color("#3a3a3e"), transparent: true, opacity: fire ? 0.9 : 0.5, depthWrite: false, toneMapped: !fire }));
+    const m = new THREE.Mesh(smokeGeo, new THREE.MeshBasicMaterial({ color: fire ? new THREE.Color(4, 1.6, 0.4) : foam ? new THREE.Color("#f4fbff") : new THREE.Color("#3a3a3e"), transparent: true, opacity: fire ? 0.9 : foam ? 0.7 : 0.5, depthWrite: false, toneMapped: !fire }));
     m.position.set(x, y, z); m.scale.setScalar(fire ? 0.6 : 0.8); scene.add(m);
     fx.push({ obj: m, life: fire ? 0.7 : 2.4, max: fire ? 0.7 : 2.4, kind: fire ? "fire" : "smoke", vx: (rnd() - 0.5) * 1.2, vy: fire ? 3 : 1.6, vz: (rnd() - 0.5) * 1.2 });
   }
@@ -754,11 +775,23 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     S.gold -= loss; S.rob = null;
     banner(tt("AUSGESCHALTET", "KNOCKED OUT"), tt(`Krankenhausrechnung: ${loss} Gold`, `Hospital bill: ${loss} gold`), "#ff3b5c");
   }
+  function busted() {
+    if (S.wasted > 0) return;
+    S.wasted = 3; S.bustT = 0; S.rob = null;
+    const loss = Math.min(S.gold, Math.round(S.gold * 0.25) + 25);
+    S.gold -= loss;
+    banner(tt("VERHAFTET", "BUSTED"), tt(`Kaution und Strafe: ${loss} Gold`, `Bail and fine: ${loss} gold`), "#3b8bff");
+    sound.tone(392, 0.4, 0.08, "square"); sound.tone(262, 0.6, 0.08, "square", 0, 0.35);
+    saveGame();
+  }
   function respawn() {
     S.hp = 100; S.armor = 0; S.stars = 0; S.searchT = 0;
     if (player.car) { player.car.kind = "parked"; player.car.driver = false; player.car = null; }
-    player.x = world.spawn.x; player.z = world.spawn.z; player.y = 0; P.obj.visible = true;
+    player.x = world.spawn.x; player.z = world.spawn.z; player.y = 0; P.obj.visible = true; player.vx = player.vz = 0;
     for (const c of cars) if (c.kind === "cop") removeCar(c);
+    S.bustT = 0;
+    // jump the camera instead of letting it fly across the city
+    camPos.set(player.x - Math.sin(S.yaw) * 4.5, 2.2, player.z - Math.cos(S.yaw) * 4.5);
     saveGame();
   }
 
@@ -899,7 +932,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     }
     // shooting from the car
     c.fireT -= dt;
-    if (sees && d < CFG.copFire && c.fireT <= 0 && S.hp > 0) {
+    if (sees && d < CFG.copFire && c.fireT <= 0 && S.hp > 0 && S.wasted <= 0) {
       c.fireT = 0.8 + rnd() * 0.9;
       const hit = rnd() < 0.42 - Math.min(0.25, Math.hypot(pp.vx || 0, pp.vz || 0) / 60) - (player.car ? 0.12 : 0);
       tmpV.set(c.x, 1.3, c.z); tmpV2.set(pp.x + (hit ? 0 : (rnd() - 0.5) * 3), 1.1, pp.z + (hit ? 0 : (rnd() - 0.5) * 3));
@@ -914,7 +947,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     S.t += dt;
     const active = S.started && !S.paused;
     if (S.wasted > 0) { S.wasted -= dt; if (S.wasted <= 0) respawn(); }
-    const alive2 = active && S.hp > 0 && !S.menu;
+    const alive2 = active && S.hp > 0 && !S.menu && S.wasted <= 0;
     S.aim = alive2 && mouse.r && !player.car && S.armed;
     S.fireT = Math.max(0, S.fireT - dt);
     if (S.reloadT > 0) { S.reloadT -= dt; if (S.reloadT <= 0) { const W = CFG.weapons[S.weapon], need = W.mag - S.mag[S.weapon], take = Math.min(need, S.reserve[S.weapon]); S.mag[S.weapon] += take; S.reserve[S.weapon] -= take; } }
@@ -978,6 +1011,14 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
         else { c.inp.th = 0; c.inp.st = 0; c.inp.hb = true; }
       }
       stepCar(c, dt, c === pc && held("ShiftLeft") ? 1.25 : 1);
+      if (c.boat) {
+        // stay on the water: east of the ocean shore or west of the bay shore
+        const sh = world.shore(c.z), inOcean = c.x > (sh.e + sh.w) / 2;
+        if (inOcean && c.x < sh.e + 2) { c.x = sh.e + 2; if (c.vx < 0) c.vx *= -0.3; }
+        if (!inOcean && c.x > sh.w - 2) { c.x = sh.w - 2; if (c.vx > 0) c.vx *= -0.3; }
+        if (c === pc && Math.hypot(c.vx, c.vz) > 6 && rnd() < 0.6) smoke(c.x - Math.sin(c.a) * 1.6 + (rnd() - 0.5) * 0.6, -0.1, c.z - Math.cos(c.a) * 1.6 + (rnd() - 0.5) * 0.6, false, true);
+        continue;
+      }
       // two circles against buildings and the sea
       const o = c.len / 2 - 1.0;
       let imp = 0;
@@ -994,9 +1035,9 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     }
     // car vs car
     for (let i = 0; i < cars.length; i++) {
-      const a = cars[i]; if (a.dead) continue;
+      const a = cars[i]; if (a.dead || a.boat) continue;
       for (let j = i + 1; j < cars.length; j++) {
-        const b = cars[j]; if (b.dead || Math.abs(a.x - b.x) > 7 || Math.abs(a.z - b.z) > 7) continue;
+        const b = cars[j]; if (b.dead || b.boat || Math.abs(a.x - b.x) > 7 || Math.abs(a.z - b.z) > 7) continue;
         let imp = 0;
         for (const s of [-1, 1]) for (const u of [-1, 1]) {
           const ax = a.x + Math.sin(a.a) * (a.len / 2 - 1) * s, az = a.z + Math.cos(a.a) * (a.len / 2 - 1) * s;
@@ -1063,6 +1104,14 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       }
     }
 
+    // arrest: standing still next to a police car while wanted
+    if (S.stars > 0 && S.hp > 0 && S.wasted <= 0) {
+      const pp2 = ppos(), sp2 = Math.hypot(pp2.vx || 0, pp2.vz || 0);
+      let near = false;
+      for (const c of cars) if (!c.dead && c.kind === "cop" && c.driver && dist(c.x, c.z, pp2.x, pp2.z) < (player.car ? 7 : 6)) { near = true; break; }
+      if (near && sp2 < 2.2) { S.bustT += dt; if (S.bustT >= 2.5) busted(); }
+      else S.bustT = Math.max(0, S.bustT - dt * 1.5);
+    } else S.bustT = 0;
     // wanted level
     S.seen = false;
     if (S.stars > 0) {
@@ -1078,14 +1127,15 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       const d = dist(c.x, c.z, pp.x, pp.z);
       if (c.kind === "civ") { civN++; if (d > 260) removeCar(c); }
       else if (c.kind === "cop") { copN++; if (d > 300 || (S.stars === 0 && d > 160 && copN > 2)) removeCar(c); }
-      else if ((c.kind === "parked" || c.kind === "wreck") && c !== mine && !c.owned && d > 320) removeCar(c);
+      else if ((c.kind === "parked" || c.kind === "wreck") && c !== mine && !c.owned && !c.boat && d > 320) removeCar(c);
     }
     for (const p of peds) if (p.deadT >= 0) { pedN++; if (dist(p.x, p.z, pp.x, pp.z) > 170 && p.mode !== "dead") removePed(p); }
-    if (civN < CFG.civCars) spawnCiv(S.started ? 110 : 30, 230);
+    S.civSpawnT -= dt; S.pedSpawnT -= dt;
+    if (civN < CFG.civCars && S.civSpawnT <= 0) { spawnCiv(S.started ? 110 : 30, 230); S.civSpawnT = 0.25; }
     const copWant = S.stars ? CFG.copsPerStar[S.stars] : 2;
     S.spawnT -= dt;
     if (copN < copWant && S.spawnT <= 0) { if (spawnCiv(S.stars ? 120 : 150, 240, "cop")) S.spawnT = S.stars ? 2.5 : 10; }
-    if (pedN < CFG.peds) spawnPed(S.started ? 60 : 10, 140);
+    if (pedN < CFG.peds && S.pedSpawnT <= 0) { spawnPed(S.started ? 60 : 10, 140); S.pedSpawnT = 0.35; }
     for (let i = cars.length - 1; i >= 0; i--) if (cars[i].dead) cars.splice(i, 1);
     for (let i = peds.length - 1; i >= 0; i--) if (peds[i].deadT < 0) peds.splice(i, 1);
 
@@ -1128,8 +1178,15 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   }
   function visuals(dt: number) {
     const pc = player.car;
-    P.obj.position.set(player.x, player.y, player.z);
-    P.obj.rotation.y = player.a + Math.PI;
+    if (pc && pc.boat) {
+      P.obj.visible = true;
+      P.obj.position.set(pc.x - Math.sin(pc.a) * 0.35, pc.mesh.position.y + 0.42, pc.z - Math.cos(pc.a) * 0.35);
+      P.obj.rotation.y = pc.a + Math.PI;
+      if (player.anim !== "Idle") { P.act.Idle.reset().play(); P.act[player.anim]?.crossFadeTo(P.act.Idle, 0.2, false); player.anim = "Idle"; }
+    } else {
+      P.obj.position.set(player.x, player.y, player.z);
+      P.obj.rotation.y = player.a + Math.PI;
+    }
     P.mixer.update(dt);
     gun.visible = !pc && S.armed;
     // camera
@@ -1173,7 +1230,10 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     sun.target.position.set(player.x, 0, player.z);
     water.position.x = Math.round(player.x / 100) * 100; water.position.z = Math.round(player.z / 100) * 100;
     (water.material as THREE.ShaderMaterial).uniforms.time.value += dt * 0.6;
-    for (const c of cars) if (!c.dead) syncCar(c, S.t);
+    for (const c of cars) if (!c.dead) {
+      syncCar(c, S.t);
+      if (c.boat) { const sp = Math.hypot(c.vx, c.vz); c.mesh.position.y = -0.32 + Math.sin(S.t * 2.6 + c.id) * 0.06; c.mesh.rotation.x = -Math.min(0.18, sp / 150) + Math.sin(S.t * 2.1 + c.id) * 0.03; c.mesh.rotation.z = -c.inp.st * Math.min(1, sp / 15) * 0.25; }
+    }
     for (const p of peds) { if (p.deadT < 0) continue; p.obj.position.x = p.x; p.obj.position.z = p.z; p.obj.rotation.y = p.a + Math.PI; if (p.mode !== "dead" && dist(p.x, p.z, player.x, player.z) < 120) p.mixer.update(dt); }
     for (const k of pickups) if (k.mesh.visible) { k.mesh.rotation.y += dt * 1.6; k.mesh.position.y = 0.8 + Math.sin(S.t * 3 + k.x) * 0.12; }
     let siren = 0;
@@ -1195,21 +1255,21 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     const fk = touch ? "" : "F · ";
     if (player.car) {
       const c = player.car;
-      if (Math.hypot(c.vx, c.vz) < 4) { const d = doorPos(c); acts.push({ key: "exit", label: fk + "🚪 " + tt("Aussteigen", "Get out"), x: d.x, y: 1.4, z: d.z, run: exitCar, d: 0 }); }
+      if (Math.hypot(c.vx, c.vz) < 4) { const d = doorPos(c); acts.push({ key: "exit", label: fk + (c.boat ? "🏖️ " + tt("Zum Strand", "Back to the beach") : "🚪 " + tt("Aussteigen", "Get out")), x: d.x, y: 1.4, z: d.z, run: exitCar, d: 0 }); }
       return;
     }
     for (const c of cars) {
-      if (c.dead || c.kind === "cop" || c.kind === "wreck" || Math.abs(c.x - player.x) > 6 || Math.abs(c.z - player.z) > 6) continue;
+      if (c.dead || c.kind === "cop" || c.kind === "wreck" || Math.abs(c.x - player.x) > 9 || Math.abs(c.z - player.z) > 9) continue;
       if (Math.hypot(c.vx, c.vz) > 4) continue;
-      const d = doorPos(c), dd = Math.min(dist(d.x, d.z, player.x, player.z), dist(c.x, c.z, player.x, player.z) - 0.8);
+      const d = doorPos(c), dd = Math.min(dist(d.x, d.z, player.x, player.z), dist(c.x, c.z, player.x, player.z) - 0.8) - (c.boat ? 4 : 0);
       if (dd > 2.6) continue;
       const jack = c.kind === "civ" && c.driver;
-      acts.push({ key: "car" + c.id, label: fk + (jack ? "👊 " + tt("Fahrer rauszerren", "Drag driver out") : "🚪 " + tt("Einsteigen", "Get in")), x: d.x, y: 1.25, z: d.z, run: () => (jack && c.driver ? pullDriver(c) : enterCar(c)), d: dd });
+      acts.push({ key: "car" + c.id, label: fk + (c.boat ? "🚤 " + tt("Aufsteigen", "Hop on") : jack ? "👊 " + tt("Fahrer rauszerren", "Drag driver out") + " " + richLabel(c.wealth ?? 0) : "🚪 " + tt("Einsteigen", "Get in")), x: d.x, y: 1.25, z: d.z, run: () => (jack && c.driver ? pullDriver(c) : enterCar(c)), d: dd });
     }
-    if (S.armed) for (const p of peds) {
+    for (const p of peds) {
       if (p.deadT < 0 || p.mode === "dead" || p.robbed) continue;
       const dd = dist(p.x, p.z, player.x, player.z);
-      if (dd < 2.6) acts.push({ key: "ped" + p.obj.id, label: fk + "💰 " + tt("Ausrauben", "Rob"), x: p.x, y: 2.15, z: p.z, run: () => mug(p), d: dd + 0.3 });
+      if (dd < 2.6) acts.push({ key: "ped" + p.obj.id, label: fk + richLabel(p.wealth) + " " + tt("Ausrauben", "Rob"), x: p.x, y: 2.15, z: p.z, run: () => mug(p), d: dd + 0.3 });
     }
     for (const sh of shops) {
       const dd = dist(sh.x, sh.z, player.x, player.z);
@@ -1299,7 +1359,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
         for (const r of world.roadNames) { const d = Math.abs(r.x - pp.x) + Math.abs(r.z - pp.z); if (d < bd) { bd = d; best = r.n; } }
         if (best !== S.street) { S.street = best; $(".sb-street").textContent = best ? best + " · South Beach" : "South Beach"; }
       }
-      const prompt = S.rob ? tt(`Kasse wird geleert … ${Math.round((S.rob.t / 4) * 100)} %`, `Emptying the register … ${Math.round((S.rob.t / 4) * 100)}%`) : "";
+      const prompt = S.bustT > 0.2 ? tt(`Festnahme! Weg hier! ${Math.round((S.bustT / 2.5) * 100)} %`, `Getting arrested! Move! ${Math.round((S.bustT / 2.5) * 100)}%`) : S.rob ? tt(`Kasse wird geleert … ${Math.round((S.rob.t / 4) * 100)} %`, `Emptying the register … ${Math.round((S.rob.t / 4) * 100)}%`) : "";
       $(".sb-prompt").textContent = prompt;
       hud.querySelectorAll(".sb-hot button").forEach((b, i) => b.classList.toggle("on", i === 0 ? !S.armed : S.armed && S.weapon === i - 1));
       const sb = hud.querySelector(".sb-shoot span"); if (sb) sb.textContent = S.armed || player.car ? "✸" : "👊";
@@ -1327,6 +1387,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     for (const k of pickups) if (k.mesh.visible) dot(k.x, k.z, 2.6, k.kind === "cash" ? "#ffcc33" : k.kind === "ammo" ? "#ffb21f" : "#ff4466");
     for (const sh of shops) { const ok = sh.dealer || sh.cool <= 0; dot(sh.x, sh.z, sh.dealer ? 5 : 3.6, sh.dealer ? "#38e6ff" : ok ? "#ffcc33" : "#7a6a3a"); }
     for (const c of cars) if (!c.dead && c.owned && c !== player.car) dot(c.x, c.z, 3.6, "#ff9df0");
+    for (const c of cars) if (!c.dead && c.boat && c !== player.car) dot(c.x, c.z, 3, "#ffffff");
     for (const c of cars) if (!c.dead && c.kind === "cop") dot(c.x, c.z, 3.4, Math.floor(S.t * 6) % 2 ? "#ff2040" : "#2050ff");
     if (!mine.dead && player.car !== mine) dot(mine.x, mine.z, 3.4, "#ff2f7a");
     if (S.stars > 0 && !S.seen) { mm.strokeStyle = "rgba(255,40,70,0.8)"; mm.lineWidth = 2; mm.beginPath(); mm.arc((S.lastSeen.x - pp.x) * world.mmScale, (S.lastSeen.z - pp.z) * world.mmScale, 20 + S.searchT * 2, 0, Math.PI * 2); mm.stroke(); }
@@ -1383,7 +1444,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   };
   raf = requestAnimationFrame(loop);
 
-  (root as unknown as { __sb: unknown }).__sb = { S, player, cars, peds, world, update, shoot, crime, keys, mouse, applyTod, camera, enterExit, scene, renderer, shops, equip, punch, openShop, shopAction, pullDriver, startRobbery, acts: () => acts, pad };
+  (root as unknown as { __sb: unknown }).__sb = { S, player, cars, peds, world, update, shoot, crime, keys, mouse, applyTod, camera, enterExit, scene, renderer, shops, busted, jetSpots, equip, punch, openShop, shopAction, pullDriver, startRobbery, acts: () => acts, pad };
 
   return () => {
     alive = false;

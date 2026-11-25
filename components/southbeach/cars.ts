@@ -8,7 +8,7 @@ export type Car = {
   kind: CarKind; model: number; driver: boolean; hp: number; dead: boolean; burnT: number;
   ph: Phys; inp: { th: number; st: number; hb: boolean };
   ai: { from: number; to: number; panic: number }; stuck: number; rev: number; revSt: number; block: number; ignore: number;
-  path: number[]; pathT: number; fireT: number; lock: number; len: number; owned?: string;
+  path: number[]; pathT: number; fireT: number; lock: number; len: number; owned?: string; boat?: boolean; wealth?: number;
 };
 
 export const PHYS = {
@@ -84,7 +84,7 @@ const interp = (pts: [number, number][], t: number) => {
   return pts[pts.length - 1][1];
 };
 /** Connects rings (same point count) along z into a closed, smooth-shaded mesh. */
-function loft(rings: { z: number; p: [number, number][] }[]) {
+export function loft(rings: { z: number; p: [number, number][] }[]) {
   const n = rings[0].p.length, pos: number[] = [], idx: number[] = [];
   for (const r of rings) for (const [x, y] of r.p) pos.push(x, y, r.z);
   for (let i = 0; i < rings.length - 1; i++)
@@ -120,9 +120,13 @@ function policeDecal() {
   return policeTex;
 }
 
+/** Geometry shared between cars of the same model (never disposed). */
+const WHEEL: Record<string, { t: THREE.BufferGeometry; r: THREE.BufferGeometry; s: THREE.BufferGeometry; d: THREE.BufferGeometry }> = {};
+const GEO: Record<number, { body: THREE.BufferGeometry; glass: THREE.BufferGeometry; roof: THREE.BufferGeometry }> = {};
+const shared = (g: THREE.BufferGeometry) => { g.userData.shared = true; return g; };
 export function makeCar(kind: CarKind, x: number, z: number, a: number, color?: string, model?: number): Car {
   const COMMON = [0, 1, 1, 1, 2, 2, 3, 6, 1, 2];
-  const m = model ?? (kind === "cop" ? 1 : Math.random() < 0.06 ? [4, 5, 7][Math.floor(Math.random() * 3)] : COMMON[Math.floor(Math.random() * COMMON.length)]);
+  const m = model ?? (kind === "cop" ? 1 : Math.random() < 0.16 ? [4, 5, 7, 6, 3][Math.floor(Math.random() * 5)] : COMMON[Math.floor(Math.random() * COMMON.length)]);
   const M = MODELS[m % MODELS.length];
   const grp = new THREE.Group();
   const paint = new THREE.MeshPhysicalMaterial({ color: kind === "cop" ? "#0d0e11" : color || PAINTS[Math.floor(Math.random() * PAINTS.length)], metalness: 0.6, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.04 });
@@ -142,7 +146,8 @@ export function makeCar(kind: CarKind, x: number, z: number, a: number, color?: 
     const ym = Math.min(y1 - 0.06, Math.max(ys + 0.02, y1 - 0.14));
     rings.push({ z: zz, p: [[0, y0], [-w * 0.86, y0], [-w * 0.98, Math.min(ys, ym - 0.01)], [-w, ym], [-w * 0.95, y1 - 0.015], [-w * 0.72, y1 + 0.012], [0, y1 + 0.03], [w * 0.72, y1 + 0.012], [w * 0.95, y1 - 0.015], [w, ym], [w * 0.98, Math.min(ys, ym - 0.01)], [w * 0.86, y0]] });
   }
-  const body = new THREE.Mesh(loft(rings), paint);
+  const geo = GEO[m] || (GEO[m] = { body: shared(loft(rings)), glass: null as unknown as THREE.BufferGeometry, roof: null as unknown as THREE.BufferGeometry });
+  const body = new THREE.Mesh(geo.body, paint);
   body.castShadow = true; body.receiveShadow = true;
   grp.add(body);
   // greenhouse (glass) and painted roof
@@ -154,7 +159,8 @@ export function makeCar(kind: CarKind, x: number, z: number, a: number, color?: 
     const k = Math.min(1, (y2 - y1) / 0.4);
     gr.push({ z: zt(t), p: [[-w * 0.94, y1], [-w * (0.94 - 0.24 * k), y2], [w * (0.94 - 0.24 * k), y2], [w * 0.94, y1]] });
   }
-  const greenhouse = new THREE.Mesh(loft(gr), glass);
+  if (!geo.glass) geo.glass = shared(loft(gr));
+  const greenhouse = new THREE.Mesh(geo.glass, glass);
   greenhouse.castShadow = true;
   grp.add(greenhouse);
   const rr: { z: number; p: [number, number][] }[] = [];
@@ -163,7 +169,8 @@ export function makeCar(kind: CarKind, x: number, z: number, a: number, color?: 
     const k = Math.min(1, (y2 - y1) / 0.4), wr = w * (0.94 - 0.24 * k);
     rr.push({ z: zt(t), p: [[-wr - 0.012, y2 - 0.035], [-wr * 0.96, y2 + 0.02], [0, y2 + 0.035], [wr * 0.96, y2 + 0.02], [wr + 0.012, y2 - 0.035]] });
   }
-  const roof = new THREE.Mesh(loft(rr), paint);
+  if (!geo.roof) geo.roof = shared(loft(rr));
+  const roof = new THREE.Mesh(geo.roof, paint);
   roof.castShadow = true;
   grp.add(roof);
   // window trim along the belt line
@@ -180,10 +187,12 @@ export function makeCar(kind: CarKind, x: number, z: number, a: number, color?: 
   }
   // wheels: tyre, multi-spoke rim, brake disc
   const wheels: THREE.Object3D[] = [], front: THREE.Object3D[] = [];
-  const tGeo = new THREE.CylinderGeometry(R, R, 0.27, 28); tGeo.rotateZ(Math.PI / 2);
-  const rimGeo = new THREE.CylinderGeometry(R * 0.66, R * 0.66, 0.285, 24); rimGeo.rotateZ(Math.PI / 2);
-  const spokeGeo = new THREE.BoxGeometry(0.03, R * 1.2, 0.07);
-  const discGeo = new THREE.CylinderGeometry(R * 0.5, R * 0.5, 0.03, 20); discGeo.rotateZ(Math.PI / 2);
+  const WK = "w" + R;
+  const WG = (WHEEL[WK] ||= { t: shared(new THREE.CylinderGeometry(R, R, 0.27, 28).rotateZ(Math.PI / 2)), r: shared(new THREE.CylinderGeometry(R * 0.66, R * 0.66, 0.285, 24).rotateZ(Math.PI / 2)), s: shared(new THREE.BoxGeometry(0.03, R * 1.2, 0.07)), d: shared(new THREE.CylinderGeometry(R * 0.5, R * 0.5, 0.03, 20).rotateZ(Math.PI / 2)) });
+  const tGeo = WG.t;
+  const rimGeo = WG.r;
+  const spokeGeo = WG.s;
+  const discGeo = WG.d;
   for (const at of M.axles)
     for (const sx of [-1, 1]) {
       const pivot = new THREE.Group();
@@ -288,4 +297,34 @@ export function syncCar(c: Car, t: number) {
     (c.lightbar[0].material as THREE.MeshBasicMaterial).color.setRGB(on && ph ? 6 : 0.4, 0.05, 0.1);
     (c.lightbar[1].material as THREE.MeshBasicMaterial).color.setRGB(0.05, 0.15, on && !ph ? 6 : 0.4);
   }
+}
+
+export const PHYS_JETSKI: Phys = { accel: 10, brake: 8, rev: 4, vmax: 27, turn: 2.7, grip: 2.4, drift: 0.8, drag: 0.35, roll: 2.5 };
+const JET_COLORS = ["#ffd21f", "#1fd2ff", "#ff2f8e", "#7cff3a", "#ffffff", "#ff7a1f"];
+/** Jet ski: V-hull, seat, handlebar. Same Car record, flagged as boat. */
+export function makeJetski(x: number, z: number, a: number, color?: string): Car {
+  const grp = new THREE.Group();
+  const paint = new THREE.MeshPhysicalMaterial({ color: color || JET_COLORS[Math.floor(Math.random() * JET_COLORS.length)], metalness: 0.3, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.05 });
+  const L = 3.1, rings: { z: number; p: [number, number][] }[] = [];
+  for (let i = 0; i <= 30; i++) {
+    const t = i / 30, zz = (t - 0.5) * L;
+    const w = 0.56 * Math.sin(Math.min(1, t * 1.15) * Math.PI * 0.5 + 0.35) * (t > 0.75 ? 1 - (t - 0.75) * 2.2 : 1);
+    const top = 0.55 + (t > 0.6 ? (t - 0.6) * 0.5 : 0) - (t < 0.12 ? (0.12 - t) * 1.2 : 0), keel = 0.05 + t * t * 0.18;
+    rings.push({ z: zz, p: [[0, keel], [-w * 0.75, keel + 0.12], [-w, 0.36], [-w * 0.95, top - 0.05], [-w * 0.5, top], [0, top + 0.04], [w * 0.5, top], [w * 0.95, top - 0.05], [w, 0.36], [w * 0.75, keel + 0.12]] });
+  }
+  const hull = new THREE.Mesh(loft(rings), paint); hull.castShadow = true;
+  const white = new THREE.MeshStandardMaterial({ color: "#eef2f5", roughness: 0.4 });
+  const blackM = new THREE.MeshStandardMaterial({ color: "#121316", roughness: 0.6 });
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(1.14, 0.08, 2.6), white); stripe.position.set(0, 0.32, 0);
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.16, 1.15), blackM); seat.position.set(0, 0.66, -0.35);
+  const cowl = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.22, 0.6), paint); cowl.position.set(0, 0.72, 0.55); cowl.rotation.x = -0.25;
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.04, 0.04), blackM); bar.position.set(0, 0.95, 0.4);
+  const post = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.22, 0.06), blackM); post.position.set(0, 0.84, 0.45);
+  grp.add(hull, stripe, seat, cowl, bar, post);
+  grp.position.set(x, -0.3, z); grp.rotation.y = a;
+  const c = makeCar("parked", x, z, a);
+  // replace the car mesh with the jet ski
+  c.mesh = grp; c.wheels = []; c.front = []; c.lightbar = []; c.brake = null; c.paint = paint;
+  c.boat = true; c.len = L; c.hp = 120; c.ph = PHYS_JETSKI; c.driver = false;
+  return c;
 }

@@ -10,6 +10,7 @@ export type World = {
   heightAt: (x: number, z: number) => number;
   onLand: (x: number, z: number) => boolean;
   pushCircle: (o: { x: number; z: number; vx?: number; vz?: number }, r: number) => number;
+  shore: (z: number) => { e: number; w: number };
   roads: Graph;
   walks: Graph;
   nearestNode: (g: Graph, x: number, z: number) => number;
@@ -402,7 +403,7 @@ export function buildWorld(map: SBMap, scene: THREE.Scene, aniso: number): World
   const roadNames: { n: string; x: number; z: number }[] = [];
   for (const rd of map.roads) if (rd.n && rd.t !== "foot") for (let i = 0; i < rd.p.length; i += 2) roadNames.push({ n: rd.n, x: rd.p[i], z: rd.p[i + 1] });
 
-  return { bounds: B, polys, near, heightAt, onLand, pushCircle, roads, walks, nearestNode, minimap: mm, mmScale, spawn, neonMat, windowMat, lampMat, roadNames };
+  return { bounds: B, polys, near, heightAt, onLand, pushCircle, shore: (z: number) => { const k = rowOf(z); return { e: east[k], w: west[k] }; }, roads, walks, nearestNode, minimap: mm, mmScale, spawn, neonMat, windowMat, lampMat, roadNames };
 }
 
 function setUv(g: THREE.BufferGeometry, scale: number) {
