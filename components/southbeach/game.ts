@@ -35,6 +35,8 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   const lang = opts.lang;
   const tt = (de: string, en: string) => (lang === "en" ? en : de);
   let alive = true;
+  const isTouch = matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints > 0 && !matchMedia("(hover: hover)").matches);
+  if (isTouch) { CFG.civCars = 12; CFG.peds = 10; }
   const disposers: (() => void)[] = [];
   const on = <K extends keyof WindowEventMap>(t: Window | Document | HTMLElement, ev: K | string, fn: (e: never) => void, o?: AddEventListenerOptions) => {
     t.addEventListener(ev, fn as EventListener, o);
@@ -42,7 +44,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   };
 
   if (!document.getElementById("sb-style")) { const st = document.createElement("style"); st.id = "sb-style"; st.textContent = CSS; document.head.appendChild(st); }
-  const root = document.createElement("div"); root.className = "sb-root"; root.tabIndex = -1;
+  const root = document.createElement("div"); root.className = "sb-root" + (isTouch ? " sb-touch" : ""); root.tabIndex = -1;
   el.appendChild(root);
 
   // ── loading screen (original art, drawn on a canvas) ──────────────────
@@ -79,7 +81,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   progress(0.25, tt("Baue South Beach …", "Building South Beach …"));
   await frame();
   const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
-  const quality = { dpr: Math.min(window.devicePixelRatio || 1, 1.6) };
+  const quality = { dpr: Math.min(window.devicePixelRatio || 1, isTouch ? 1.25 : 1.6) };
   renderer.setPixelRatio(quality.dpr);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -99,7 +101,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
   const sky = new Sky(); sky.scale.setScalar(20000); scene.add(sky);
   const sun = new THREE.DirectionalLight("#ffd7a8", 3.2);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(isTouch ? 1024 : 2048, isTouch ? 1024 : 2048);
   const sc = sun.shadow.camera as THREE.OrthographicCamera;
   sc.left = -70; sc.right = 70; sc.top = 70; sc.bottom = -70; sc.near = 10; sc.far = 600;
   sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04;
@@ -294,7 +296,14 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     <div class="sb-prompt"></div>
     <div class="sb-toasts"></div>
     <div class="sb-banner"><b></b><span></span></div>
-    <div class="sb-hint"></div>`;
+    <div class="sb-hint"></div>
+    <div class="sb-tl"><button class="sb-ib" data-b="fs" aria-label="Vollbild">⛶</button>${isTouch ? `<button class="sb-ib" data-b="pause" aria-label="Pause">❚❚</button>` : ""}</div>
+    <div class="sb-rot">${tt("Dreh dein Handy quer 🔄", "Turn your phone sideways 🔄")}</div>
+    ${isTouch ? `<div class="sb-joyzone"><div class="sb-joy"><i></i></div></div>
+    <button class="sb-b sb-jump" data-b="jump"><span>${tt("SPRUNG", "JUMP")}</span></button>
+    <button class="sb-b sb-shoot" data-b="shoot"><span>✸</span></button>
+    <button class="sb-b sb-enter" data-b="enter"><span>🚗</span></button>
+    <button class="sb-b sb-wsw" data-b="weap"><span>⇄</span></button>` : ""}`;
   root.appendChild(hud);
   const $ = (s: string) => hud.querySelector(s) as HTMLElement;
   const mmCv = hud.querySelector(".sb-mm canvas") as HTMLCanvasElement, mm = mmCv.getContext("2d")!;
@@ -313,28 +322,124 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     <b>${tt("Leertaste", "Space")}</b><span>${tt("springen · Handbremse", "jump · handbrake")}</span>
     <b>T</b><span>${tt("Tageszeit: Sonnenuntergang / Nacht / Tag", "time of day: sunset / night / day")}</span>
     <b>H</b><span>${tt("Hupe", "horn")}</span><b>Esc</b><span>${tt("Pause", "pause")}</span></div>`;
-  const touch = matchMedia("(pointer: coarse)").matches;
+  const touch = isTouch;
+  const touchHelp = `<div class="sb-keys">
+    <b>${tt("Joystick links", "Left joystick")}</b><span>${tt("laufen · im Auto: Gas, Bremse, Lenken", "move · in a car: throttle, brake, steer")}</span>
+    <b>${tt("Rechts wischen", "Swipe right side")}</b><span>${tt("Kamera drehen", "turn the camera")}</span>
+    <b>${tt("SPRUNG", "JUMP")}</b><span>${tt("springen · im Auto: Handbremse / Drift", "jump · in a car: handbrake / drift")}</span>
+    <b>✸</b><span>${tt("schießen (zielt automatisch)", "shoot (auto-aim)")}</span>
+    <b>🚗</b><span>${tt("ein-/aussteigen, Autos klauen", "enter/exit, steal cars")}</span>
+    <b>⇄</b><span>${tt("Waffe wechseln", "switch weapon")}</span>
+    <b>⛶</b><span>${tt("Vollbild", "fullscreen")}</span></div>`;
   function showStart() {
     ov.style.display = "flex";
     ov.innerHTML = `<div class="sb-card"><div class="sb-title">SOUTH BEACH<small>MIAMI · FLORIDA</small></div>
       <p>${tt("Ocean Drive, Collins Avenue, Lummus Park – South Beach im Maßstab 1:1 nach OpenStreetMap-Daten. Klau dir ein Auto, fahr den Strand entlang, und wenn du Ärger suchst: Die Polizei von Miami Beach findet dich.", "Ocean Drive, Collins Avenue, Lummus Park – South Beach at 1:1 scale from OpenStreetMap data. Steal a car, cruise the beach, and if you go looking for trouble: Miami Beach PD will find you.")}</p>
-      ${keysHtml}
-      ${touch ? `<p class="sb-warn">${tt("Am besten am Computer mit Maus und Tastatur spielen.", "Best played on a computer with mouse and keyboard.")}</p>` : ""}
+      ${touch ? touchHelp : keysHtml}
       <button class="sb-btn" data-a="play">${tt("Spielen", "Play")}</button>
       <p class="sb-small">${map!.synthetic ? tt("Kartendaten gerade nicht erreichbar – vereinfachter Stadtplan.", "Map data unavailable right now – simplified street plan.") : "Map data © OpenStreetMap contributors (ODbL)"}</p></div>`;
   }
   function showPause() {
     ov.style.display = "flex";
-    ov.innerHTML = `<div class="sb-card"><div class="sb-title" style="font-size:44px">PAUSE</div>${keysHtml}<button class="sb-btn" data-a="play">${tt("Weiter", "Resume")}</button></div>`;
+    ov.innerHTML = `<div class="sb-card"><div class="sb-title" style="font-size:44px">PAUSE</div>${touch ? touchHelp : keysHtml}<button class="sb-btn" data-a="play">${tt("Weiter", "Resume")}</button></div>`;
   }
   const lockPointer = () => { if (!touch) renderer.domElement.requestPointerLock?.(); };
   on(ov, "click", (e: MouseEvent) => {
     const a = (e.target as HTMLElement).closest("[data-a]") as HTMLElement | null;
     if (!a) return;
     sound.unlock();
+    if (touch && !isFs()) toggleFs();
     S.started = true; S.paused = false; ov.style.display = "none";
     lockPointer();
   });
+  // ── fullscreen (real API, or a CSS fallback on iPhone) ────────────────
+  type FsDoc = Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void };
+  type FsEl = HTMLElement & { webkitRequestFullscreen?: () => void };
+  const isFs = () => !!(document.fullscreenElement || (document as FsDoc).webkitFullscreenElement || root.classList.contains("sb-fake"));
+  function fakeFs(onOff: boolean) {
+    root.classList.toggle("sb-fake", onOff);
+    document.documentElement.style.overflow = onOff ? "hidden" : "";
+    if (onOff) window.scrollTo(0, 0);
+  }
+  function toggleFs() {
+    const d = document as FsDoc, r = root as FsEl;
+    if (isFs()) {
+      if (root.classList.contains("sb-fake")) fakeFs(false);
+      else if (document.exitFullscreen) void document.exitFullscreen().catch(() => {});
+      else d.webkitExitFullscreen?.();
+      return;
+    }
+    if (r.requestFullscreen) {
+      r.requestFullscreen({ navigationUI: "hide" }).then(() => {
+        const o = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+        if (touch) o.lock?.("landscape").catch(() => {});
+      }).catch(() => fakeFs(true));
+    } else if (r.webkitRequestFullscreen) r.webkitRequestFullscreen();
+    else fakeFs(true);
+  }
+  disposers.push(() => fakeFs(false));
+  // ── touch controls ────────────────────────────────────────────────────
+  const pad = { jx: 0, jy: 0, jump: false, shoot: false };
+  on(hud, "pointerdown", (e: PointerEvent) => {
+    const b = (e.target as HTMLElement).closest("[data-b]") as HTMLElement | null;
+    if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    sound.unlock();
+    const k = b.dataset.b;
+    if (k === "fs") { toggleFs(); return; }
+    if (k === "pause") { if (S.started) { S.paused = true; showPause(); } return; }
+    if (!S.started || S.paused) return;
+    b.classList.add("on");
+    try { b.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+    if (k === "jump") pad.jump = true;
+    if (k === "shoot") pad.shoot = true;
+    if (k === "enter") enterExit();
+    if (k === "weap") { S.weapon = (S.weapon + 1) % CFG.weapons.length; S.reloadT = 0; showWeapon(); toast(CFG.weapons[S.weapon][lang]); }
+  });
+  const btnUp = (e: PointerEvent) => {
+    const b = (e.target as HTMLElement).closest("[data-b]") as HTMLElement | null;
+    if (!b) return;
+    b.classList.remove("on");
+    if (b.dataset.b === "jump") pad.jump = false;
+    if (b.dataset.b === "shoot") pad.shoot = false;
+  };
+  on(hud, "pointerup", btnUp); on(hud, "pointercancel", btnUp);
+  const joyZone = hud.querySelector(".sb-joyzone") as HTMLElement | null, joy = hud.querySelector(".sb-joy") as HTMLElement | null;
+  if (joyZone && joy) {
+    const knob = joy.querySelector("i") as HTMLElement;
+    let jid = -1, cx = 0, cy = 0;
+    const R = 58;
+    const home = () => { joy.style.left = ""; joy.style.top = ""; joy.classList.remove("on"); knob.style.transform = ""; };
+    on(joyZone, "pointerdown", (e: PointerEvent) => {
+      if (jid >= 0) return;
+      e.preventDefault(); sound.unlock();
+      jid = e.pointerId; try { joyZone.setPointerCapture(e.pointerId); } catch { /* synthetic or lost pointer */ }
+      const zr = joyZone.getBoundingClientRect();
+      cx = e.clientX; cy = e.clientY;
+      joy.style.left = cx - zr.left - 70 + "px"; joy.style.top = cy - zr.top - 70 + "px";
+      joy.classList.add("on");
+    });
+    on(joyZone, "pointermove", (e: PointerEvent) => {
+      if (e.pointerId !== jid) return;
+      let dx = e.clientX - cx, dy = e.clientY - cy;
+      const l = Math.hypot(dx, dy);
+      if (l > R) { dx = (dx / l) * R; dy = (dy / l) * R; }
+      pad.jx = dx / R; pad.jy = dy / R;
+      knob.style.transform = `translate(${dx}px, ${dy}px)`;
+    });
+    const end = (e: PointerEvent) => { if (e.pointerId !== jid) return; jid = -1; pad.jx = pad.jy = 0; home(); };
+    on(joyZone, "pointerup", end); on(joyZone, "pointercancel", end);
+  }
+  // swipe on the right side turns the camera
+  let camId = -1, lx = 0, ly = 0;
+  on(renderer.domElement, "pointerdown", (e: PointerEvent) => { if (e.pointerType === "mouse" || camId >= 0) return; camId = e.pointerId; lx = e.clientX; ly = e.clientY; sound.unlock(); });
+  on(renderer.domElement, "pointermove", (e: PointerEvent) => {
+    if (e.pointerId !== camId || S.paused) return;
+    S.yaw -= (e.clientX - lx) * 0.0058; S.pitch = Math.max(-0.65, Math.min(1.15, S.pitch + (e.clientY - ly) * 0.0045));
+    lx = e.clientX; ly = e.clientY; S.mouseIdle = 0;
+  });
+  const camEnd = (e: PointerEvent) => { if (e.pointerId === camId) camId = -1; };
+  on(renderer.domElement, "pointerup", camEnd); on(renderer.domElement, "pointercancel", camEnd);
   on(renderer.domElement, "click", () => { sound.unlock(); if (S.started && document.pointerLockElement !== renderer.domElement) lockPointer(); });
   on(document, "pointerlockchange", () => {
     if (!S.started) return;
@@ -361,7 +466,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     if (e.code === "KeyH" && player.car) sound.tone(392, 0.35, 0.12, "square");
   });
   on(window, "keyup", (e: KeyboardEvent) => keys.delete(e.code));
-  const releaseAll = () => { keys.clear(); mouse.l = mouse.r = false; };
+  const releaseAll = () => { keys.clear(); mouse.l = mouse.r = false; pad.jx = pad.jy = 0; pad.jump = pad.shoot = false; hud.querySelectorAll(".on").forEach((x) => x.classList.remove("on")); };
   on(window, "blur", releaseAll);
   on(document, "visibilitychange", () => { if (document.hidden) { releaseAll(); sound.suspend(); } else sound.resume(); });
   on(renderer.domElement, "mousedown", (e: MouseEvent) => { if (e.button === 0) mouse.l = true; if (e.button === 2) mouse.r = true; });
@@ -498,6 +603,20 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     S.mag[S.weapon]--; S.fireT = W.rate;
     // aim ray from the camera
     camera.getWorldDirection(aimDir);
+    if (touch) {
+      let best = 0.22, tx = 0, ty = 0, tz = 0;
+      const cp = camera.position;
+      const cand: [number, number, number][] = [];
+      for (const p of peds) if (p.mode !== "dead") cand.push([p.x, 1.1, p.z]);
+      for (const c of cars) if (!c.dead && c !== player.car && c.kind !== "wreck") cand.push([c.x, 0.8, c.z]);
+      for (const [x, y, z] of cand) {
+        const dx = x - cp.x, dy = y - cp.y, dz = z - cp.z, d = Math.hypot(dx, dy, dz);
+        if (d > 70 || d < 1) continue;
+        const ang = Math.acos(Math.max(-1, Math.min(1, (dx * aimDir.x + dy * aimDir.y + dz * aimDir.z) / d)));
+        if (ang < best && los(ppos().x, ppos().z, x, z)) { best = ang; tx = dx / d; ty = dy / d; tz = dz / d; }
+      }
+      if (best < 0.22) aimDir.set(tx, ty, tz);
+    }
     aimDir.x += (rnd() - 0.5) * W.spread * (S.aim ? 1 : 2.2); aimDir.y += (rnd() - 0.5) * W.spread; aimDir.z += (rnd() - 0.5) * W.spread * (S.aim ? 1 : 2.2);
     aimDir.normalize();
     const o = camera.position.clone();
@@ -633,24 +752,27 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     S.aim = alive2 && mouse.r && !player.car;
     S.fireT = Math.max(0, S.fireT - dt);
     if (S.reloadT > 0) { S.reloadT -= dt; if (S.reloadT <= 0) { const W = CFG.weapons[S.weapon], need = W.mag - S.mag[S.weapon], take = Math.min(need, S.reserve[S.weapon]); S.mag[S.weapon] += take; S.reserve[S.weapon] -= take; } }
-    if (alive2 && mouse.l && (CFG.weapons[S.weapon].auto || !S.firing)) shoot();
-    S.firing = mouse.l;
+    const trig = mouse.l || pad.shoot;
+    if (alive2 && trig && (CFG.weapons[S.weapon].auto || !S.firing)) shoot();
+    S.firing = trig;
 
     // player on foot
     const pc = player.car;
     if (!pc) {
-      const fwd = (alive2 && held("KeyW", "ArrowUp") ? 1 : 0) - (alive2 && held("KeyS", "ArrowDown") ? 1 : 0);
-      const side = (alive2 && held("KeyD", "ArrowRight") ? 1 : 0) - (alive2 && held("KeyA", "ArrowLeft") ? 1 : 0);
+      let fwd = (alive2 && held("KeyW", "ArrowUp") ? 1 : 0) - (alive2 && held("KeyS", "ArrowDown") ? 1 : 0);
+      let side = (alive2 && held("KeyD", "ArrowRight") ? 1 : 0) - (alive2 && held("KeyA", "ArrowLeft") ? 1 : 0);
+      const jm = Math.hypot(pad.jx, pad.jy);
+      if (alive2 && jm > 0.12) { fwd = -pad.jy; side = pad.jx; }
       const fx = Math.sin(S.yaw), fz = Math.cos(S.yaw), rx = -fz, rz = fx;
       let mx = fx * fwd + rx * side, mz = fz * fwd + rz * side;
       const l = Math.hypot(mx, mz);
-      const speed = S.aim ? CFG.walk * 1.1 : held("ShiftLeft", "ShiftRight") ? CFG.sprint : held("KeyC", "ControlLeft") ? CFG.walk : CFG.run;
+      const speed = S.aim ? CFG.walk * 1.1 : jm > 0.12 ? (jm < 0.55 ? CFG.walk : jm > 0.97 ? CFG.run * 1.15 : CFG.run) : held("ShiftLeft", "ShiftRight") ? CFG.sprint : held("KeyC", "ControlLeft") ? CFG.walk : CFG.run;
       if (l > 0) { mx /= l; mz /= l; player.vx = mx * speed; player.vz = mz * speed; }
       else { player.vx = 0; player.vz = 0; }
-      const faceA = S.aim || (mouse.l && alive2) ? S.yaw : l > 0 ? Math.atan2(mx, mz) : player.a;
+      const faceA = S.aim || (trig && alive2) ? S.yaw : l > 0 ? Math.atan2(mx, mz) : player.a;
       let da = faceA - player.a; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2;
       player.a += da * Math.min(1, CFG.turnFoot * dt);
-      if (alive2 && keys.has("Space") && player.grounded) { player.vy = CFG.jump; player.grounded = false; }
+      if (alive2 && (keys.has("Space") || pad.jump) && player.grounded) { player.vy = CFG.jump; player.grounded = false; }
       player.vy -= CFG.gravity * dt; player.y += player.vy * dt;
       if (player.y <= 0) { player.y = 0; player.vy = 0; player.grounded = true; }
       player.x += player.vx * dt; player.z += player.vz * dt;
@@ -672,7 +794,8 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
       const c = pc;
       c.inp.th = alive2 ? (held("KeyW", "ArrowUp") ? 1 : 0) - (held("KeyS", "ArrowDown") ? 1 : 0) : 0;
       c.inp.st = alive2 ? (held("KeyA", "ArrowLeft") ? 1 : 0) - (held("KeyD", "ArrowRight") ? 1 : 0) : 0;
-      c.inp.hb = alive2 && keys.has("Space");
+      if (alive2 && Math.hypot(pad.jx, pad.jy) > 0.12) { c.inp.th = Math.max(-1, Math.min(1, -pad.jy * 1.25)); c.inp.st = Math.max(-1, Math.min(1, -pad.jx * 1.2)); }
+      c.inp.hb = alive2 && (keys.has("Space") || pad.jump);
       player.x = c.x; player.z = c.z;
       if (c.hp <= 0 && c.kind !== "wreck") { explode(c); player.car = null; P.obj.visible = true; player.x = c.x + 2; hurt(100); }
     }
@@ -863,7 +986,7 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
     camera.fov += ((S.aim ? 48 : pc ? 66 + Math.min(10, Math.hypot(pc.vx, pc.vz) / 4) : 62) - camera.fov) * Math.min(1, 6 * dt);
     camera.updateProjectionMatrix();
     // aim pose: right arm points where the camera looks
-    if (!pc && (S.aim || S.fireT > 0 || mouse.l) && S.hp > 0) {
+    if (!pc && (S.aim || S.fireT > 0 || mouse.l || pad.shoot) && S.hp > 0) {
       camera.getWorldDirection(aimDir);
       pointBone(bones.RightArm, bones.RightForeArm, aimDir);
       pointBone(bones.RightForeArm, bones.RightHand, aimDir);
@@ -907,7 +1030,9 @@ export async function mountSouthBeach(el: HTMLElement, opts: { lang: Lang }): Pr
         for (const c of cars) if (!c.dead && c.kind !== "cop" && c.kind !== "wreck" && dist(c.x, c.z, player.x, player.z) < 4.2) { prompt = c.kind === "civ" && c.driver ? tt("[F] Auto klauen", "[F] Steal car") : tt("[F] Einsteigen", "[F] Get in"); break; }
       } else if (player.car) prompt = "";
       $(".sb-prompt").textContent = prompt;
-      $(".sb-cross").style.display = S.aim || (!player.car && mouse.l) ? "block" : "none";
+      $(".sb-cross").style.display = S.aim || (!player.car && (mouse.l || pad.shoot)) ? "block" : "none";
+      const jb = hud.querySelector(".sb-jump span"); if (jb) jb.textContent = player.car ? "DRIFT" : tt("SPRUNG", "JUMP");
+      const eb = hud.querySelector(".sb-enter") as HTMLElement | null; if (eb) eb.classList.toggle("hot", !!prompt || !!player.car);
       $(".sb-toasts").innerHTML = S.toast.filter((x) => S.t - x.t < 3.2).map((x) => `<div style="color:${x.col}">${x.txt}</div>`).join("");
       const bn = $(".sb-banner");
       if (S.banner && S.t - S.banner.t < 3.5) { bn.style.display = "flex"; (bn.querySelector("b") as HTMLElement).textContent = S.banner.big; (bn.querySelector("b") as HTMLElement).style.color = S.banner.col; (bn.querySelector("span") as HTMLElement).textContent = S.banner.small; }
