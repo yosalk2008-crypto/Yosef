@@ -15,12 +15,14 @@ type Inp = { T: number; S: number; B: boolean; J: boolean; slide: boolean; roll:
 type Car = {
   id: string; name: string; team: 0 | 1; bot: boolean; remote: boolean; diff: number;
   p: THREE.Vector3; v: THREE.Vector3; q: THREE.Quaternion; yaw: number; ground: boolean;
-  boost: number; boosting: boolean; jumpT: number; flipT: number; flipAxis: THREE.Vector3; flipped: boolean; prevJ: boolean;
+  boost: number; boosting: boolean; jumpT: number; holdT: number; w: THREE.Vector3; flipT: number; flipAxis: THREE.Vector3; flipped: boolean; prevJ: boolean;
   dead: number; hitCd: number; mesh: CarMesh; inp: Inp; slot: number; upT: number;
-  goals: number; saves: number; shots: number; tgt?: { p: THREE.Vector3; v: THREE.Vector3; q: THREE.Quaternion; t: number; b: boolean };
+  goals: number; saves: number; shots: number; air?: { x: number; y: number; z: number }; flipNext?: boolean; kickFlip?: boolean; tgt?: { p: THREE.Vector3; v: THREE.Vector3; q: THREE.Quaternion; t: number; b: boolean };
 };
 
-const BALL_R = 2.1, G = 22, CAR_HALF = new THREE.Vector3(1.05, 0.55, 1.85), CAR_UP = 0.6;
+// physics scaled from Rocket League's measured values (car length 118 uu ≈ 3.7 m here, 1 uu ≈ 0.0314 m)
+const JUMP_V = 9.2, JUMP_HOLD = 45.8, DODGE_V = 15.7, FLIP_T = 0.65, BOOST_A = 31;
+const BALL_R = 2.1, G = 20.4, CAR_HALF = new THREE.Vector3(1.05, 0.55, 1.85), CAR_UP = 0.6;
 const MAX_DRIVE = 28, MAX_CAR = 46, SUPERSONIC = 40, MATCH = 300;
 const NAME_KEY = "geografik:mpname";
 
@@ -109,7 +111,7 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
     const mesh = makeCarMesh(team, slot);
     scene.add(mesh.group);
     const label = nameSprite(name, team); mesh.group.add(label); label.position.y = 2.6; mesh.name = label;
-    const c: Car = { id, name, team, bot, remote, diff: S.diff, p: new THREE.Vector3(), v: new THREE.Vector3(), q: new THREE.Quaternion(), yaw: 0, ground: true, boost: 33, boosting: false, jumpT: 0, flipT: 0, flipAxis: new THREE.Vector3(), flipped: false, prevJ: false, dead: 0, hitCd: 0, mesh, inp: { T: 0, S: 0, B: false, J: false, slide: false, roll: 0, P: 0 }, slot, upT: 0, goals: 0, saves: 0, shots: 0 };
+    const c: Car = { id, name, team, bot, remote, diff: S.diff, p: new THREE.Vector3(), v: new THREE.Vector3(), q: new THREE.Quaternion(), yaw: 0, ground: true, boost: 33, boosting: false, jumpT: 0, holdT: 0, w: new THREE.Vector3(), flipT: 0, flipAxis: new THREE.Vector3(), flipped: false, prevJ: false, dead: 0, hitCd: 0, mesh, inp: { T: 0, S: 0, B: false, J: false, slide: false, roll: 0, P: 0 }, slot, upT: 0, goals: 0, saves: 0, shots: 0 };
     cars.push(c);
     return c;
   }
@@ -192,7 +194,7 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
       const fx = Math.sin(c.yaw), fz = Math.cos(c.yaw);
       let vf = c.v.x * fx + c.v.z * fz, vs = c.v.x * fz - c.v.z * fx;
       const boosting = I.B && c.boost > 0;
-      if (boosting) { vf += 26 * dt; c.boost = Math.max(0, c.boost - 33 * dt); }
+      if (boosting) { vf += BOOST_A * dt; c.boost = Math.max(0, c.boost - 33.3 * dt); }
       if (I.T > 0.05) vf += vf < -0.5 ? 50 * dt * I.T : Math.max(0, 34 * (1 - vf / MAX_DRIVE)) * I.T * dt;
       else if (I.T < -0.05) vf += vf > 0.5 ? -50 * dt * -I.T : -Math.max(0, 18 * (1 + vf / 14)) * -I.T * dt;
       else if (!boosting) vf -= Math.sign(vf) * Math.min(Math.abs(vf), 7 * dt);
@@ -204,43 +206,55 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
       c.v.set(nfx * vf + nfz * vs, 0, nfz * vf - nfx * vs);
       c.q.setFromEuler(new THREE.Euler(0, c.yaw, 0));
       c.boosting = boosting;
-      if (jumpEdge) { c.v.y = 10.5; c.ground = false; c.jumpT = 0; c.flipped = false; c.p.y += 0.05; tone(300, 0.08, 0.06, "triangle"); }
+      // jump along the car's up axis; holding the button up to 0.2 s jumps higher (Rocket League)
+      if (jumpEdge) { c.v.y = JUMP_V; c.ground = false; c.jumpT = 0; c.holdT = 0.2; c.flipped = false; c.p.y += 0.05; c.w.set(0, 0, 0); tone(300, 0.08, 0.06, "triangle"); }
     } else {
       c.jumpT += dt;
-      // second jump: dodge in the stick direction, or a double jump
-      if (jumpEdge && !c.flipped && c.jumpT < 1.4) {
-        c.flipped = true;
-        if (Math.abs(I.T) > 0.3 || Math.abs(I.S) > 0.3) {
-          const yaw = Math.atan2(fwdV.set(0, 0, 1).applyQuaternion(c.q).x, fwdV.z);
+      if (c.holdT > 0) { if (I.J) { axes(c); c.v.addScaledVector(upV, JUMP_HOLD * dt); c.holdT -= dt; } else c.holdT = 0; }
+      // second jump within 1.25 s: flip in the stick direction, otherwise a double jump
+      if (jumpEdge && !c.flipped && c.jumpT < 1.25) {
+        c.flipped = true; c.holdT = 0;
+        if (Math.abs(I.T) > 0.4 || Math.abs(I.S) > 0.4) {
+          axes(c);
+          const yaw = Math.atan2(fwdV.x, fwdV.z);
           const lx = -I.S, lz = I.T, l = Math.hypot(lx, lz) || 1;
           const dx = (Math.sin(yaw) * lz + Math.cos(yaw) * lx) / l, dz = (Math.cos(yaw) * lz - Math.sin(yaw) * lx) / l;
-          c.v.x += dx * 11; c.v.z += dz * 11; c.v.y = Math.max(c.v.y * 0.3, 1.5);
-          c.flipT = 0.6; c.flipAxis.set(dz, 0, -dx).normalize();
+          c.v.x += dx * DODGE_V; c.v.z += dz * DODGE_V; c.v.y = Math.max(0, c.v.y) * 0.15;
+          c.flipT = FLIP_T; c.flipAxis.set(dz, 0, -dx).normalize(); c.w.set(0, 0, 0);
           tone(420, 0.12, 0.08, "triangle", 220);
-        } else { c.v.y += 9; tone(380, 0.08, 0.06, "triangle"); }
+        } else { axes(c); c.v.addScaledVector(upV, JUMP_V); tone(380, 0.08, 0.06, "triangle"); }
       }
       if (c.flipT > 0) {
         const k = Math.min(c.flipT, dt); c.flipT -= dt;
-        tq.setFromAxisAngle(c.flipAxis, (Math.PI * 2 * k) / 0.6); c.q.premultiply(tq);
+        tq.setFromAxisAngle(c.flipAxis, (Math.PI * 2 * k) / FLIP_T); c.q.premultiply(tq);
       } else {
-        // air control in the car's own axes
-        const pitch = -I.T * 4.6 * dt, yawR = (I.roll ? 0 : -I.S * 3.8) * dt, roll = (I.roll ? I.S * 4.6 : 0) * dt;
-        tq.setFromEuler(new THREE.Euler(pitch, yawR, roll, "YXZ")); c.q.multiply(tq);
+        // air control with angular acceleration, damping and a 5.5 rad/s cap (car-local axes: x pitch, y yaw, z roll)
+        const ip = -I.T, iy = I.roll ? 0 : -I.S, ir = I.roll ? I.S : 0;
+        c.w.x += (ip * 12.5 - c.w.x * 2.8 * (1 - Math.abs(ip))) * dt;
+        c.w.y += (iy * 9.1 - c.w.y * 1.9 * (1 - Math.abs(iy))) * dt;
+        c.w.z += (ir * 24 - c.w.z * 4.5 * (1 - Math.abs(ir))) * dt;
+        if (c.w.length() > 5.5) c.w.setLength(5.5);
+        tq.setFromEuler(new THREE.Euler(c.w.x * dt, c.w.y * dt, c.w.z * dt, "YXZ")); c.q.multiply(tq);
       }
       c.v.y -= G * dt;
       c.boosting = I.B && c.boost > 0;
-      if (c.boosting) { axes(c); c.v.addScaledVector(fwdV, 28 * dt); c.boost = Math.max(0, c.boost - 33 * dt); }
+      if (c.boosting) { axes(c); c.v.addScaledVector(fwdV, BOOST_A * dt); c.boost = Math.max(0, c.boost - 33.3 * dt); }
     }
     if (c.v.length() > MAX_CAR) c.v.setLength(MAX_CAR);
     c.p.addScaledVector(c.v, dt);
     // arena: collide a sphere at the car's centre
     tv.copy(c.p); tv.y += 1.4; collide(tv, c.v, 1.4, 0.1, 0.9); c.p.set(tv.x, tv.y - 1.4, tv.z);
     if (!c.ground && c.p.y <= 0.05 && c.v.y <= 1.5 && c.jumpT > 0.1) {
-      // landing: keep the heading, flip upright
       axes(c);
-      c.yaw = Math.atan2(fwdV.x, fwdV.z);
-      if (upV.y < 0.2) c.yaw = Math.atan2(-fwdV.x, -fwdV.z) + Math.PI;
-      c.ground = true; c.p.y = 0; c.v.y = 0; c.flipT = 0; c.q.setFromEuler(new THREE.Euler(0, c.yaw, 0));
+      if (upV.y > 0.55) {
+        // wheels down: land and keep the heading
+        c.yaw = Math.atan2(fwdV.x, fwdV.z);
+        c.ground = true; c.p.y = 0; c.v.y = 0; c.flipT = 0; c.w.set(0, 0, 0); c.q.setFromEuler(new THREE.Euler(0, c.yaw, 0));
+      } else {
+        // on the roof or the side: the car rights itself after a moment
+        c.p.y = 0; c.v.y = Math.max(0, c.v.y); c.v.x *= 0.9; c.v.z *= 0.9; c.upT += dt;
+        if (c.upT > 0.5) { c.upT = 0; c.yaw = Math.atan2(fwdV.x, fwdV.z); c.v.y = 6; c.jumpT = 0; c.flipped = false; c.w.set(0, 0, 0); c.q.setFromEuler(new THREE.Euler(0, c.yaw, 0)); }
+      }
     }
     if (c.ground) c.p.y = 0;
     // boost pads
@@ -267,7 +281,7 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
   const inv = new THREE.Quaternion(), local = new THREE.Vector3(), cen = new THREE.Vector3();
   function stepBall(dt: number) {
     if (S.phase === "count") return;
-    ball.v.y -= G * 0.85 * dt;
+    ball.v.y -= G * dt;
     ball.p.addScaledVector(ball.v, dt);
     const hit = collide(ball.p, ball.v, BALL_R, 0.62, 0.985);
     if (hit > 4) thump(hit * 0.6);
@@ -325,50 +339,149 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
   }
 
   // ── bots ─────────────────────────────────────────────────────────
+  // Ball prediction (same physics as the real ball), refreshed every few ticks and shared by all bots.
+  const PRED_DT = 1 / 30, PRED_N = 105;
+  const pred: { x: number; y: number; z: number }[] = [];
+  let predAt = -1;
+  const pp0 = new THREE.Vector3(), pv0 = new THREE.Vector3();
+  function predict() {
+    if (S.t - predAt < 0.05 && pred.length) return;
+    predAt = S.t; pred.length = 0;
+    pp0.copy(ball.p); pv0.copy(ball.v);
+    for (let i = 0; i < PRED_N; i++) {
+      pv0.y -= G * PRED_DT; pp0.addScaledVector(pv0, PRED_DT); collide(pp0, pv0, BALL_R, 0.62, 0.985);
+      if (pp0.y < BALL_R + 0.05) { pv0.x *= 1 - 0.35 * PRED_DT; pv0.z *= 1 - 0.35 * PRED_DT; }
+      pred.push({ x: pp0.x, y: pp0.y, z: pp0.z });
+    }
+  }
+  const angTo = (c: Car, x: number, z: number) => { let d = Math.atan2(x - c.p.x, z - c.p.z) - c.yaw; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return d; };
+  /** Drive towards a point; returns the heading error. */
+  function steerTo(c: Car, x: number, z: number, wantSpeed: number) {
+    const I = c.inp, da = angTo(c, x, z), sp = c.v.length(), d = Math.hypot(x - c.p.x, z - c.p.z);
+    I.S = Math.max(-1, Math.min(1, -da * 3));
+    I.slide = Math.abs(da) > 1.2 && sp > 10 && d > 6;
+    if (Math.abs(da) > 2.4 && d < 10 && sp < 10) { I.T = -1; I.S = -I.S; return da; }
+    I.T = sp < wantSpeed + 1 ? 1 : sp > wantSpeed + 6 ? -0.4 : 0;
+    I.B = c.boost > 0 && Math.abs(da) < 0.35 && sp < wantSpeed - 2 && wantSpeed > 26 && sp < MAX_CAR - 1;
+    return da;
+  }
+  const SKILL = [
+    { react: 0.45, aerial: 0, speed: 0.75, flip: 0.25, err: 3 },
+    { react: 0.12, aerial: 9, speed: 0.95, flip: 0.8, err: 1 },
+    { react: 0, aerial: 15, speed: 1, flip: 1, err: 0 },
+  ];
   function botThink(c: Car) {
-    const I = c.inp; I.J = false; I.B = false; I.slide = false; I.roll = 0;
-    if (c.dead > 0) return;
-    const goalZ = c.team === 0 ? A.L / 2 : -A.L / 2, ownZ = -goalZ, dir = Math.sign(goalZ);
+    const I = c.inp; I.J = false; I.B = false; I.slide = false; I.roll = 0; I.T = 0; I.S = 0;
+    if (c.dead > 0 || S.phase === "count") return;
+    const sk = SKILL[Math.max(0, Math.min(2, c.diff))];
+    predict();
+    const dir = c.team === 0 ? 1 : -1, goalZ = dir * (A.L / 2 + 2), ownZ = -dir * (A.L / 2);
+    axes(c);
+    // ── in the air: aerial towards the target or land on the wheels
+    if (!c.ground) {
+      if (c.flipT > 0) return;
+      const tg = c.air;
+      if (tg && c.jumpT < 2.6) {
+        tv.set(tg.x - c.p.x, tg.y - c.p.y, tg.z - c.p.z); const dl = tv.length(); tv.normalize();
+        // point the nose at the target (bots steer their car directly – like a perfect stick)
+        tq.setFromUnitVectors(tv2.set(0, 0, 1), tv); c.q.slerp(tq, Math.min(1, 7 * (1 / 60)));
+        I.B = fwdV.dot(tv) > 0.8 && c.boost > 0;
+        if (c.holdT > 0) I.J = true;
+        if (!c.flipped && c.jumpT > 0.22 && c.jumpT < 0.3 && tg.y > 7) I.J = false; // release, then double jump below
+        if (!c.flipped && c.jumpT > 0.3 && tg.y > 7 && c.prevJ === false) { I.J = true; I.T = 0; I.S = 0; }
+        if (dl < BALL_R + 2.5 && !c.flipped && c.jumpT > 0.3) { I.J = true; I.T = 1; }
+        if (Math.hypot(ball.p.x - tg.x, ball.p.z - tg.z) > 12) c.air = undefined;
+      } else {
+        c.air = undefined;
+        // recover: level out
+        tq.setFromEuler(new THREE.Euler(0, Math.atan2(c.v.x || fwdV.x, c.v.z || fwdV.z), 0)); c.q.slerp(tq, Math.min(1, 5 / 60));
+      }
+      return;
+    }
+    c.air = undefined;
+    // ── kickoff: full boost at the ball, flip into it
+    const atKick = Math.hypot(ball.p.x, ball.p.z) < 0.5 && ball.v.lengthSq() < 0.5;
     const mates = cars.filter((o) => o.team === c.team && o.dead <= 0);
-    const dBall = (o: Car) => Math.hypot(o.p.x - ball.p.x, o.p.z - ball.p.z) + ((o.p.z - ball.p.z) * dir > 0 ? 18 : 0);
-    const first = mates.reduce((a, b) => (dBall(a) <= dBall(b) ? a : b), c);
-    // predicted ball spot
-    const look = Math.min(1.0, Math.hypot(c.p.x - ball.p.x, c.p.z - ball.p.z) / 40) * (0.5 + c.diff * 0.25);
-    const bx = ball.p.x + ball.v.x * look, bz = ball.p.z + ball.v.z * look;
-    let tx: number, tz: number, attack = false;
-    if (first === c || mates.length === 1) {
-      attack = true;
-      // aim to hit the ball towards the opponent goal: approach from behind
-      const gx = 0 - bx, gz = goalZ - bz, gl = Math.hypot(gx, gz) || 1;
-      const behind = (c.p.z - bz) * dir > -1.5; // car is in front of the ball (wrong side)
-      if (behind) { tx = bx + (c.p.x > bx ? 7 : -7); tz = bz - dir * 9; }
-      else { tx = bx - (gx / gl) * (BALL_R + 1.2); tz = bz - (gz / gl) * (BALL_R + 1.2); }
-    } else {
-      // support: sit between the ball and our goal
-      const k = mates.indexOf(c) % 2 ? 0.65 : 0.4;
-      tx = ball.p.x * 0.5; tz = ownZ + (ball.p.z - ownZ) * k;
-      if (Math.abs(tz - ownZ) < 6) tz = ownZ + dir * 6;
+    if (atKick) {
+      const taker = mates.reduce((a, b) => (Math.hypot(a.p.x, a.p.z) - (a.bot ? 0 : 0.1) <= Math.hypot(b.p.x, b.p.z) ? a : b), c);
+      if (taker === c) {
+        steerTo(c, ball.p.x, ball.p.z - dir * 1.2, MAX_CAR); I.B = c.boost > 0; I.T = 1;
+        const d = Math.hypot(ball.p.x - c.p.x, ball.p.z - c.p.z);
+        if (d < 10 && sk.flip > 0.5) { I.J = true; c.kickFlip = true; }
+        return;
+      }
+      // others: grab boost on the way back
+      let best = arena.pads[0], bd = 1e9;
+      for (const pd of arena.pads) if (pd.t <= 0 && (pd.z - ownZ) * dir < 30) { const d = Math.hypot(pd.x - c.p.x, pd.z - c.p.z); if (d < bd) { bd = d; best = pd; } }
+      steerTo(c, best.x, best.z, 30); return;
     }
-    // grab boost when low and far from the action
-    if (c.boost < 25 && !attack) {
-      let best: (typeof arena.pads)[number] | null = null, bd = 1e9;
-      for (const pd of arena.pads) if (pd.t <= 0) { const d = Math.hypot(pd.x - c.p.x, pd.z - c.p.z) + (pd.big ? -10 : 0); if (d < bd) { bd = d; best = pd; } }
-      if (best && bd < 30) { tx = best.x; tz = best.z; }
+    if (c.kickFlip && c.ground) c.kickFlip = false;
+    // ── find where the car can reach the ball first
+    const spNow = c.v.length(), vmax = c.boost > 15 ? MAX_CAR : MAX_DRIVE;
+    let hit = -1, hx = 0, hz = 0, hy = 0;
+    const aimX = Math.max(-A.GW / 2 + 3, Math.min(A.GW / 2 - 3, c.p.x * -0.15));
+    for (let i = Math.floor(sk.react / PRED_DT); i < pred.length; i++) {
+      const b = pred[i], t = (i + 1) * PRED_DT;
+      const maxH = c.boost > 20 ? sk.aerial : 0;
+      if (b.y > Math.max(3.8, maxH)) continue;
+      // contact point behind the ball, on the line from the opponent goal
+      tv.set(aimX - b.x, 0, goalZ - b.z).normalize();
+      const px = b.x - tv.x * (BALL_R + 1.4), pz = b.z - tv.z * (BALL_R + 1.4);
+      const d = Math.hypot(px - c.p.x, pz - c.p.z), turn = Math.abs(angTo(c, px, pz)) * 0.32;
+      const avg = Math.max(12, (spNow + vmax * sk.speed) / 2);
+      const need = turn + d / avg + (b.y > 3.8 ? 0.35 + b.y * 0.05 : 0);
+      if (need <= t) { hit = i; hx = px; hz = pz; hy = b.y; break; }
     }
-    const want = Math.atan2(tx - c.p.x, tz - c.p.z);
-    let da = want - c.yaw; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2;
+    // roles: who reaches the ball first attacks, the last one stays back
+    const reach = (o: Car) => Math.hypot(ball.p.x - o.p.x, ball.p.z - o.p.z) + ((o.p.z - ball.p.z) * (o.team === 0 ? 1 : -1) > 0 ? 25 : 0) + (o.bot ? 0 : -4);
+    const order = mates.slice().sort((a, b) => reach(a) - reach(b));
+    const role = order.indexOf(c);
+    const danger = pred.some((b) => (b.z - ownZ) * dir < 2 && Math.abs(b.x) < A.GW / 2 + 2 && b.y < A.GH);
+    const ballSide = (ball.p.z - c.p.z) * dir; // > 0: we are goal-side (good)
+    if (role === 0 || (danger && role === 1) || mates.length === 1) {
+      if (hit < 0) { const b = pred[pred.length - 1]; hx = b.x; hz = b.z - dir * 4; hy = b.y; }
+      const t = (Math.max(hit, 0) + 1) * PRED_DT;
+      // wrong side of the ball: drive around it towards our own goal side first
+      if (ballSide < -1 && !danger) {
+        const side = c.p.x > ball.p.x ? 1 : -1;
+        steerTo(c, ball.p.x + side * 9, ball.p.z - dir * 12, MAX_CAR * sk.speed); return;
+      }
+      if (danger && ballSide < 0) {
+        // get back to goal fast (far post), then turn to the ball
+        const post = ball.p.x > 0 ? -A.GW / 4 : A.GW / 4;
+        steerTo(c, post, ownZ + dir * 3, MAX_CAR); if (Math.abs(c.p.z - ownZ) > 12) I.B = c.boost > 0; return;
+      }
+      const d = Math.hypot(hx - c.p.x, hz - c.p.z);
+      const want = hit < 0 ? MAX_CAR : Math.min(MAX_CAR, (d / Math.max(0.1, t)) * 1.1 + 2);
+      const da = steerTo(c, hx, hz, Math.max(want, 14) * sk.speed + (sk.err ? 0 : 3));
+      // aerial when the ball will be up high
+      if (hy > 5 && sk.aerial > 0 && c.boost > 25 && Math.abs(da) < 0.25 && d < t * (spNow + 18) && d > t * spNow * 0.4) {
+        const b = pred[Math.max(hit, 0)]; c.air = { x: b.x - tv.set(aimX - b.x, 0, goalZ - b.z).normalize().x * 1.5, y: b.y, z: b.z - tv.z * 1.5 };
+        I.J = true; return;
+      }
+      // jump for bouncing balls at mid height
+      const bd = Math.hypot(ball.p.x - c.p.x, ball.p.z - c.p.z);
+      if (ball.p.y > 3.6 && ball.p.y < 6.5 && bd < 6 && Math.abs(da) < 0.5) I.J = true;
+      // power shot: jump and flip forward into the ball
+      if (bd < 7.5 && ball.p.y < 3.8 && Math.abs(angTo(c, ball.p.x, ball.p.z)) < 0.35 && spNow > 12 && Math.random() < sk.flip * 0.4) { I.J = true; c.flipNext = true; }
+      return;
+    }
+    if (c.flipNext) { c.flipNext = false; }
+    // ── support / last man
+    let tx: number, tz: number;
+    if (role === mates.length - 1 && mates.length > 1) { tx = ball.p.x * 0.3; tz = ownZ + dir * Math.min(22, Math.max(4, Math.abs(ball.p.z - ownZ) * 0.35)); }
+    else { tx = ball.p.x * 0.6 + (c.p.x > ball.p.x ? 8 : -8); tz = ball.p.z - dir * 22; }
+    if ((tz - ownZ) * dir < 3) tz = ownZ + dir * 3;
+    // top up boost on the way if a pad is close
+    if (c.boost < 50) for (const pd of arena.pads) if (pd.t <= 0 && Math.hypot(pd.x - c.p.x, pd.z - c.p.z) < 14 && (pd.z - ball.p.z) * dir < 0) { tx = pd.x; tz = pd.z; break; }
     const d = Math.hypot(tx - c.p.x, tz - c.p.z);
-    I.S = Math.max(-1, Math.min(1, -da * 2.4));
-    I.T = Math.abs(da) > 2.3 && d < 12 ? -1 : d < 3 && !attack ? 0 : 1;
-    I.slide = Math.abs(da) > 1.4 && c.v.length() > 12;
-    I.B = c.diff > 0 && Math.abs(da) < 0.3 && c.boost > 0 && (d > 18 || (attack && c.diff > 1 && d > 8)) && c.ground;
-    if (!c.ground) { I.T = 0; I.S = 0; I.B = false; }
-    // jumps and dodges into the ball
-    const bd3 = Math.hypot(c.p.x - ball.p.x, c.p.z - ball.p.z);
-    if (attack && c.ground && bd3 < 9 && ball.p.y > 3.2 && ball.p.y < 8 && Math.abs(da) < 0.5 && c.diff > 0) I.J = true;
-    if (attack && c.ground && bd3 < 6.5 && ball.p.y < 3.5 && Math.abs(da) < 0.35 && c.v.length() > 14 && Math.random() < 0.05 * (1 + c.diff)) I.J = true;
-    if (!c.ground && !c.flipped && c.jumpT > 0.12 && bd3 < 5.5 && c.diff > 0) { I.J = true; I.T = 1; I.S = 0; }
-    if (c.ground && c.v.length() < 2 && Math.abs(da) > 2.5) I.T = -1;
+    steerTo(c, tx, tz, d > 25 ? MAX_CAR * sk.speed : d > 6 ? 24 : 4);
+    if (d < 4) { I.T = 0; I.S = Math.max(-1, Math.min(1, -angTo(c, ball.p.x, ball.p.z) * 2)); I.T = Math.abs(angTo(c, ball.p.x, ball.p.z)) > 0.5 ? 0.4 : 0; }
+  }
+  // bots press the second jump (flip forward) a moment after a ground jump
+  function botAfterJump(c: Car) {
+    if (!c.bot || c.ground || c.flipped || c.flipT > 0) return;
+    if ((c.flipNext || c.kickFlip) && c.jumpT > 0.1) { c.inp.J = !c.prevJ; c.inp.T = 1; c.inp.S = 0; if (c.inp.J) { c.flipNext = false; c.kickFlip = false; } }
   }
 
   // ── fx ───────────────────────────────────────────────────────────
@@ -439,7 +552,7 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
         else endMatch();
       }
     }
-    for (const c of cars) if (c.bot && authority) botThink(c);
+    for (const c of cars) if (c.bot && authority) { botThink(c); botAfterJump(c); }
     const mine = me(); if (mine) readInput(mine.inp);
     for (const c of cars) if (!c.remote) stepCar(c, dt);
     for (const pd of arena.pads) if (pd.t > 0) pd.t -= dt;
@@ -462,7 +575,7 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
   // ── input ────────────────────────────────────────────────────────
   const keys = new Set<string>();
   const mouse = { l: false, r: false };
-  const pad = { x: 0, y: 0, gas: false, rev: false, boost: false, jump: false };
+  const pad = { x: 0, y: 0, boost: false, jump: false, slide: false };
   on(window, "keydown", (e: KeyboardEvent) => {
     if ((e.target as HTMLElement)?.tagName === "INPUT") return;
     keys.add(e.code); audioOn();
@@ -499,10 +612,18 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
     }
     // touch
     if (touch) {
-      if (Math.abs(pad.x) > 0.1) I.S = pad.x;
-      if (pad.gas || pad.rev) I.T = (pad.gas ? 1 : 0) - (pad.rev ? 1 : 0);
-      if (!me()?.ground && Math.abs(pad.y) > 0.2) I.T = -pad.y;
-      if (pad.boost) I.B = true; if (pad.jump) I.J = true;
+      const mag = Math.min(1, Math.hypot(pad.x, pad.y)), c = me();
+      if (c && mag > 0.15) {
+        if (c.ground) {
+          // the stick points where the car should go (relative to the camera); the car drives as long as it is pushed
+          const camYaw = Math.atan2(camLook.x - camPos.x, camLook.z - camPos.z);
+          const want = camYaw - Math.atan2(pad.x, -pad.y);
+          let da = want - c.yaw; while (da > Math.PI) da -= Math.PI * 2; while (da < -Math.PI) da += Math.PI * 2;
+          if (Math.abs(da) > 2.5 && c.v.length() < 6) { I.T = -mag; I.S = Math.max(-1, Math.min(1, (da > 0 ? Math.PI - da : -Math.PI - da) * 2.5)); }
+          else { I.T = mag; I.S = Math.max(-1, Math.min(1, -da * 2.5)); I.slide = Math.abs(da) > 1.4 && c.v.length() > 12; }
+        } else { I.S = pad.x; I.T = -pad.y; }
+      }
+      if (pad.boost) I.B = true; if (pad.jump) I.J = true; if (pad.slide) { I.slide = true; I.roll = 1; }
     }
     if (S.paused) { I.T = 0; I.S = 0; I.B = false; I.J = false; }
   }
@@ -664,7 +785,7 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
     <div class="tb-boost"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" class="tb-bg"/><circle cx="50" cy="50" r="42" class="tb-fg"/></svg><b>33</b></div>
     <button class="tb-cam" data-a="cam">${tt("Ball-Kamera", "Ball cam")}</button>
     <button class="tb-pause" data-a="pause">❚❚</button>
-    ${touch ? `<div class="tb-joy"><i></i></div><div class="tb-btns"><button data-p="jump" class="j">${tt("SPRUNG", "JUMP")}</button><button data-p="boost" class="b">BOOST</button><button data-p="gas" class="g">GAS</button><button data-p="rev" class="r">${tt("RÜCK", "REV")}</button></div>` : ""}
+    ${touch ? `<div class="tb-joy"><i></i></div><div class="tb-btns"><button data-p="boost" class="b">BOOST</button><button data-p="jump" class="j">${tt("SPRUNG", "JUMP")}</button><button data-p="slide" class="r">DRIFT</button></div>` : ""}
     <div class="tb-menu"></div>`;
   const $ = (s: string) => hud.querySelector(s) as HTMLElement;
   const ui = { sb: $(".tb-sb"), so: $(".tb-so"), clock: $(".tb-clock"), msg: $(".tb-msg"), big: $(".tb-big"), boost: $(".tb-boost b"), ring: $(".tb-fg"), cam: $(".tb-cam"), menu: $(".tb-menu") };
@@ -772,7 +893,7 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
     const up = (e: PointerEvent) => { if (e.pointerId !== jid) return; jid = -1; pad.x = pad.y = 0; knob.style.transform = ""; };
     on(joy, "pointerup", up); on(joy, "pointercancel", up);
     hud.querySelectorAll("[data-p]").forEach((b) => {
-      const k = (b as HTMLElement).dataset.p as "gas" | "rev" | "boost" | "jump";
+      const k = (b as HTMLElement).dataset.p as "boost" | "jump" | "slide";
       on(b as HTMLElement, "pointerdown", (e: PointerEvent) => { e.preventDefault(); pad[k] = true; b.classList.add("on"); audioOn(); });
       const off = () => { pad[k] = false; b.classList.remove("on"); };
       on(b as HTMLElement, "pointerup", off); on(b as HTMLElement, "pointercancel", off); on(b as HTMLElement, "pointerleave", off);
