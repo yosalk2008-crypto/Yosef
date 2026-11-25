@@ -88,8 +88,9 @@ export function SiteHeader() {
             <Link href="/fernweh" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold" style={{ background: "#a9d3dc", ["--edge" as string]: "#7fb0bc" }}>
               {t("Fernweh", "Wanderlust")}
             </Link>
-            <Link href="/turboball" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #1f6fff, #12204a 60%, #ff6a10)", ["--edge" as string]: "#0a1230" }}>
-              Turboball
+            <Link href="/andere-spiele" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #ff3d7f, #6a1f8a 55%, #1f6fff)", ["--edge" as string]: "#1a0a2e" }}>
+              {t("Andere Spiele", "Other games")}
+              <span className="text-sm font-bold opacity-80">🏎️ ⚽</span>
             </Link>
             {SOUTHBEACH_ENABLED && (
               <Link href="/southbeach" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #ff3b6b, #2a0f3a 75%)", ["--edge" as string]: "#12061a" }}>
