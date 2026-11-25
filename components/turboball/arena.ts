@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 /** Arena size (metres). x = across, z = along (goals at z = ±L/2), y = up. */
-export const A = { W: 82, L: 112, H: 28, RC: 14, GW: 18, GH: 7.2, GD: 9 };
+export const A = { W: 82, L: 112, H: 28, RC: 14, GW: 18, GH: 7.2, GD: 9, FIL: 6 };
 export const BLUE = new THREE.Color("#1f7bff"), ORANGE = new THREE.Color("#ff7a12");
 
 function tex(w: number, h: number, draw: (g: CanvasRenderingContext2D) => void, rep = true) {
@@ -102,7 +102,7 @@ export function buildArena(scene: THREE.Scene) {
   };
   trim(0.08, 0.12, 2.2); trim(H, 0.2, 2.6); trim(GH + 4, 0.06, 1.2);
   // curved ramps (visual quarter pipes along the walls)
-  const rampR = 3.2, rampPts: number[] = [], rampIdx: number[] = [], rampUv: number[] = [];
+  const rampR = A.FIL, rampPts: number[] = [], rampIdx: number[] = [], rampUv: number[] = [];
   const RS = 6, inner = sub(rrect(W / 2 - rampR, L / 2 - rampR, Math.max(1, RC - rampR), 12));
   for (let i = 0; i < inner.length; i++) {
     const [ix, iz] = inner[i], [ox, oz] = outline[i];
@@ -115,7 +115,7 @@ export function buildArena(scene: THREE.Scene) {
   for (let i = 0; i < inner.length; i++) for (let k = 0; k < RS; k++) {
     const a = i * (RS + 1) + k, b = ((i + 1) % inner.length) * (RS + 1) + k;
     const [ox, oz] = outline[i];
-    if (Math.abs(ox) < GW / 2 + 2 && Math.abs(oz) > L / 2 - 1) continue; // goal mouth
+    if (Math.abs(ox) < GW / 2 && Math.abs(oz) > L / 2 - 1) continue; // goal mouth
     rampIdx.push(a, b, a + 1, b, b + 1, a + 1);
   }
   const rg = new THREE.BufferGeometry(); rg.setAttribute("position", new THREE.Float32BufferAttribute(rampPts, 3)); rg.setAttribute("uv", new THREE.Float32BufferAttribute(rampUv, 2)); rg.setIndex(rampIdx); rg.computeVertexNormals();

@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Chakra_Petch, Russo_One } from "next/font/google";
 import { useLang, useT } from "@/lib/i18n";
+
+const display = Russo_One({ weight: "400", subsets: ["latin"], variable: "--tb-display" });
+const uiFont = Chakra_Petch({ weight: ["500", "600", "700"], subsets: ["latin"], variable: "--tb-ui" });
 
 /** Turboball – car soccer (three.js), loaded only on this page. */
 export function Turboball() {
@@ -32,7 +36,7 @@ export function Turboball() {
     };
   }, [lang]);
   return (
-    <div className="relative h-[calc(100dvh-64px)] min-h-[300px] w-full bg-[#05070f] sm:h-[calc(100dvh-72px)]">
+    <div className={`${display.variable} ${uiFont.variable} relative h-[calc(100dvh-64px)] min-h-[300px] w-full bg-[#05070f] sm:h-[calc(100dvh-72px)]`}>
       <div ref={ref} className="absolute inset-0" />
       {failed && (
         <p className="absolute inset-0 grid place-items-center p-6 text-center font-semibold text-white">

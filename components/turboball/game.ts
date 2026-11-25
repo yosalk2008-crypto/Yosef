@@ -15,7 +15,7 @@ type Inp = { T: number; S: number; B: boolean; J: boolean; slide: boolean; roll:
 type Car = {
   id: string; name: string; team: 0 | 1; bot: boolean; remote: boolean; diff: number;
   p: THREE.Vector3; v: THREE.Vector3; q: THREE.Quaternion; yaw: number; ground: boolean;
-  boost: number; boosting: boolean; jumpT: number; holdT: number; w: THREE.Vector3; flipT: number; flipAxis: THREE.Vector3; flipped: boolean; prevJ: boolean;
+  boost: number; boosting: boolean; jumpT: number; holdT: number; w: THREE.Vector3; n: THREE.Vector3; flipT: number; flipAxis: THREE.Vector3; flipped: boolean; prevJ: boolean;
   dead: number; hitCd: number; mesh: CarMesh; inp: Inp; slot: number; upT: number;
   goals: number; saves: number; shots: number; air?: { x: number; y: number; z: number }; flipNext?: boolean; kickFlip?: boolean; tgt?: { p: THREE.Vector3; v: THREE.Vector3; q: THREE.Quaternion; t: number; b: boolean };
 };
@@ -58,6 +58,13 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
   composer.addPass(new OutputPass());
   const arena = buildArena(scene);
   const ballMesh = makeBallMesh(BALL_R); scene.add(ballMesh);
+  // showroom car for the main menu (on a glowing turntable)
+  const show = makeCarMesh(0, 0); show.flame.visible = true; scene.add(show.group);
+  const SHOW = new THREE.Vector3(7, 0, -6);
+  show.group.position.copy(SHOW); show.group.scale.setScalar(1.25);
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 4.4, 0.12, 48), new THREE.MeshStandardMaterial({ color: "#11162a", metalness: 0.8, roughness: 0.3 }));
+  const discRing = new THREE.Mesh(new THREE.TorusGeometry(4.3, 0.06, 8, 96), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.6, 1.4, 3), toneMapped: false }));
+  discRing.rotation.x = Math.PI / 2; discRing.position.y = 0.12; disc.position.copy(SHOW).setY(0.06); discRing.position.x = SHOW.x; discRing.position.z = SHOW.z; scene.add(disc, discRing);
   const ballShadow = new THREE.Mesh(new THREE.CircleGeometry(BALL_R, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: "#000", transparent: true, opacity: 0.35, depthWrite: false }));
   scene.add(ballShadow);
   const resize = () => {
@@ -111,7 +118,7 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
     const mesh = makeCarMesh(team, slot);
     scene.add(mesh.group);
     const label = nameSprite(name, team); mesh.group.add(label); label.position.y = 2.6; mesh.name = label;
-    const c: Car = { id, name, team, bot, remote, diff: S.diff, p: new THREE.Vector3(), v: new THREE.Vector3(), q: new THREE.Quaternion(), yaw: 0, ground: true, boost: 33, boosting: false, jumpT: 0, holdT: 0, w: new THREE.Vector3(), flipT: 0, flipAxis: new THREE.Vector3(), flipped: false, prevJ: false, dead: 0, hitCd: 0, mesh, inp: { T: 0, S: 0, B: false, J: false, slide: false, roll: 0, P: 0 }, slot, upT: 0, goals: 0, saves: 0, shots: 0 };
+    const c: Car = { id, name, team, bot, remote, diff: S.diff, p: new THREE.Vector3(), v: new THREE.Vector3(), q: new THREE.Quaternion(), yaw: 0, ground: true, boost: 33, boosting: false, jumpT: 0, holdT: 0, w: new THREE.Vector3(), n: new THREE.Vector3(0, 1, 0), flipT: 0, flipAxis: new THREE.Vector3(), flipped: false, prevJ: false, dead: 0, hitCd: 0, mesh, inp: { T: 0, S: 0, B: false, J: false, slide: false, roll: 0, P: 0 }, slot, upT: 0, goals: 0, saves: 0, shots: 0 };
     cars.push(c);
     return c;
   }
@@ -135,49 +142,47 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
       list.forEach((c, i) => {
         const [x, z] = spots[i % spots.length] || [i * 6 - 6, -50];
         const sz = team === 0 ? 1 : -1;
-        c.p.set(team === 0 ? x : -x, 0, z * sz); c.v.set(0, 0, 0); c.yaw = Math.atan2(-c.p.x, -c.p.z); c.q.setFromEuler(new THREE.Euler(0, c.yaw, 0)); c.ground = true; c.boost = 33; c.dead = 0; c.flipT = 0; c.flipped = false; c.mesh.group.visible = true;
+        c.p.set(team === 0 ? x : -x, 0, z * sz); c.v.set(0, 0, 0); c.yaw = Math.atan2(-c.p.x, -c.p.z); c.q.setFromEuler(new THREE.Euler(0, c.yaw, 0)); c.ground = true; c.n.set(0, 1, 0); c.boost = 33; c.dead = 0; c.flipT = 0; c.flipped = false; c.mesh.group.visible = true;
       });
     }
-    S.phase = "count"; S.countT = 3; for (const p of arena.pads) p.t = 0;
+    S.phase = "count"; S.countT = 3; for (const p of arena.pads) p.t = 0; lastCount = -1;
+    const m0 = me(); if (m0) { camYaw = Math.atan2(-m0.p.x, -m0.p.z); camPos.set(m0.p.x - Math.sin(camYaw) * 10.5, 3.4, m0.p.z - Math.cos(camYaw) * 10.5); }
     beep(3);
   }
   let lastBeep = 0;
   function beep(n: number) { if (n !== lastBeep) { lastBeep = n; tone(n > 0 ? 660 : 990, n > 0 ? 0.15 : 0.4, 0.25, "square"); } }
 
   // ── arena collisions ─────────────────────────────────────────────
-  const tmpN = new THREE.Vector3();
-  /** Pushes a sphere out of the arena walls. Returns impact speed (0 when nothing was hit). */
-  function collide(p: THREE.Vector3, v: THREE.Vector3, r: number, e: number, fr = 0.97) {
+  // The arena as a distance field: positive inside, with round fillets (radius FIL) between floor, walls and
+  // ceiling – so balls roll up the curves and cars drive onto the walls like in the real game.
+  const FIL = A.FIL;
+  const fil = (a: number, b: number) => (a < FIL && b < FIL ? FIL - Math.hypot(FIL - a, FIL - b) : Math.min(a, b));
+  function sdf(x: number, y: number, z: number) {
     const { W, L, H, RC, GW, GH, GD } = A;
+    const mouth = Math.abs(x) < GW / 2 && y < GH;
+    if (mouth && Math.abs(z) > L / 2) return Math.min(GW / 2 - Math.abs(x), GH - y, L / 2 + GD - Math.abs(z), y); // inside a goal
+    let a: number;
+    if (mouth) a = W / 2 - Math.abs(x); // no end wall in front of the goal
+    else { const qx = Math.abs(x) - (W / 2 - RC), qz = Math.abs(z) - (L / 2 - RC); a = RC - (Math.hypot(Math.max(qx, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qz), 0)); }
+    return Math.min(fil(a, y), fil(a, H - y));
+  }
+  const gradN = new THREE.Vector3();
+  function grad(x: number, y: number, z: number, out = gradN) {
+    const e = 0.04;
+    out.set(sdf(x + e, y, z) - sdf(x - e, y, z), sdf(x, y + e, z) - sdf(x, y - e, z), sdf(x, y, z + e) - sdf(x, y, z - e));
+    const l = out.length(); if (l < 1e-6) out.set(0, 1, 0); else out.divideScalar(l);
+    return out;
+  }
+  /** Pushes a sphere out of the arena surface. Returns impact speed (0 when nothing was hit). */
+  function collide(p: THREE.Vector3, v: THREE.Vector3, r: number, e: number, fr = 0.97) {
     let hit = 0;
-    const bounce = (nx: number, ny: number, nz: number, pen: number) => {
-      p.x += nx * pen; p.y += ny * pen; p.z += nz * pen;
-      const vn = v.x * nx + v.y * ny + v.z * nz;
-      if (vn < 0) { v.x -= (1 + e) * vn * nx; v.y -= (1 + e) * vn * ny; v.z -= (1 + e) * vn * nz; v.x *= fr; v.z *= fr; if (ny === 0) v.y *= fr; hit = Math.max(hit, -vn); }
-    };
-    const inMouth = Math.abs(p.x) < GW / 2 && p.y < GH;
-    if (Math.abs(p.z) > L / 2 - r && inMouth) {
-      // inside a goal
-      const s = Math.sign(p.z);
-      if (p.x > GW / 2 - r) bounce(-1, 0, 0, p.x - (GW / 2 - r));
-      if (p.x < -GW / 2 + r) bounce(1, 0, 0, -GW / 2 + r - p.x);
-      if (p.y > GH - r && Math.abs(p.z) > L / 2) bounce(0, -1, 0, p.y - (GH - r));
-      if (Math.abs(p.z) > L / 2 + GD - r) bounce(0, 0, -s, Math.abs(p.z) - (L / 2 + GD - r));
-    } else {
-      // crossbar / posts: treat the goal frame edge as a wall when outside the mouth
-      if (p.x > W / 2 - r) bounce(-1, 0, 0, p.x - (W / 2 - r));
-      if (p.x < -W / 2 + r) bounce(1, 0, 0, -W / 2 + r - p.x);
-      if (p.z > L / 2 - r) bounce(0, 0, -1, p.z - (L / 2 - r));
-      if (p.z < -L / 2 + r) bounce(0, 0, 1, -L / 2 + r - p.z);
-      const cx = W / 2 - RC, cz = L / 2 - RC;
-      if (Math.abs(p.x) > cx && Math.abs(p.z) > cz) {
-        const ox = Math.sign(p.x) * cx, oz = Math.sign(p.z) * cz, dx = p.x - ox, dz = p.z - oz, d = Math.hypot(dx, dz);
-        if (d > RC - r) bounce(-dx / d, 0, -dz / d, d - (RC - r));
-      }
+    for (let k = 0; k < 2; k++) {
+      const d = sdf(p.x, p.y, p.z); if (d >= r) break;
+      const n = grad(p.x, p.y, p.z);
+      p.addScaledVector(n, r - d);
+      const vn = v.dot(n);
+      if (vn < 0) { v.addScaledVector(n, -vn); v.multiplyScalar(fr); v.addScaledVector(n, -e * vn); hit = Math.max(hit, -vn); }
     }
-    if (p.y < r) bounce(0, 1, 0, r - p.y);
-    if (p.y > A.H - r) bounce(0, -1, 0, p.y - (A.H - r));
-    void H;
     return hit;
   }
 
@@ -191,23 +196,43 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
     c.hitCd = Math.max(0, c.hitCd - dt);
     if (frozen) { c.v.set(0, 0, 0); return; }
     if (c.ground) {
-      const fx = Math.sin(c.yaw), fz = Math.cos(c.yaw);
-      let vf = c.v.x * fx + c.v.z * fz, vs = c.v.x * fz - c.v.z * fx;
+      // driving on any surface (floor, ramps, walls): forward lies in the surface plane, up is the surface normal
+      const n = c.n;
+      fT.set(0, 0, 1).applyQuaternion(c.q); fT.addScaledVector(n, -fT.dot(n));
+      if (fT.lengthSq() < 1e-4) fT.set(0, 0, 1).addScaledVector(n, -n.z); fT.normalize();
+      sT.crossVectors(n, fT);
+      let vf = c.v.dot(fT), vs = c.v.dot(sT);
       const boosting = I.B && c.boost > 0;
       if (boosting) { vf += BOOST_A * dt; c.boost = Math.max(0, c.boost - 33.3 * dt); }
       if (I.T > 0.05) vf += vf < -0.5 ? 50 * dt * I.T : Math.max(0, 34 * (1 - vf / MAX_DRIVE)) * I.T * dt;
       else if (I.T < -0.05) vf += vf > 0.5 ? -50 * dt * -I.T : -Math.max(0, 18 * (1 + vf / 14)) * -I.T * dt;
       else if (!boosting) vf -= Math.sign(vf) * Math.min(Math.abs(vf), 7 * dt);
       const sp = Math.abs(vf), steerRate = (3.0 - Math.min(1.6, sp / 20)) * (I.slide ? 1.35 : 1);
-      c.yaw -= I.S * steerRate * Math.min(1, sp / 3 + 0.15) * Math.sign(vf || 1) * dt;
+      tq.setFromAxisAngle(n, -I.S * steerRate * Math.min(1, sp / 3 + 0.15) * Math.sign(vf || 1) * dt); fT.applyQuaternion(tq);
+      sT.crossVectors(n, fT);
       vs *= Math.exp(-(I.slide ? 1.3 : 14) * dt);
+      // gravity along the surface (slows you down on walls and ramps)
+      const gf = -G * fT.y, gs = -G * sT.y; vf += gf * dt; vs += gs * dt;
       vf = Math.max(-16, Math.min(MAX_CAR, vf));
-      const nfx = Math.sin(c.yaw), nfz = Math.cos(c.yaw);
-      c.v.set(nfx * vf + nfz * vs, 0, nfz * vf - nfx * vs);
-      c.q.setFromEuler(new THREE.Euler(0, c.yaw, 0));
+      c.v.copy(fT).multiplyScalar(vf).addScaledVector(sT, vs);
       c.boosting = boosting;
+      c.p.addScaledVector(c.v, dt);
+      // stay on the surface
+      const d = sdf(c.p.x, c.p.y, c.p.z), n2 = grad(c.p.x, c.p.y, c.p.z, tv2);
+      const pullAway = -G * n2.y; // > 0: gravity pulls the car off (ceiling, overhang)
+      if (d > 0.9 || pullAway > STICK || (n2.y < 0.35 && c.v.length() < 5)) {
+        c.ground = false; c.jumpT = 0.3; c.flipped = false; c.holdT = 0; c.w.set(0, 0, 0);
+      } else {
+        c.p.addScaledVector(n2, -d); c.n.copy(n2);
+        c.v.addScaledVector(n2, -c.v.dot(n2));
+        fT.addScaledVector(n2, -fT.dot(n2)).normalize();
+        setBasis(c, fT, n2);
+      }
+      c.yaw = Math.atan2(fT.x, fT.z);
       // jump along the car's up axis; holding the button up to 0.2 s jumps higher (Rocket League)
-      if (jumpEdge) { c.v.y = JUMP_V; c.ground = false; c.jumpT = 0; c.holdT = 0.2; c.flipped = false; c.p.y += 0.05; c.w.set(0, 0, 0); tone(300, 0.08, 0.06, "triangle"); }
+      if (jumpEdge) { c.v.addScaledVector(c.n, JUMP_V); c.p.addScaledVector(c.n, 0.08); c.ground = false; c.jumpT = 0; c.holdT = 0.2; c.flipped = false; c.w.set(0, 0, 0); tone(300, 0.08, 0.06, "triangle"); }
+      if (c.ground) { padCheck(c); return; }
+      return;
     } else {
       c.jumpT += dt;
       if (c.holdT > 0) { if (I.J) { axes(c); c.v.addScaledVector(upV, JUMP_HOLD * dt); c.holdT -= dt; } else c.holdT = 0; }
@@ -242,21 +267,37 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
     }
     if (c.v.length() > MAX_CAR) c.v.setLength(MAX_CAR);
     c.p.addScaledVector(c.v, dt);
-    // arena: collide a sphere at the car's centre
-    tv.copy(c.p); tv.y += 1.4; collide(tv, c.v, 1.4, 0.1, 0.9); c.p.set(tv.x, tv.y - 1.4, tv.z);
-    if (!c.ground && c.p.y <= 0.05 && c.v.y <= 1.5 && c.jumpT > 0.1) {
-      axes(c);
-      if (upV.y > 0.55) {
-        // wheels down: land and keep the heading
-        c.yaw = Math.atan2(fwdV.x, fwdV.z);
-        c.ground = true; c.p.y = 0; c.v.y = 0; c.flipT = 0; c.w.set(0, 0, 0); c.q.setFromEuler(new THREE.Euler(0, c.yaw, 0));
+    // body against the arena (sphere around the car's centre)
+    axes(c);
+    tv.copy(c.p).addScaledVector(upV, 1.2); collide(tv, c.v, 1.2, 0.1, 0.95); c.p.copy(tv).addScaledVector(upV, -1.2);
+    // touching a surface with the wheels: land on it (floor, ramp or wall)
+    const dW = sdf(c.p.x, c.p.y, c.p.z);
+    if (dW < 0.25 && c.jumpT > 0.1) {
+      const n = grad(c.p.x, c.p.y, c.p.z, tv2);
+      if (upV.dot(n) > 0.45 && -G * n.y < STICK) {
+        c.ground = true; c.n.copy(n); c.p.addScaledVector(n, -dW); c.v.addScaledVector(n, -c.v.dot(n));
+        c.flipT = 0; c.w.set(0, 0, 0); c.upT = 0;
+        fT.copy(fwdV).addScaledVector(n, -fwdV.dot(n)); if (fT.lengthSq() < 1e-4) fT.copy(c.v).addScaledVector(n, -c.v.dot(n)); fT.normalize();
+        setBasis(c, fT, n); c.yaw = Math.atan2(fT.x, fT.z);
       } else {
-        // on the roof or the side: the car rights itself after a moment
-        c.p.y = 0; c.v.y = Math.max(0, c.v.y); c.v.x *= 0.9; c.v.z *= 0.9; c.upT += dt;
-        if (c.upT > 0.5) { c.upT = 0; c.yaw = Math.atan2(fwdV.x, fwdV.z); c.v.y = 6; c.jumpT = 0; c.flipped = false; c.w.set(0, 0, 0); c.q.setFromEuler(new THREE.Euler(0, c.yaw, 0)); }
+        // on the roof or the side (also in a curve): the car rights itself after a moment
+        c.v.multiplyScalar(0.92); c.upT += dt;
+        if (c.upT > 0.45) {
+          c.upT = 0; c.ground = true; c.n.copy(n); c.p.addScaledVector(n, -dW); c.v.addScaledVector(n, -c.v.dot(n)); c.flipT = 0; c.w.set(0, 0, 0);
+          fT.copy(fwdV).addScaledVector(n, -fwdV.dot(n)); if (fT.lengthSq() < 1e-3) fT.copy(upV).addScaledVector(n, -upV.dot(n)); if (fT.lengthSq() < 1e-3) fT.set(1, 0, 0).addScaledVector(n, -n.x); fT.normalize();
+          setBasis(c, fT, n); c.yaw = Math.atan2(fT.x, fT.z);
+        }
       }
     }
-    if (c.ground) c.p.y = 0;
+    padCheck(c);
+  }
+  const m4 = new THREE.Matrix4(), fT = new THREE.Vector3(), sT = new THREE.Vector3(), bX = new THREE.Vector3(), bZ = new THREE.Vector3();
+  const STICK = 10;
+  function setBasis(c: Car, f: THREE.Vector3, n: THREE.Vector3) {
+    bX.crossVectors(n, f).normalize(); bZ.crossVectors(bX, n).normalize();
+    m4.makeBasis(bX, n, bZ); c.q.setFromRotationMatrix(m4);
+  }
+  function padCheck(c: Car) {
     // boost pads
     for (const pd of arena.pads) {
       if (pd.t > 0 || c.boost >= 100 || c.p.y > 2) continue;
@@ -266,7 +307,7 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
   function respawn(c: Car) {
     const s = c.team === 0 ? -1 : 1;
     c.p.set((Math.random() - 0.5) * 30, 0, s * (A.L / 2 - 12)); c.v.set(0, 0, 0); c.yaw = s < 0 ? 0 : Math.PI; c.q.setFromEuler(new THREE.Euler(0, c.yaw, 0));
-    c.ground = true; c.boost = 33; c.dead = 0; c.mesh.group.visible = true;
+    c.ground = true; c.n.set(0, 1, 0); c.boost = 33; c.dead = 0; c.mesh.group.visible = true;
   }
   function demolish(c: Car, by?: Car) {
     if (c.dead > 0) return;
@@ -399,6 +440,7 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
       return;
     }
     c.air = undefined;
+    if (c.n.y < 0.6) { I.J = true; return; } // bots leave walls
     // ── kickoff: full boost at the ball, flip into it
     const atKick = Math.hypot(ball.p.x, ball.p.z) < 0.5 && ball.v.lengthSq() < 0.5;
     const mates = cars.filter((o) => o.team === c.team && o.dead <= 0);
@@ -627,7 +669,7 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
     }
     if (S.paused) { I.T = 0; I.S = 0; I.B = false; I.J = false; }
   }
-  function toggleCam() { S.ballCam = !S.ballCam; ui.cam.textContent = S.ballCam ? tt("Ball-Kamera", "Ball cam") : tt("Auto-Kamera", "Car cam"); ui.cam.classList.toggle("off", !S.ballCam); }
+  function toggleCam() { S.ballCam = !S.ballCam; ui.cam.textContent = S.ballCam ? tt("Ball-Kamera", "Ball cam") : tt("Auto-Kamera", "Car cam"); ui.camB.classList.toggle("off", !S.ballCam); }
 
   // ── network (Supabase Realtime) ──────────────────────────────────
   let sb: ReturnType<typeof createClient> | null = null, ch: RealtimeChannel | null = null, sendT = 0;
@@ -735,7 +777,7 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
     const list = [...lobbyMembers().filter((m) => m.team === c.team).map((m) => m.id)].sort();
     const i = Math.max(0, list.indexOf(c.id)), spots = SPOTS[Math.min(2, S.mode - 1)], [x, z] = spots[i % spots.length];
     const s = c.team === 0 ? 1 : -1;
-    c.p.set(c.team === 0 ? x : -x, 0, z * s); c.v.set(0, 0, 0); c.yaw = Math.atan2(-c.p.x, -c.p.z); c.q.setFromEuler(new THREE.Euler(0, c.yaw, 0)); c.ground = true; c.boost = 33; c.dead = 0; c.mesh.group.visible = true;
+    c.p.set(c.team === 0 ? x : -x, 0, z * s); c.v.set(0, 0, 0); c.yaw = Math.atan2(-c.p.x, -c.p.z); c.q.setFromEuler(new THREE.Euler(0, c.yaw, 0)); c.ground = true; c.n.set(0, 1, 0); c.boost = 33; c.dead = 0; c.mesh.group.visible = true;
   }
   function fillBots() {
     // humans first, bots fill the empty seats
@@ -779,53 +821,91 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
 
   // ── UI ───────────────────────────────────────────────────────────
   const hud = document.createElement("div"); hud.className = "tb-hud"; wrap.appendChild(hud);
+  const ico = {
+    cam: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4v4M12 16v4M4 12h4M16 12h4"/></svg>`,
+    fs: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>`,
+    pause: `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>`,
+  };
   hud.innerHTML = `
-    <div class="tb-score"><b class="tb-sb">0</b><span class="tb-clock">5:00</span><b class="tb-so">0</b></div>
-    <div class="tb-msg"></div><div class="tb-big"></div>
-    <div class="tb-boost"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" class="tb-bg"/><circle cx="50" cy="50" r="42" class="tb-fg"/></svg><b>33</b></div>
-    <button class="tb-cam" data-a="cam">${tt("Ball-Kamera", "Ball cam")}</button>
-    <button class="tb-pause" data-a="pause">❚❚</button>
+    <div class="tb-score"><div class="tb-team-s blue"><b class="tb-sb">0</b><small>${tt("BLAU", "BLUE")}</small></div><div class="tb-mid"><span class="tb-clock">5:00</span><span class="tb-ot"></span></div><div class="tb-team-s orange"><b class="tb-so">0</b><small>ORANGE</small></div></div>
+    <div class="tb-msg"><span></span></div><div class="tb-big"></div>
+    <div class="tb-speed"><span>0</span><small>KM/H</small></div>
+    <div class="tb-boost"><svg viewBox="0 0 120 120"><defs><linearGradient id="tbBoostG" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#ff5a00"/><stop offset=".6" stop-color="#ffb020"/><stop offset="1" stop-color="#fff2a0"/></linearGradient></defs>
+      <circle cx="60" cy="60" r="40" class="disc"/><path d="M 22.4 81.7 A 46 46 0 1 1 97.6 81.7" class="bg"/><path d="M 22.4 81.7 A 46 46 0 1 1 97.6 81.7" class="ticks"/><path d="M 22.4 81.7 A 46 46 0 1 1 97.6 81.7" class="fg"/></svg><b>33</b><small>BOOST</small></div>
+    <div class="tb-ic l"><button data-a="pause" aria-label="Pause">${ico.pause}</button></div>
+    <div class="tb-ic r"><button data-a="cam" class="tb-cam">${ico.cam}<span>${tt("Ball-Kamera", "Ball cam")}</span></button><button data-a="fs" aria-label="${tt("Vollbild", "Fullscreen")}">${ico.fs}</button></div>
     ${touch ? `<div class="tb-joy"><i></i></div><div class="tb-btns"><button data-p="boost" class="b">BOOST</button><button data-p="jump" class="j">${tt("SPRUNG", "JUMP")}</button><button data-p="slide" class="r">DRIFT</button></div>` : ""}
     <div class="tb-menu"></div>`;
   const $ = (s: string) => hud.querySelector(s) as HTMLElement;
-  const ui = { sb: $(".tb-sb"), so: $(".tb-so"), clock: $(".tb-clock"), msg: $(".tb-msg"), big: $(".tb-big"), boost: $(".tb-boost b"), ring: $(".tb-fg"), cam: $(".tb-cam"), menu: $(".tb-menu") };
+  const ui = { sb: $(".tb-sb"), so: $(".tb-so"), clock: $(".tb-clock"), ot: $(".tb-ot"), msg: $(".tb-msg"), msgT: $(".tb-msg span"), big: $(".tb-big"), boostBox: $(".tb-boost"), boost: $(".tb-boost b"), ring: $(".tb-boost .fg"), speed: $(".tb-speed"), speedT: $(".tb-speed span"), cam: $(".tb-cam span"), camB: $(".tb-cam"), menu: $(".tb-menu"), play: [$(".tb-score"), $(".tb-boost"), $(".tb-speed"), $(".tb-ic.r"), $(".tb-ic.l")] };
+  const ARC = 2 * Math.PI * 46 * (280 / 360);
+  ui.ring.style.strokeDasharray = `${ARC} 999`;
   let msgT = 0;
-  function msg(t: string) { ui.msg.textContent = t; ui.msg.style.opacity = "1"; msgT = 3; }
+  function msg(t: string) { ui.msgT.textContent = t; ui.msg.style.opacity = "1"; msgT = 3; }
   function showGoal(team: 0 | 1, who: string) {
-    ui.big.innerHTML = `<div class="tb-goal ${team === 0 ? "blue" : "orange"}">${tt("TOR!", "GOAL!")}</div>${who ? `<small>${who}</small>` : ""}`;
-    ui.big.style.display = "block"; setTimeout(() => { if (S.phase !== "end") ui.big.style.display = "none"; }, 2800);
+    const kmh = Math.round(ball.v.length() * 3.6 * 1.6);
+    ui.big.innerHTML = `<div class="tb-goalwrap"><div class="tb-goalband ${team === 0 ? "blue" : "orange"}"></div><div class="tb-goaltxt"><b>${tt("TOR!", "GOAL!")}</b><span>${who ? `${who} · ` : ""}${kmh} KM/H</span></div></div>`;
+    ui.big.style.display = "block"; (team === 0 ? ui.sb : ui.so).classList.remove("pop"); void ui.sb.offsetWidth; (team === 0 ? ui.sb : ui.so).classList.add("pop");
+    setTimeout(() => { if (S.phase !== "end" && ui.big.querySelector(".tb-goalwrap")) ui.big.style.display = "none"; }, 3000);
   }
-  S.paused = false;
+  // fullscreen (real API, CSS fallback on iPhone)
+  type FsDoc = Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void };
+  type FsEl = HTMLElement & { webkitRequestFullscreen?: () => void };
+  const isFs = () => !!(document.fullscreenElement || (document as FsDoc).webkitFullscreenElement || wrap.classList.contains("tb-fake"));
+  function fakeFs(onOff: boolean) { wrap.classList.toggle("tb-fake", onOff); document.documentElement.style.overflow = onOff ? "hidden" : ""; if (onOff) window.scrollTo(0, 0); setTimeout(resize, 50); }
+  function toggleFs() {
+    const r = wrap as FsEl;
+    if (isFs()) { if (wrap.classList.contains("tb-fake")) fakeFs(false); else if (document.exitFullscreen) void document.exitFullscreen().catch(() => {}); else (document as FsDoc).webkitExitFullscreen?.(); return; }
+    if (r.requestFullscreen) r.requestFullscreen({ navigationUI: "hide" }).then(() => { const o = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> }; if (touch) o.lock?.("landscape").catch(() => {}); }).catch(() => fakeFs(true));
+    else if (r.webkitRequestFullscreen) r.webkitRequestFullscreen();
+    else fakeFs(true);
+  }
+  on(document, "fullscreenchange", () => setTimeout(resize, 50));
+  cleanups.push(() => fakeFs(false));
   function togglePause() {
     if (S.phase === "menu" || S.phase === "end") return;
     S.paused = !S.paused;
-    if (S.paused) { ui.menu.innerHTML = `<div class="tb-card"><h2>${tt("Pause", "Paused")}</h2>${S.online ? `<p>${tt("Online läuft das Spiel weiter.", "Online, the match keeps running.")}</p>` : ""}<button data-a="resume" class="tb-main">${tt("Weiter", "Resume")}</button><button data-a="quit">${tt("Spiel verlassen", "Leave match")}</button>${controlsHtml()}</div>`; ui.menu.style.display = "flex"; }
+    if (S.paused) { openPanel(`<div class="tb-panel"><div class="tb-ph"><h2>${tt("PAUSE", "PAUSED")}</h2></div>${S.online ? `<p class="tb-hint">${tt("Online läuft das Spiel weiter.", "Online, the match keeps running.")}</p>` : ""}<button data-a="resume" class="tb-go"><span>${tt("WEITER", "RESUME")}</span></button><div class="tb-row"><button data-a="fs" class="tb-ghost">${tt("Vollbild", "Fullscreen")}</button><button data-a="quit" class="tb-ghost">${tt("Spiel verlassen", "Leave match")}</button></div>${controlsHtml()}</div>`); }
     else ui.menu.style.display = "none";
   }
-  const controlsHtml = () => `<details class="tb-keys"><summary>${tt("Steuerung", "Controls")}</summary><div>
-    <b>W / S</b><span>${tt("Gas / Bremse, rückwärts (in der Luft: Nase hoch/runter)", "throttle / brake, reverse (in the air: pitch)")}</span>
-    <b>A / D</b><span>${tt("lenken (in der Luft: drehen)", "steer (in the air: yaw)")}</span>
-    <b>${tt("Leertaste / Rechtsklick", "Space / right click")}</b><span>${tt("springen, in der Luft nochmal: Doppelsprung oder mit Richtung ein Flip", "jump, again in the air: double jump or flip with a direction")}</span>
-    <b>${tt("Shift / Linksklick", "Shift / left click")}</b><span>Boost</span>
-    <b>Strg / Q</b><span>${tt("Driften, in der Luft rollen", "powerslide, air roll")}</span>
+  const controlsHtml = () => `<details class="tb-keys"><summary>${tt("STEUERUNG", "CONTROLS")}</summary><div>
+    <b>W / S</b><span>${tt("Gas, Bremse, rückwärts · in der Luft: Nase hoch/runter", "throttle, brake, reverse · in the air: pitch")}</span>
+    <b>A / D</b><span>${tt("lenken · in der Luft: drehen", "steer · in the air: yaw")}</span>
+    <b>${tt("Leertaste", "Space")}</b><span>${tt("springen (halten = höher) · nochmal: Doppelsprung, mit Richtung: Flip", "jump (hold = higher) · again: double jump, with a direction: flip")}</span>
+    <b>Shift</b><span>${tt("Boost (auch Linksklick)", "boost (or left click)")}</span>
+    <b>Strg / Q</b><span>${tt("Driften · in der Luft rollen", "powerslide · air roll")}</span>
     <b>C</b><span>${tt("Ball-Kamera an/aus", "ball cam on/off")}</span>
-    <b>🎮</b><span>${tt("Controller: RT/LT Gas/Rück, A Sprung, B Boost, X Drift, Y Kamera", "Gamepad: RT/LT throttle/reverse, A jump, B boost, X slide, Y camera")}</span></div></details>`;
+    <b>F</b><span>${tt("Vollbild", "fullscreen")}</span>
+    <b>🎮</b><span>${tt("RT/LT Gas/Rück · A Sprung · B Boost · X Drift · Y Kamera", "RT/LT throttle/reverse · A jump · B boost · X slide · Y camera")}</span>
+    <b>📱</b><span>${tt("Joystick zeigt die Richtung und fährt · Boost · Sprung · Drift", "stick points the way and drives · boost · jump · drift")}</span></div></details>`;
   let menuView: "main" | "solo" | "online" | "lobby" = "main";
-  function showMenu() { S.phase = "menu"; S.paused = false; ui.menu.style.display = "flex"; ui.big.style.display = "none"; menuView = "main"; renderMenu(); }
+  function openPanel(html: string) { ui.menu.className = "tb-menu center"; ui.menu.innerHTML = html; ui.menu.style.display = "flex"; }
+  function showMenu() { S.phase = "menu"; S.paused = false; ui.big.style.display = "none"; menuView = "main"; renderMenu(); }
   function hideMenu() { ui.menu.style.display = "none"; }
+  const chips = (k: string, opts: [number, string, string?][], cur: number) => `<div class="tb-chips" data-k="${k}">${opts.map(([v, l, sub]) => `<button data-v="${v}" class="${cur === v ? "on" : ""}"><span>${l}${sub ? `<small>${sub}</small>` : ""}</span></button>`).join("")}</div>`;
+  const nameIn = () => `<label class="tb-name">${tt("NAME", "NAME")}<input maxlength="16" value="${(S.myName || "").replace(/"/g, "")}" placeholder="${tt("Dein Name", "Your name")}"></label>`;
+  const modes = () => chips("mode", [[1, "1 v 1"], [2, "2 v 2"], [3, "3 v 3"]], S.mode);
   function renderMenu() {
-    const title = `<h1 class="tb-title">TURBO<span>BALL</span></h1><p class="tb-sub">${tt("Auto-Fußball · Boost · Flips · Tore", "Car soccer · boost · flips · goals")}</p>`;
-    const nameIn = `<label class="tb-name">${tt("Dein Name", "Your name")}<input maxlength="16" value="${(S.myName || "").replace(/"/g, "")}" placeholder="${tt("Name", "Name")}"></label>`;
-    if (menuView === "main") ui.menu.innerHTML = `<div class="tb-card">${title}${nameIn}<button class="tb-main" data-a="solo">${tt("Gegen Bots spielen", "Play vs bots")}</button><button class="tb-main alt" data-a="online">${tt("Online mit Freunden", "Online with friends")}</button>${controlsHtml()}</div>`;
-    if (menuView === "solo") ui.menu.innerHTML = `<div class="tb-card"><h2>${tt("Gegen Bots", "Vs bots")}</h2>
-      <div class="tb-seg" data-k="mode">${[1, 2, 3].map((m) => `<button data-v="${m}" class="${S.mode === m ? "on" : ""}">${m}v${m}</button>`).join("")}</div>
-      <div class="tb-seg" data-k="diff">${[tt("Anfänger", "Rookie"), tt("Profi", "Pro"), tt("Champion", "All-star")].map((d, i) => `<button data-v="${i}" class="${S.diff === i ? "on" : ""}">${d}</button>`).join("")}</div>
-      <button class="tb-main" data-a="go">${tt("Anstoß!", "Kick off!")}</button><button data-a="back">${tt("Zurück", "Back")}</button></div>`;
-    if (menuView === "online") ui.menu.innerHTML = `<div class="tb-card"><h2>${tt("Online", "Online")}</h2>${nameIn}
-      <div class="tb-seg" data-k="mode">${[1, 2, 3].map((m) => `<button data-v="${m}" class="${S.mode === m ? "on" : ""}">${m}v${m}</button>`).join("")}</div>
-      <button class="tb-main" data-a="create">${tt("Raum erstellen", "Create room")}</button>
-      <div class="tb-join"><input class="tb-code" maxlength="5" placeholder="${tt("CODE", "CODE")}"><button data-a="join">${tt("Beitreten", "Join")}</button></div>
-      <p class="tb-hint">${tt("Freie Plätze füllen Bots auf.", "Bots fill the empty seats.")}</p><button data-a="back">${tt("Zurück", "Back")}</button></div>`;
+    if (menuView === "main") {
+      ui.menu.className = "tb-menu"; ui.menu.style.display = "block";
+      ui.menu.innerHTML = `<div class="tb-main-l"><h1 class="tb-logo"><span class="a">TURBO</span><span class="b">BALL</span></h1><p class="tb-tag">${tt("Auto-Fußball · Boost · Flips · Tore", "Car soccer · boost · flips · goals")}</p>
+        ${nameIn()}
+        <button class="tb-item hot" data-a="solo"><i>⚡</i><span><b>${tt("SPIELEN", "PLAY")}</b><small>${tt("Gegen Bots · 1v1 bis 3v3", "Vs bots · 1v1 to 3v3")}</small></span></button>
+        <button class="tb-item hot2" data-a="online"><i>🌐</i><span><b>ONLINE</b><small>${tt("Mit Freunden per Code", "With friends via code")}</small></span></button>
+        <button class="tb-item" data-a="fs"><i>⛶</i><span><b>${tt("VOLLBILD", "FULLSCREEN")}</b><small>${tt("Für das beste Erlebnis", "For the best experience")}</small></span></button>
+        ${controlsHtml()}</div>`;
+      return;
+    }
+    if (menuView === "solo") openPanel(`<div class="tb-panel"><div class="tb-ph"><h2>${tt("GEGEN BOTS", "VS BOTS")}</h2><button class="tb-ghost tb-back" data-a="back">✕</button></div>
+      <div class="tb-lbl">${tt("MODUS", "MODE")}</div>${modes()}
+      <div class="tb-lbl">${tt("BOT-STÄRKE", "BOT SKILL")}</div>${chips("diff", [[0, tt("Anfänger", "Rookie"), tt("zum Reinkommen", "to get started")], [1, "Profi", tt("Aerials, Flips", "aerials, flips")], [2, "Champion", tt("gnadenlos", "merciless")]], S.diff)}
+      <button class="tb-go" data-a="go"><span>${tt("ANSTOSS!", "KICK OFF!")}</span></button></div>`);
+    if (menuView === "online") openPanel(`<div class="tb-panel"><div class="tb-ph"><h2>ONLINE</h2><button class="tb-ghost tb-back" data-a="back">✕</button></div>${nameIn()}
+      <div class="tb-lbl">${tt("NEUER RAUM", "NEW ROOM")}</div>${modes()}
+      <button class="tb-go" data-a="create"><span>${tt("RAUM ERSTELLEN", "CREATE ROOM")}</span></button>
+      <div class="tb-lbl">${tt("BEITRETEN", "JOIN")}</div>
+      <div class="tb-join"><input class="tb-code" maxlength="5" placeholder="CODE"><button class="tb-go orange" data-a="join" style="padding:10px 18px;font-size:18px"><span>${tt("LOS", "GO")}</span></button></div>
+      <p class="tb-hint">${tt("Freie Plätze füllen Bots auf.", "Bots fill the empty seats.")}</p></div>`);
     if (menuView === "lobby") renderLobby();
   }
   function renderLobby() {
@@ -833,24 +913,26 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
     const ms = lobbyMembers();
     const col = (team: 0 | 1) => {
       const list = ms.filter((m) => m.team === team);
-      const rows = list.map((m) => `<li>${m.name || "?"}${m.id === myId ? ` <i>(${tt("du", "you")})</i>` : ""}</li>`).join("") + Array.from({ length: Math.max(0, S.mode - list.length) }, () => `<li class="bot">🤖 Bot</li>`).join("");
-      return `<div class="tb-team ${team === 0 ? "blue" : "orange"}"><h3>${team === 0 ? tt("Blau", "Blue") : "Orange"}</h3><ul>${rows}</ul>${myTeam !== team ? `<button data-a="team" data-t="${team}">${tt("Wechseln", "Switch")}</button>` : ""}</div>`;
+      const rows = list.map((m) => `<li><span>${m.name || "?"}</span>${m.id === myId ? `<i>${tt("DU", "YOU")}</i>` : ""}</li>`).join("") + Array.from({ length: Math.max(0, S.mode - list.length) }, () => `<li class="bot"><span>🤖 Bot</span></li>`).join("");
+      return `<div class="tb-team ${team === 0 ? "blue" : "orange"}"><h3>${team === 0 ? tt("BLAU", "BLUE") : "ORANGE"}</h3><ul>${rows}</ul>${myTeam !== team ? `<button class="tb-ghost" data-a="team" data-t="${team}">${tt("Beitreten", "Join")}</button>` : ""}</div>`;
     };
-    ui.menu.innerHTML = `<div class="tb-card wide"><h2>${tt("Raum", "Room")} <span class="tb-codebig">${S.code}</span></h2>
-      <p class="tb-hint">${tt("Schick Freunden den Code. Sie gehen auf Turboball → Online → Code eingeben.", "Send your friends the code. They open Turboball → Online → enter the code.")}</p>
-      ${S.host ? `<div class="tb-seg" data-k="mode">${[1, 2, 3].map((m) => `<button data-v="${m}" class="${S.mode === m ? "on" : ""}">${m}v${m}</button>`).join("")}</div><div class="tb-seg" data-k="diff">${[tt("Bots leicht", "Easy bots"), tt("Bots mittel", "Medium bots"), tt("Bots schwer", "Hard bots")].map((d, i) => `<button data-v="${i}" class="${S.diff === i ? "on" : ""}">${d}</button>`).join("")}</div>` : `<p class="tb-hint">${S.mode}v${S.mode}</p>`}
+    openPanel(`<div class="tb-panel wide"><div class="tb-ph"><h2>${tt("RAUM", "ROOM")}</h2><button class="tb-ghost tb-back" data-a="leave">✕</button></div>
+      <div class="tb-codebox"><span class="tb-codebig">${S.code}</span><button class="tb-ghost" data-a="copy">${tt("Kopieren", "Copy")}</button></div>
+      <p class="tb-hint">${tt("Freunde öffnen Turboball → Online → Code eingeben.", "Friends open Turboball → Online → enter the code.")}</p>
+      ${S.host ? `${modes()}${chips("diff", [[0, tt("Bots leicht", "Easy bots")], [1, tt("Bots mittel", "Medium bots")], [2, tt("Bots schwer", "Hard bots")]], S.diff)}` : `<p class="tb-hint">${S.mode} v ${S.mode}</p>`}
       <div class="tb-teams">${col(0)}${col(1)}</div>
-      ${S.host ? `<button class="tb-main" data-a="start">${tt("Spiel starten", "Start match")}</button>` : `<p class="tb-hint">${tt("Warte auf den Gastgeber …", "Waiting for the host …")}</p>`}
-      <button data-a="leave">${tt("Raum verlassen", "Leave room")}</button></div>`;
+      ${S.host ? `<button class="tb-go" data-a="start"><span>${tt("SPIEL STARTEN", "START MATCH")}</span></button>` : `<p class="tb-hint">${tt("Warte auf den Gastgeber …", "Waiting for the host …")}</p>`}</div>`);
   }
+  const pts = (c: Car) => c.goals * 100 + c.saves * 50 + c.shots * 20;
   function showEnd() {
     const mine = me(), won = mine ? S.score[mine.team] > S.score[1 - mine.team] : S.score[0] > S.score[1];
-    const rows = cars.slice().sort((a, b) => a.team - b.team || b.goals - a.goals).map((c) => `<tr class="${c.team === 0 ? "blue" : "orange"}"><td>${c.name}${c.bot ? " 🤖" : ""}</td><td>${c.goals}</td><td>${c.shots}</td><td>${c.saves}</td></tr>`).join("");
-    ui.menu.innerHTML = `<div class="tb-card wide"><h2 class="${won ? "win" : "lose"}">${won ? tt("SIEG!", "VICTORY!") : tt("NIEDERLAGE", "DEFEAT")}</h2>
-      <div class="tb-final"><b class="blue">${S.score[0]}</b><span>:</span><b class="orange">${S.score[1]}</b></div>
-      <table class="tb-stats"><tr><th></th><th>${tt("Tore", "Goals")}</th><th>${tt("Schüsse", "Shots")}</th><th>${tt("Paraden", "Saves")}</th></tr>${rows}</table>
-      ${S.online ? (S.host ? `<button class="tb-main" data-a="again">${tt("Revanche", "Rematch")}</button>` : `<p class="tb-hint">${tt("Der Gastgeber kann eine Revanche starten.", "The host can start a rematch.")}</p>`) + `<button data-a="leave">${tt("Raum verlassen", "Leave room")}</button>` : `<button class="tb-main" data-a="rematch">${tt("Nochmal", "Play again")}</button><button data-a="menu">${tt("Hauptmenü", "Main menu")}</button>`}</div>`;
-    ui.menu.style.display = "flex";
+    const mvp = cars.slice().sort((a, b) => pts(b) - pts(a))[0];
+    const rows = cars.slice().sort((a, b) => a.team - b.team || pts(b) - pts(a)).map((c) => `<tr class="${c.team === 0 ? "blue" : "orange"}${c.id === myId ? " me" : ""}"><td>${c.name}${c.bot ? " 🤖" : ""}</td><td class="pts">${pts(c)}</td><td>${c.goals}</td><td>${c.shots}</td><td>${c.saves}</td></tr>`).join("");
+    openPanel(`<div class="tb-panel wide"><div class="tb-result ${won ? "win" : "lose"}">${won ? tt("SIEG!", "VICTORY!") : tt("NIEDERLAGE", "DEFEAT")}</div>
+      <div class="tb-final"><b class="blue">${S.score[0]}</b><span>–</span><b class="orange">${S.score[1]}</b></div>
+      ${mvp ? `<div class="tb-mvp"><b>MVP</b><span>★ ${mvp.name}</span></div>` : ""}
+      <table class="tb-stats"><tr><th></th><th>${tt("PUNKTE", "SCORE")}</th><th>${tt("TORE", "GOALS")}</th><th>${tt("SCHÜSSE", "SHOTS")}</th><th>${tt("PARADEN", "SAVES")}</th></tr>${rows}</table>
+      ${S.online ? (S.host ? `<button class="tb-go" data-a="again"><span>${tt("REVANCHE", "REMATCH")}</span></button>` : `<p class="tb-hint">${tt("Der Gastgeber kann eine Revanche starten.", "The host can start a rematch.")}</p>`) + `<button class="tb-ghost" data-a="leave">${tt("Raum verlassen", "Leave room")}</button>` : `<div class="tb-row"><button class="tb-go" data-a="rematch"><span>${tt("NOCHMAL", "PLAY AGAIN")}</span></button></div><button class="tb-ghost" data-a="menu">${tt("Hauptmenü", "Main menu")}</button>`}</div>`);
   }
   const newCode = () => { const A2 = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s = ""; const r = crypto.getRandomValues(new Uint32Array(5)); for (const x of r) s += A2[x % A2.length]; return s; };
   on(hud, "input", (e: Event) => {
@@ -859,14 +941,14 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
   });
   on(hud, "click", async (e: MouseEvent) => {
     const el = (e.target as HTMLElement).closest("button") as HTMLButtonElement | null; if (!el) return;
-    audioOn();
-    const seg = el.closest(".tb-seg") as HTMLElement | null;
+    audioOn(); tone(1200, 0.05, 0.04, "square");
+    const seg = el.closest(".tb-chips") as HTMLElement | null;
     if (seg) { const k = seg.dataset.k, v = +el.dataset.v!; if (k === "mode") S.mode = v; if (k === "diff") S.diff = v; if (menuView === "lobby") { sendCfg(); renderLobby(); } else renderMenu(); return; }
     const a = el.dataset.a;
     if (a === "solo") { menuView = "solo"; renderMenu(); }
     else if (a === "online") { menuView = "online"; renderMenu(); }
-    else if (a === "back" || a === "menu") { menuView = "main"; renderMenu(); if (a === "menu") { for (const c of cars.slice()) removeCar(c); S.phase = "menu"; } }
-    else if (a === "go" || a === "rematch") startOffline(S.mode, S.diff);
+    else if (a === "back" || a === "menu") { menuView = "main"; if (a === "menu") { for (const c of cars.slice()) removeCar(c); S.phase = "menu"; } renderMenu(); }
+    else if (a === "go" || a === "rematch") { if (touch && !isFs()) toggleFs(); startOffline(S.mode, S.diff); }
     else if (a === "create") { el.disabled = true; menuView = "lobby"; myTeam = 0; try { await connect(newCode(), true); } catch { msg(tt("Verbindung fehlgeschlagen.", "Connection failed.")); menuView = "online"; } renderMenu(); }
     else if (a === "join") {
       const code = ((hud.querySelector(".tb-code") as HTMLInputElement)?.value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -875,15 +957,17 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
       try { await connect(code, false); } catch { msg(tt("Verbindung fehlgeschlagen.", "Connection failed.")); menuView = "online"; }
       renderMenu();
     }
+    else if (a === "copy") { try { await navigator.clipboard.writeText(S.code); msg(tt("Code kopiert!", "Code copied!")); } catch { /* ignore */ } }
     else if (a === "team") { myTeam = (+el.dataset.t! as 0 | 1); await ch?.track({ name: S.myName, team: myTeam }); }
-    else if (a === "start") startOnlineMatch();
+    else if (a === "start") { if (touch && !isFs()) toggleFs(); startOnlineMatch(); }
     else if (a === "again") { S.phase = "menu"; startOnlineMatch(); }
     else if (a === "leave") leaveOnline();
     else if (a === "cam") toggleCam();
-    else if (a === "pause") togglePause();
-    else if (a === "resume") togglePause();
+    else if (a === "fs") toggleFs();
+    else if (a === "pause" || a === "resume") togglePause();
     else if (a === "quit") { S.paused = false; if (S.online) leaveOnline(); else { for (const c of cars.slice()) removeCar(c); showMenu(); } }
   });
+  on(window, "keydown", (e: KeyboardEvent) => { if (e.code === "KeyF" && (e.target as HTMLElement)?.tagName !== "INPUT") toggleFs(); });
   // touch controls
   if (touch) {
     const joy = $(".tb-joy"), knob = joy.querySelector("i") as HTMLElement;
@@ -899,18 +983,34 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
       on(b as HTMLElement, "pointerup", off); on(b as HTMLElement, "pointercancel", off); on(b as HTMLElement, "pointerleave", off);
     });
   }
+  let lastCount = -1, lastScore = "0:0";
   function drawHud(dt: number) {
-    ui.sb.textContent = String(S.score[0]); ui.so.textContent = String(S.score[1]);
-    const ck = Math.max(0, Math.ceil(S.clock)); ui.clock.textContent = `${S.ot ? "+" : ""}${Math.floor(ck / 60)}:${String(ck % 60).padStart(2, "0")}`;
+    const sc = S.score.join(":");
+    if (sc !== lastScore) { lastScore = sc; ui.sb.textContent = String(S.score[0]); ui.so.textContent = String(S.score[1]); }
+    const ck = Math.max(0, Math.ceil(S.clock));
+    ui.clock.textContent = `${S.ot ? "+" : ""}${Math.floor(ck / 60)}:${String(ck % 60).padStart(2, "0")}`;
+    ui.clock.classList.toggle("low", !S.ot && ck <= 30 && S.phase === "play");
+    ui.ot.textContent = S.ot ? tt("VERLÄNGERUNG", "OVERTIME") : "";
     const mine = me(), b = mine ? Math.round(mine.boost) : 0;
-    ui.boost.textContent = String(b); ui.ring.style.strokeDashoffset = String(264 * (1 - b / 100));
-    if (S.phase === "count") { ui.big.innerHTML = `<div class="tb-count">${Math.max(1, Math.ceil(S.countT))}</div>`; ui.big.style.display = "block"; }
-    else if (S.phase === "play" && ui.big.querySelector(".tb-count")) { ui.big.innerHTML = `<div class="tb-count go">GO!</div>`; setTimeout(() => { if (S.phase === "play") ui.big.style.display = "none"; }, 600); }
+    ui.boost.textContent = String(b); ui.ring.style.strokeDashoffset = String(ARC * (1 - b / 100));
+    ui.boostBox.classList.toggle("on", !!mine?.boosting);
+    const kmh = mine ? Math.round(mine.v.length() * 3.6 * 1.6) : 0;
+    ui.speedT.textContent = String(kmh); ui.speed.classList.toggle("ss", !!mine && mine.v.length() > SUPERSONIC);
+    const inGame = S.phase !== "menu";
+    for (const el of ui.play) el.style.visibility = inGame ? "visible" : "hidden";
+    if (S.phase === "count") {
+      const n = Math.max(1, Math.ceil(S.countT));
+      if (n !== lastCount) { lastCount = n; ui.big.innerHTML = `<div class="tb-count">${n}</div>`; ui.big.style.display = "block"; }
+    } else if (lastCount > 0 && S.phase === "play") {
+      lastCount = 0; ui.big.innerHTML = `<div class="tb-count go">GO!</div>`; ui.big.style.display = "block";
+      setTimeout(() => { if (ui.big.querySelector(".tb-count.go")) ui.big.style.display = "none"; }, 800);
+    }
     msgT -= dt; if (msgT <= 0) ui.msg.style.opacity = "0";
   }
 
   // ── render loop ──────────────────────────────────────────────────
   const camPos = new THREE.Vector3(0, 20, -70), camLook = new THREE.Vector3();
+  let camYaw = 0;
   let last = performance.now(), acc = 0, menuAng = 0;
   function frame() {
     if (!alive) return;
@@ -948,20 +1048,39 @@ export async function mountTurboball(root: HTMLElement, opts: { lang: Lang }) {
       boostG.gain.setTargetAtTime(mine?.boosting ? 0.12 : 0, ac.currentTime, 0.05);
     }
     // camera
-    if (S.phase === "menu" || !mine) {
+    const inMenu = S.phase === "menu" || !mine;
+    show.group.visible = disc.visible = discRing.visible = inMenu && menuView === "main";
+    if (inMenu && menuView === "main") {
+      // showroom: slow orbit, car on the right side of the screen
+      menuAng += dt * 0.25; show.group.rotation.y += dt * 0.35;
+      show.flame.scale.set(1, 1, 0.6 + Math.random() * 0.4);
+      camPos.set(SHOW.x + Math.sin(menuAng) * 11, 3.4, SHOW.z + Math.cos(menuAng) * 11);
+      const vx = SHOW.x - camPos.x, vz = SHOW.z - camPos.z, vl = Math.hypot(vx, vz);
+      const asp = camera.aspect, off = asp > 1.2 ? 3.6 : 0;
+      camLook.set(SHOW.x + (vz / vl) * off, 1.3, SHOW.z - (vx / vl) * off);
+      camera.position.copy(camPos); camera.lookAt(camLook);
+    } else if (inMenu) {
       menuAng += dt * 0.08;
       camPos.set(Math.sin(menuAng) * 70, 26, Math.cos(menuAng) * 90); camLook.set(0, 4, 0);
       camera.position.copy(camPos); camera.lookAt(camLook);
     } else {
-      const tgt = mine.dead > 0 ? ball.p : mine.p;
-      let dx: number, dz: number, dy = 0;
-      if (S.ballCam && S.phase !== "goal") { dx = ball.p.x - tgt.x; dz = ball.p.z - tgt.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l; dy = Math.max(-0.2, Math.min(0.5, (ball.p.y - tgt.y) / Math.max(10, l))); }
-      else { fwdV.set(0, 0, 1).applyQuaternion(mine.q); const l = Math.hypot(fwdV.x, fwdV.z) || 1; dx = mine.ground ? fwdV.x / l : Math.sin(mine.yaw); dz = mine.ground ? fwdV.z / l : Math.cos(mine.yaw); if (!mine.ground) { const vl = Math.hypot(mine.v.x, mine.v.z); if (vl > 3) { dx = mine.v.x / vl; dz = mine.v.z / vl; } } }
-      const want = tv.set(tgt.x - dx * 10, tgt.y + 3.6 + dy * 4, tgt.z - dz * 10);
+      // Rocket-League-like camera: the car always stays in the lower part of the picture.
+      // Ball cam turns smoothly towards the ball (horizontal angle only); car cam follows the driving direction.
+      const tgt = mine.dead > 0 ? camLook : mine.p;
+      const bx = ball.p.x - mine.p.x, bz = ball.p.z - mine.p.z, bdist = Math.hypot(bx, bz);
+      let wantYaw = camYaw;
+      if (S.ballCam && S.phase !== "goal") { if (bdist > 4) wantYaw = Math.atan2(bx, bz); }
+      else { const vl = Math.hypot(mine.v.x, mine.v.z); wantYaw = vl > 4 ? Math.atan2(mine.v.x, mine.v.z) : Math.atan2(fwdV.set(0, 0, 1).applyQuaternion(mine.q).x, fwdV.z); }
+      let dy = wantYaw - camYaw; while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+      camYaw += dy * Math.min(1, dt * (S.ballCam ? 5 : 4));
+      const dx = Math.sin(camYaw), dz = Math.cos(camYaw);
+      const lift = S.ballCam ? Math.max(0, Math.min(5, (ball.p.y - tgt.y) * 0.12)) : 0;
+      const want = tv.set(tgt.x - dx * 10.5, tgt.y + 3.4 + lift * 0.4, tgt.z - dz * 10.5);
+      // keep the camera inside the arena
+      const dIn = sdf(want.x, want.y, want.z); if (dIn < 1) want.addScaledVector(grad(want.x, want.y, want.z, tv2), 1 - dIn);
       want.y = Math.max(1.2, Math.min(A.H - 1, want.y));
-      camPos.lerp(want, Math.min(1, dt * 9));
-      if (S.ballCam && S.phase !== "goal") camLook.lerp(tv2.set(tgt.x + dx * 6, tgt.y + 1.8 + dy * 8, tgt.z + dz * 6).lerp(ball.p, 0.25), Math.min(1, dt * 10));
-      else camLook.lerp(tv2.set(tgt.x + dx * 8, tgt.y + 1.6, tgt.z + dz * 8), Math.min(1, dt * 10));
+      camPos.lerp(want, Math.min(1, dt * 12));
+      camLook.lerp(tv2.set(tgt.x + dx * 4, tgt.y + 1.6 + lift, tgt.z + dz * 4), Math.min(1, dt * 14));
       camera.position.copy(camPos);
       if (S.shake > 0) { camera.position.x += (Math.random() - 0.5) * S.shake; camera.position.y += (Math.random() - 0.5) * S.shake; S.shake = Math.max(0, S.shake - dt * 2); }
       camera.lookAt(camLook);
