@@ -8,7 +8,7 @@ export type Car = {
   kind: CarKind; model: number; driver: boolean; hp: number; dead: boolean; burnT: number;
   ph: Phys; inp: { th: number; st: number; hb: boolean };
   ai: { from: number; to: number; panic: number }; stuck: number; rev: number; revSt: number; block: number; ignore: number;
-  path: number[]; pathT: number; fireT: number; lock: number; len: number;
+  path: number[]; pathT: number; fireT: number; lock: number; len: number; owned?: string;
 };
 
 export const PHYS = {
@@ -33,7 +33,7 @@ export const headMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.2,
 const drlMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 1.7, 2.0), toneMapped: false });
 
 // Car shapes as smooth lofts. t runs from the rear (0) to the nose (1).
-type Model = { L: number; W: number; R: number; axles: [number, number]; y0: number; ends: [number, number][]; y1: [number, number][]; cab: [number, number][]; roof: [number, number]; sport: boolean };
+type Model = { L: number; W: number; R: number; axles: [number, number]; y0: number; ends: [number, number][]; y1: [number, number][]; cab: [number, number][]; roof: [number, number]; sport: boolean; wing?: boolean };
 const MODELS: Model[] = [
   // low sports coupé
   { L: 4.55, W: 1.96, R: 0.35, axles: [0.2, 0.79], y0: 0.2, ends: [[0, 0.44], [0.05, 0.22], [0.95, 0.21], [1, 0.36]], y1: [[0, 0.8], [0.06, 0.88], [0.24, 0.91], [0.6, 0.84], [0.88, 0.73], [0.97, 0.63], [1, 0.55]], cab: [[0.13, 0], [0.25, 1.16], [0.42, 1.23], [0.5, 1.21], [0.64, 0]], roof: [0.28, 0.5], sport: true },
@@ -43,7 +43,38 @@ const MODELS: Model[] = [
   { L: 4.8, W: 1.99, R: 0.41, axles: [0.19, 0.8], y0: 0.4, ends: [[0, 0.58], [0.04, 0.42], [0.96, 0.42], [1, 0.58]], y1: [[0, 1.08], [0.06, 1.15], [0.6, 1.15], [0.86, 1.11], [0.97, 1.01], [1, 0.9]], cab: [[0.035, 0], [0.07, 1.8], [0.6, 1.82], [0.72, 0]], roof: [0.08, 0.62], sport: false },
   // grand tourer
   { L: 4.75, W: 1.95, R: 0.36, axles: [0.19, 0.8], y0: 0.21, ends: [[0, 0.45], [0.05, 0.23], [0.95, 0.22], [1, 0.38]], y1: [[0, 0.86], [0.08, 0.93], [0.3, 0.95], [0.62, 0.9], [0.9, 0.79], [0.98, 0.68], [1, 0.6]], cab: [[0.16, 0], [0.3, 1.3], [0.46, 1.33], [0.55, 1.3], [0.67, 0]], roof: [0.32, 0.55], sport: true },
+  // 4 wedge supercar (V12, big wing)
+  { L: 4.95, W: 2.1, R: 0.37, axles: [0.2, 0.76], y0: 0.17, ends: [[0, 0.4], [0.05, 0.2], [0.95, 0.17], [1, 0.28]], y1: [[0, 0.86], [0.1, 0.92], [0.3, 0.9], [0.55, 0.8], [0.85, 0.6], [0.96, 0.45], [1, 0.38]], cab: [[0.3, 0], [0.45, 1.1], [0.55, 1.12], [0.62, 1.05], [0.82, 0]], roof: [0.46, 0.6], sport: true, wing: true },
+  // 5 super SUV
+  { L: 5.1, W: 2.02, R: 0.43, axles: [0.19, 0.8], y0: 0.38, ends: [[0, 0.6], [0.04, 0.4], [0.96, 0.4], [1, 0.55]], y1: [[0, 1.02], [0.07, 1.1], [0.55, 1.08], [0.85, 1.0], [0.97, 0.86], [1, 0.76]], cab: [[0.08, 0], [0.24, 1.6], [0.5, 1.64], [0.6, 1.6], [0.72, 0]], roof: [0.25, 0.58], sport: true },
+  // 6 performance wagon
+  { L: 4.99, W: 1.95, R: 0.37, axles: [0.18, 0.8], y0: 0.24, ends: [[0, 0.46], [0.05, 0.26], [0.95, 0.26], [1, 0.42]], y1: [[0, 0.95], [0.06, 1.02], [0.3, 1.03], [0.62, 0.99], [0.88, 0.9], [0.97, 0.8], [1, 0.7]], cab: [[0.04, 0], [0.09, 1.42], [0.55, 1.46], [0.68, 0]], roof: [0.09, 0.55], sport: true },
+  // 7 mid-engine berlinetta
+  { L: 4.6, W: 1.98, R: 0.36, axles: [0.2, 0.78], y0: 0.17, ends: [[0, 0.42], [0.05, 0.2], [0.95, 0.18], [1, 0.3]], y1: [[0, 0.9], [0.08, 0.96], [0.25, 0.95], [0.4, 0.88], [0.6, 0.78], [0.85, 0.66], [0.97, 0.5], [1, 0.4]], cab: [[0.3, 0], [0.42, 1.12], [0.52, 1.14], [0.6, 1.08], [0.78, 0]], roof: [0.43, 0.57], sport: true },
 ];
+
+/** Dealer catalogue. Brand and model names are made up (parodies), so no real trademarks are used. */
+export type Spec = { id: string; name: string; tier: number; price: number; model: number; color: string; v: number; a: number };
+export const TIERS = [
+  { de: "Einsteiger", en: "Entry" }, { de: "RS-Klasse", en: "RS class" }, { de: "Stellar Performance", en: "Stellar Performance" },
+  { de: "Competition", en: "Competition" }, { de: "Toro", en: "Toro" }, { de: "Vettora", en: "Vettora" },
+];
+export const CATALOG: Spec[] = [
+  { id: "qa3", name: "Quattra A3 Sportback", tier: 0, price: 150, model: 1, color: "#9aa3ad", v: 0.85, a: 0.85 },
+  { id: "qa5", name: "Quattra A5 Coupé", tier: 0, price: 230, model: 3, color: "#1d3557", v: 0.9, a: 0.9 },
+  { id: "qa6", name: "Quattra A6", tier: 0, price: 320, model: 1, color: "#2b2d31", v: 0.93, a: 0.92 },
+  { id: "rs3", name: "Quattra RS 3", tier: 1, price: 600, model: 1, color: "#5fb83a", v: 1.0, a: 1.1 },
+  { id: "rs6", name: "Quattra RS 6 Avant", tier: 1, price: 950, model: 6, color: "#7a7f88", v: 1.08, a: 1.15 },
+  { id: "s63", name: "Stellar SR 63", tier: 2, price: 1000, model: 1, color: "#e8e8e8", v: 1.05, a: 1.15 },
+  { id: "sgt", name: "Stellar GT Black", tier: 2, price: 1700, model: 3, color: "#151515", v: 1.15, a: 1.3 },
+  { id: "bx4", name: "Bavaro X4 Competition", tier: 3, price: 1150, model: 0, color: "#1f4fd1", v: 1.08, a: 1.2 },
+  { id: "bx5", name: "Bavaro X5 Competition", tier: 3, price: 1500, model: 1, color: "#24402c", v: 1.12, a: 1.22 },
+  { id: "tou", name: "Toro Uro", tier: 4, price: 3200, model: 5, color: "#ffb800", v: 1.15, a: 1.3 },
+  { id: "tsv", name: "Toro Avalanche SVR", tier: 4, price: 5200, model: 4, color: "#7cff3a", v: 1.32, a: 1.55 },
+  { id: "vf9", name: "Vettora F9 Tributo", tier: 5, price: 4300, model: 7, color: "#d10f1f", v: 1.28, a: 1.45 },
+  { id: "vsf", name: "Vettora SF-X Stradale", tier: 5, price: 6500, model: 7, color: "#f2f2f2", v: 1.38, a: 1.65 },
+];
+export const specPhys = (sp: Spec): Phys => ({ ...PHYS.player, vmax: PHYS.player.vmax * sp.v, accel: PHYS.player.accel * sp.a, turn: PHYS.player.turn * (sp.model === 4 || sp.model === 7 ? 1.08 : sp.model === 5 ? 0.92 : 1), grip: PHYS.player.grip * (sp.tier >= 4 ? 1.25 : 1) });
 const interp = (pts: [number, number][], t: number) => {
   if (t <= pts[0][0]) return pts[0][1];
   for (let i = 0; i < pts.length - 1; i++) {
@@ -90,7 +121,8 @@ function policeDecal() {
 }
 
 export function makeCar(kind: CarKind, x: number, z: number, a: number, color?: string, model?: number): Car {
-  const m = model ?? (kind === "cop" ? 1 : Math.floor(Math.random() * MODELS.length));
+  const COMMON = [0, 1, 1, 1, 2, 2, 3, 6, 1, 2];
+  const m = model ?? (kind === "cop" ? 1 : Math.random() < 0.06 ? [4, 5, 7][Math.floor(Math.random() * 3)] : COMMON[Math.floor(Math.random() * COMMON.length)]);
   const M = MODELS[m % MODELS.length];
   const grp = new THREE.Group();
   const paint = new THREE.MeshPhysicalMaterial({ color: kind === "cop" ? "#0d0e11" : color || PAINTS[Math.floor(Math.random() * PAINTS.length)], metalness: 0.6, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.04 });
@@ -187,6 +219,14 @@ export function makeCar(kind: CarKind, x: number, z: number, a: number, color?: 
     const pl = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.11, 0.02), plateMat); pl.position.set(0, yy, zz); grp.add(pl);
   }
   if (M.sport) for (const sx of [-0.3, 0.3]) { const ex = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.12, 12).rotateX(Math.PI / 2), chrome); ex.position.set(sx, interp(M.ends, 0) - 0.12, zt(0) + 0.02); grp.add(ex); }
+  if (M.wing) {
+    const carbon = new THREE.MeshPhysicalMaterial({ color: "#111214", roughness: 0.35, metalness: 0.5, clearcoat: 1 });
+    const yw = interp(M.y1, 0.06) + 0.32;
+    const wing = new THREE.Mesh(new THREE.BoxGeometry(M.W * 0.92, 0.04, 0.38), carbon); wing.position.set(0, yw, zt(0.05)); wing.rotation.x = -0.12;
+    grp.add(wing);
+    for (const sx of [-0.45, 0.45]) { const post = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.32, 0.12), carbon); post.position.set(sx, yw - 0.16, zt(0.06)); grp.add(post); }
+    for (const sx of [-1, 1]) { const end = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.16, 0.42), carbon); end.position.set(sx * M.W * 0.46, yw + 0.02, zt(0.05)); grp.add(end); }
+  }
   // police livery + lightbar + push bar
   const lightbar: THREE.Mesh[] = [];
   if (kind === "cop") {

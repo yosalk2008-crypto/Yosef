@@ -63,6 +63,36 @@ export const CSS = `
 .sb-enter{right:40px;bottom:140px;width:64px;height:64px;font-size:26px}
 .sb-enter.hot{background:rgba(40,200,255,.5);border-color:#fff}
 .sb-wsw{right:118px;bottom:132px;width:52px;height:52px;font-size:22px}
+.sb-coin{display:inline-block;width:.8em;height:.8em;margin-right:.3em;border-radius:50%;vertical-align:-.04em;background:radial-gradient(circle at 35% 30%,#fff6b0,#ffcc33 45%,#c58a00);box-shadow:inset 0 0 0 2px rgba(150,90,0,.6)}
+.sb-money{color:#ffd24a!important}
+.sb-hot{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;pointer-events:auto}
+.sb-hot button{position:relative;width:74px;height:74px;border-radius:12px;border:2px solid rgba(255,255,255,.35);background:rgba(18,14,28,.68);color:#fff;font:700 11px Arial,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:none}
+.sb-hot button i{font-style:normal;font-size:28px;line-height:1}
+.sb-hot button small{position:absolute;left:6px;top:4px;font-size:11px;opacity:.7}
+.sb-hot button.on{border-color:#fff;background:rgba(80,160,255,.55);box-shadow:0 0 0 2px rgba(80,160,255,.6),0 4px 14px rgba(0,0,0,.5)}
+.sb-gun{display:inline-block;width:34px;height:22px;background:linear-gradient(#d9dde3,#d9dde3) 0 0/30px 8px no-repeat,linear-gradient(#d9dde3,#d9dde3) 8px 6px/8px 15px no-repeat;transform:skewX(-8deg)}
+.sb-gun.smg{background:linear-gradient(#d9dde3,#d9dde3) 0 2px/34px 8px no-repeat,linear-gradient(#d9dde3,#d9dde3) 8px 8px/7px 13px no-repeat,linear-gradient(#d9dde3,#d9dde3) 18px 8px/6px 11px no-repeat}
+.sb-acts{position:absolute;inset:0;pointer-events:none}
+.sb-act{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;white-space:nowrap;border:2px solid #fff;border-radius:999px;background:rgba(20,120,255,.85);color:#fff;font:800 15px Arial,sans-serif;padding:9px 16px;box-shadow:0 4px 16px rgba(0,0,0,.45);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:none;animation:sbpop .18s ease-out}
+.sb-act.first{background:rgba(255,47,142,.9)}
+.sb-act.off{background:rgba(40,40,50,.8);border-color:rgba(255,255,255,.4);font-weight:700}
+@keyframes sbpop{from{transform:translate(-50%,-50%) scale(.6);opacity:0}}
+.sb-shop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,3,12,.6);pointer-events:auto;padding:12px;z-index:5}
+.sb-shopcard{width:min(640px,100%);max-height:100%;display:flex;flex-direction:column;background:rgba(14,10,24,.96);border:1px solid rgba(255,255,255,.18);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.6);overflow:hidden}
+.sb-shophead{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.1);background:linear-gradient(90deg,rgba(56,230,255,.18),transparent)}
+.sb-shophead>div{flex:1}.sb-shophead b{display:block;font:900 20px "Arial Black",Arial,sans-serif;letter-spacing:.04em}.sb-shophead small{opacity:.7;font-size:12px}
+.sb-gold{font:800 20px Arial,sans-serif;color:#ffd24a}
+.sb-shophead button{width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;font-size:18px;cursor:pointer}
+.sb-shoplist{overflow:auto;padding:4px 18px 10px}
+.sb-tier{margin:14px 0 6px;font:800 12px Arial,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#38e6ff}
+.sb-carrow{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.sb-sw{width:34px;height:20px;border-radius:5px;flex:none;box-shadow:inset 0 -6px 8px rgba(0,0,0,.35)}
+.sb-cn{flex:1;min-width:0}.sb-cn b{display:block;font-size:15px}.sb-cn small{opacity:.65;font-size:12px}
+.sb-carrow button{flex:none;border:0;border-radius:8px;padding:9px 14px;font:800 14px Arial,sans-serif;background:linear-gradient(90deg,#ff2f8e,#ff8a3d);color:#fff;cursor:pointer;touch-action:manipulation}
+.sb-carrow button[disabled]{background:rgba(255,255,255,.12);color:rgba(255,255,255,.45);cursor:not-allowed}
+.sb-carrow button.own{background:rgba(56,230,255,.3)}
+.sb-shopcard .sb-small{padding:0 18px 12px;margin:6px 0 0}
+.sb-touch .sb-hot{bottom:10px}.sb-touch .sb-hot button{width:58px;height:58px}.sb-touch .sb-hot button i{font-size:22px}.sb-touch .sb-hot button b{display:none}
 .sb-rot{display:none}
 @media (orientation:portrait){.sb-touch .sb-rot{display:block;position:absolute;left:50%;top:64px;transform:translateX(-50%);background:rgba(255,47,142,.85);padding:6px 14px;border-radius:20px;font-weight:800;font-size:13px;white-space:nowrap}}
 @media (max-width:700px){.sb-mm{width:130px;height:130px;left:12px;bottom:12px}.sb-street{left:150px;bottom:16px;font-size:15px}.sb-money{font-size:22px}.sb-tr{right:12px;top:10px}}
