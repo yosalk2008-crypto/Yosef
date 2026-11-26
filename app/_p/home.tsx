@@ -1,6 +1,7 @@
 import Link from "@/components/Link";
 import { DailyBoard } from "@/components/DailyBoard";
 import { MoreBoard } from "@/components/MoreBoard";
+import { AppCard } from "@/components/AppCard";
 import { MAIN_REGIONS, regionLabel } from "@/lib/data/regions";
 import type { Lang } from "@/lib/i18n";
 import { tr } from "@/lib/tr";
@@ -35,6 +36,10 @@ export default function Home({ lang }: { lang: Lang }) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }} />
       <section className="mx-auto max-w-6xl px-4 pb-2 pt-5 sm:pt-7">
         <DailyBoard />
+      </section>
+
+      <section className="mx-auto max-w-6xl px-4 pt-8 empty:hidden">
+        <AppCard />
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pt-12 sm:pt-16">

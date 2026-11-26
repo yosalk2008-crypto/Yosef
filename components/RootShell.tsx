@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { EasterEggs } from "@/components/EasterEggs";
 import { LangProvider } from "@/components/LangProvider";
 import { Analytics } from "@vercel/analytics/next";
+import { ServiceWorker } from "@/components/AppCard";
 import type { Lang } from "@/lib/i18n";
 import "@/app/globals.css";
 
@@ -35,6 +36,7 @@ export function RootShell({ lang, children }: { lang: Lang; children: React.Reac
           <EasterEggs />
         </LangProvider>
         <Analytics />
+        <ServiceWorker />
       </body>
     </html>
   );
