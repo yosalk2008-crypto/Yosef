@@ -298,5 +298,25 @@
    "JPN",
    "CHN"
   ]
+ },
+ "2026-12-03": {
+  "qs": [
+   "x-wm-2026-teilnehmer",
+   "x-eu-mitglied",
+   "x-vorwahl-plus5",
+   "grenze-AUT",
+   "sub-Western Europe+urban>80",
+   "sub-Western Europe+nachbarn5",
+   "sub-Western Europe+pop>20000000"
+  ],
+  "path": [
+   "MEX",
+   "AUT",
+   "GBR",
+   "CZE",
+   "BEL",
+   "FRA",
+   "DEU"
+  ]
  }
 }
