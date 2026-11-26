@@ -1,6 +1,6 @@
 # Auftrag: Tagespläne für Fernweh und Gipfelsturm (geplante Aufgabe, täglich)
 
-Ziel des Nutzers: Fernweh und Gipfelsturm haben **jeden Tag ein neues Spiel, keine Frage wiederholt sich je**. Der Tag wechselt bei beiden um **7:50 Uhr deutscher Zeit** (lib/daily.ts `day0750`). Diese Aufgabe läuft jeden Morgen und sorgt dafür, dass die Pläne immer mindestens **7 Tage im Voraus** fertig und live sind – auf keinen Fall darf ein Tag ungeplant sein.
+Ziel des Nutzers: Fernweh und Gipfelsturm haben **jeden Tag ein neues Spiel, keine Frage wiederholt sich je**. Der Tag wechselt bei beiden um **7:00 Uhr deutscher Zeit** (lib/daily.ts `day0750`). Diese Aufgabe läuft jeden Morgen und sorgt dafür, dass die Pläne immer mindestens **7 Tage im Voraus** fertig und live sind – auf keinen Fall darf ein Tag ungeplant sein.
 
 Repo: GitHub yosalk2008-crypto/Yosef (Next.js 15). Produktions-Branch: claude/loving-fermi-w7h92k (Push = Live-Deploy). Klonen, direkt auf dem Branch arbeiten; NO_PROXY=localhost no_proxy=localhost npm_config_noproxy=localhost npm ci.
 
@@ -14,7 +14,7 @@ Repo: GitHub yosalk2008-crypto/Yosef (Next.js 15). Produktions-Branch: claude/lo
 7. Commit und Push: `git pull --rebase origin claude/loving-fermi-w7h92k`, dann `git -c user.name="Claude" -c user.email="noreply@anthropic.com" commit -am "Tagespläne: Fernweh/Gipfelsturm bis <Datum>, <n> neue Hinweise"` mit diesen zwei letzten Zeilen in der Nachricht:
    Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
    Claude-Session: <URL dieser Session>
-   Dann `git push origin HEAD:claude/loving-fermi-w7h92k` (bei Konflikt erneut pull --rebase und push – andere Aufgaben pushen parallel). Muss vor 7:50 Uhr live sein.
+   Dann `git push origin HEAD:claude/loving-fermi-w7h92k` (bei Konflikt erneut pull --rebase und push – andere Aufgaben pushen parallel). Muss vor 7:00 Uhr live sein.
 
 ## Regeln für jede Frage
 - Die Länderliste muss **vollständig und richtig** sein – jedes passende Land ist eine richtige Antwort. Nur Fakten, bei denen du dir sicher bist; im Zweifel mit Websuche/WebFetch (z. B. Wikipedia-Listen, CIA World Factbook) prüfen, das ist ausdrücklich erlaubt. Die Shell erreicht nur GitHub und Paket-Server. Eine Quelle in `src` angeben.

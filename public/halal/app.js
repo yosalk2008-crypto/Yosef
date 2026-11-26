@@ -96,7 +96,7 @@ window.mountHalal = function (app) {
   const lvN = (q) => q.lv || 2;
   const KEY = "kt-daily-halal";
   const berlinDay = () => {
-    try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date()); } catch (e) { return new Date().toISOString().slice(0, 10); }
+    try { return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date(Date.now() - 7 * 3600000)); } catch (e) { return new Date(Date.now() - 6 * 3600000).toISOString().slice(0, 10); } /* new quiz at 07:00 German time */
   };
   const dayLabel = (d) => new Date(d + "T12:00:00").toLocaleDateString(EN ? "en-GB" : "de-DE", { day: "numeric", month: "long" });
   function dailySet() {

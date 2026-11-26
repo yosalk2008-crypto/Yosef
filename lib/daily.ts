@@ -29,8 +29,12 @@ export type DailyResult = {
   state?: unknown;
 };
 
+/**
+ * Today's puzzle day. Every daily game switches to the next puzzle at 07:00 German time (since 26 Nov 2026;
+ * before: midnight UTC, Fernweh/Gipfelsturm 07:50). The name is kept from the midnight-UTC days.
+ */
 export function utcDate(d = new Date()): string {
-  return d.toISOString().slice(0, 10);
+  return gameDay(d);
 }
 
 export function dayNumber(date: string): number {
@@ -44,28 +48,29 @@ export function addDays(date: string, n: number): string {
   return new Date(t).toISOString().slice(0, 10);
 }
 
-/**
- * Fernweh and Gipfelsturm switch to the next puzzle at 07:50 German time (not at midnight UTC) and
- * start on their launch day: every day has its own puzzle from the day plan, no question twice.
- */
+/** First day of games with their own day plan (Fernweh, Gipfelsturm): no puzzle before their launch. */
 export const SWITCH_0750: Partial<Record<GameKey, string>> = { fernweh: "2026-11-18", gipfelsturm: "2026-11-18" };
-const SWITCH_MIN = 7 * 60 + 50;
+/** All daily games switch at 07:00 German time (summer and winter time). */
+const SWITCH_MIN = 7 * 60;
 
+const BERLIN = typeof Intl !== "undefined" ? new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }) : null;
 function berlinParts(now: Date) {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).formatToParts(now);
+  const parts = BERLIN!.formatToParts(now);
   const g = (t: string) => parts.find((p) => p.type === t)?.value ?? "0";
   return { date: `${g("year")}-${g("month")}-${g("day")}`, h: +g("hour"), m: +g("minute"), s: +g("second") };
 }
 
-/** The puzzle day that is live at `now` for a game that switches at 07:50 German time. */
-export function day0750(now = new Date()): string {
+/** The puzzle day that is live at `now`: the German date, but before 07:00 still the day before. */
+export function gameDay(now = new Date()): string {
   const b = berlinParts(now);
   return b.h * 60 + b.m < SWITCH_MIN ? addDays(b.date, -1) : b.date;
 }
+/** Old name (Fernweh/Gipfelsturm scripts). */
+export const day0750 = gameDay;
 
-/** Today's puzzle day for a game (07:50 German time for Fernweh/Gipfelsturm, midnight UTC otherwise). */
-export function todayFor(game?: GameKey, now = new Date()): string {
-  return game && SWITCH_0750[game] ? day0750(now) : utcDate(now);
+/** Today's puzzle day – the same for every game (07:00 German time). */
+export function todayFor(_game?: GameKey, now = new Date()): string {
+  return gameDay(now);
 }
 
 /** First playable day of a game. */
@@ -171,19 +176,15 @@ export function useDay(game?: GameKey): { day: string; isToday: boolean; ready: 
   return state;
 }
 
-/** Milliseconds until the next puzzle (midnight UTC, or 07:50 German time for Fernweh/Gipfelsturm). */
-export function msUntilNextDay(game?: GameKey) {
+/** Milliseconds until the next puzzle (07:00 German time, for every game). */
+export function msUntilNextDay(_game?: GameKey) {
   const now = new Date();
-  if (game && SWITCH_0750[game]) {
-    const b = berlinParts(now);
-    const wallNow = Date.UTC(+b.date.slice(0, 4), +b.date.slice(5, 7) - 1, +b.date.slice(8, 10), b.h, b.m, b.s);
-    const offset = wallNow - Math.floor(now.getTime() / 1000) * 1000; // Berlin wall clock minus UTC
-    const next = addDays(day0750(now), 1);
-    const target = Date.parse(`${next}T07:50:00Z`) - offset;
-    return Math.max(0, target - now.getTime());
-  }
-  const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
-  return next - now.getTime();
+  const b = berlinParts(now);
+  const wallNow = Date.UTC(+b.date.slice(0, 4), +b.date.slice(5, 7) - 1, +b.date.slice(8, 10), b.h, b.m, b.s);
+  const offset = wallNow - Math.floor(now.getTime() / 1000) * 1000; // Berlin wall clock minus UTC
+  const next = addDays(gameDay(now), 1);
+  const target = Date.parse(`${next}T07:00:00Z`) - offset;
+  return Math.max(0, target - now.getTime());
 }
 
 /** Only the most recent days can be replayed from the archive (each game costs Street View loads). */

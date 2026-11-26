@@ -1,6 +1,6 @@
 /**
  * Tiefgang: ten new daily questions per day from 16 Nov 2026 (`d` = the day, Europe/Berlin).
- * Written by AI (Claude); a scheduled task adds the day's ten every morning at 7:50 (until then the day shows fill-in questions).
+ * Written by AI (Claude); a scheduled task adds the next days in advance every morning; the day switches at 07:00 German time.
  *
  * Rules for every entry:
  * - at least 50 valid answers (Israel never counts towards that), no politics, nothing hurtful

@@ -5,8 +5,10 @@ import { findOrt } from "./tiefgangOrte";
 import { KATALOG, cleanAnswers, type KatalogPrompt } from "./data/tiefgang-katalog";
 import { EXTEND, KATALOG3, ranked } from "./data/tiefgang-katalog3";
 import { TAEGLICH, type TagesFrage } from "./data/tiefgang-taeglich";
+import { GESPERRT } from "./data/tiefgang-gesperrt";
 import { THEMA_FRAGEN, type Thema } from "./data/tiefgang-themen";
 import { makeRng, type Rng } from "./rng";
+import { utcDate } from "./daily";
 import { ansAltsEn, ansName } from "./tiefgang-i18n";
 
 /**
@@ -195,12 +197,14 @@ export function curatedQ(p: KatalogPrompt): Question {
   }
   return { key: "k:" + p.key, text: p.text, hint: p.hint, answers: withPerle(answers) };
 }
-const CURATED: Question[] = KATALOG.map(curatedQ);
+/** Topics the owner does not want (provinces & co., trails, valleys, gorges, passes) never come up. */
+const allowed = (q: Question) => !GESPERRT.has(q.key);
+const CURATED: Question[] = KATALOG.map(curatedQ).filter(allowed);
 
 /** Pools as they were before the big expansion on 12 Nov 2026 – keeps older daily puzzles (and saved games) unchanged. */
 const LEGACY_TEMPLATES = TEMPLATES.slice(0, 12);
 const LEGACY_CURATED_KEYS = ["fluss-europa", "fluss-afrika", "fluss-asien", "fluss-amerika", "gebirge", "berg-4000", "insel-mittelmeer", "meer", "wueste", "see-europa", "vulkan", "insel-deutschland", "stadt-rhein", "us-staat", "kanton", "de-grossstadt", "bundesland-hauptstadt"];
-const LEGACY_CURATED = LEGACY_CURATED_KEYS.map((k) => CURATED.find((q) => q.key === "k:" + k)!);
+const LEGACY_CURATED = LEGACY_CURATED_KEYS.map((k) => CURATED.find((q) => q.key === "k:" + k)).filter((q): q is Question => !!q);
 const EXPANDED_FROM = "2026-11-12";
 
 function pickQuestions(rng: Rng, n: number, legacy = false): Question[] {
@@ -229,7 +233,7 @@ const MIN_ANSWERS = 50;
 const CURATED3: Question[] = [
   ...KATALOG.map((p) => curatedQ(EXTEND[p.key] ? { ...p, answers: [...p.answers, ...EXTEND[p.key]] } : p)),
   ...KATALOG3.map(curatedQ),
-].filter((q) => q.answers.filter((a) => !NEVER_ASKED.has(a.id)).length >= MIN_ANSWERS);
+].filter((q) => allowed(q) && q.answers.filter((a) => !NEVER_ASKED.has(a.id)).length >= MIN_ANSWERS);
 
 const capAnswers = (list: Country[]) => scored(list.filter((c) => c.cap && !NEVER_ASKED.has(c.id)).map((c) => ({ id: "cap-" + c.id, name: c.cap!, alt: c.capAlt, fame: fame(c) })));
 const ofCont = (...cs: string[]) => ALL_COUNTRIES.filter((c) => cs.includes(c.cont));
@@ -325,7 +329,7 @@ const BIG_TEMPLATES: Question[] = [
   fixed("englisch", "Nenne ein Land mit Englisch als Amtssprache.", "Staaten, in denen Englisch (Mit-)Amtssprache ist.", byIds(SET_IDS.englisch)),
   fixed("afrikanische-union", "Nenne ein Mitglied der Afrikanischen Union.", "Alle afrikanischen Staaten.", byIds(AU_IDS)),
   fixed("atlantik", "Nenne ein Land mit Küste am Atlantik.", "Inklusive Nordsee, Karibik und Golf von Mexiko.", byIds(SET_IDS.atlantik)),
-].filter((q) => q.answers.filter((a) => !NEVER_ASKED.has(a.id)).length >= MIN_ANSWERS);
+].filter((q) => allowed(q) && q.answers.filter((a) => !NEVER_ASKED.has(a.id)).length >= MIN_ANSWERS);
 
 function pickBig(rng: Rng, n: number): Question[] {
   const curated = rng.sample(CURATED3, Math.min(4, CURATED3.length));
@@ -351,7 +355,7 @@ export function tagesQ(p: TagesFrage): Question {
 }
 /** Only questions with at least 50 valid answers make it into a day. */
 const valid = (q: Question) => q.answers.filter((a) => !NEVER_ASKED.has(a.id)).length >= MIN_ANSWERS;
-const TAGES: Question[] = TAEGLICH.map(tagesQ);
+const TAGES: Question[] = TAEGLICH.map(tagesQ).filter(allowed);
 const TAGES_DAY: Record<string, string> = Object.fromEntries(TAEGLICH.map((p) => ["k:" + p.key, p.d]));
 /** The day a question of the daily list belongs to (for checks). */
 export const tagesDay = (key: string) => TAGES_DAY[key];
@@ -370,7 +374,7 @@ export function dailyQuestions(day: string): Question[] {
 
 /** Geography questions for free play: the big pool plus every daily question whose day is over. */
 function geoQuestions(rng: ReturnType<typeof makeRng>, n: number): Question[] {
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date());
+  const today = utcDate();
   const past = TAGES.filter((q) => TAGES_DAY[q.key] < today && valid(q));
   if (!past.length || n <= 0) return pickBig(rng, n);
   const fromPast = rng.sample(past, Math.min(past.length, Math.round(n * Math.min(0.5, past.length / (past.length + BIG_POOL.length)) + 1)));

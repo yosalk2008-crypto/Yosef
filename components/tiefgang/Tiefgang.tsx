@@ -17,7 +17,7 @@ import { OceanScene } from "./OceanScene";
 import type { Impact } from "./OceanFx";
 
 type Result = { input: string; pts: number; answer?: string; id?: string; perle?: boolean; reason?: string };
-/** `keys` = the questions the progress belongs to (the daily set can change at 7:50 when the new questions arrive). */
+/** `keys` = the questions the progress belongs to (the daily set changes at 07:00 when the new questions arrive). */
 type S = { results: Result[]; pending?: number; keys?: string };
 
 const nfDe = new Intl.NumberFormat("de-DE");

@@ -48,7 +48,7 @@ export function KosherQuiz() {
         if (!w.KTFX) await load("/koscher/fx.js?v=3");
         if (!w.KT_ART) await load("/koscher/art.js?v=1");
         if (!(window as unknown as { ktOutcome?: unknown }).ktOutcome) await load("/fx/outcome.js?v=1");
-        if (!window.mountKosher) await load("/koscher/app.js?v=15");
+        if (!window.mountKosher) await load("/koscher/app.js?v=16");
         if (alive && ref.current && window.mountKosher) cleanup = window.mountKosher(ref.current);
       } catch {
         if (alive) setFailed(true);
