@@ -8,6 +8,9 @@ import { useEffect, useState } from "react";
 import { useLang, useT } from "@/lib/i18n";
 import { currentSubscription, disableReminder, enableReminder, isIOS, isStandalone, pushSupported } from "@/lib/push";
 
+/** Reminder (web push) stays hidden until the backend is live: set NEXT_PUBLIC_PUSH=1 in Vercel. */
+const PUSH_ON = process.env.NEXT_PUBLIC_PUSH === "1";
+
 type BIPEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 
 export function AppCard() {
@@ -30,15 +33,15 @@ export function AppCard() {
     setStandalone(st);
     setIos(i);
     // iPhone/iPad allow notifications only for the web app on the home screen
-    setCanPush(pushSupported() && (!i || st));
-    currentSubscription().then((s) => setOn(!!s)).catch(() => {});
+    setCanPush(PUSH_ON && pushSupported() && (!i || st));
+    if (PUSH_ON) currentSubscription().then((s) => setOn(!!s)).catch(() => {});
     const onBip = (e: Event) => { e.preventDefault(); setBip(e as BIPEvent); };
     window.addEventListener("beforeinstallprompt", onBip);
     setReady(true);
     return () => window.removeEventListener("beforeinstallprompt", onBip);
   }, []);
 
-  if (!ready || (hidden && !standalone)) return null;
+  if (!ready || (hidden && !standalone) || (standalone && !PUSH_ON)) return null;
 
   const toggle = async () => {
     setBusy(true);
@@ -80,7 +83,7 @@ export function AppCard() {
             {standalone
               ? t("Jeden Morgen um 7 Uhr eine Mitteilung, wenn die neuen Rätsel da sind.", "A notification every morning at 7 when the new puzzles are out.")
               : ios
-                ? t("Tippe unten in Safari auf Teilen (□↑) und dann auf „Zum Home-Bildschirm“. Dann startet Koshertrivia wie eine App – ohne App Store, und du kannst dich jeden Morgen erinnern lassen.", "In Safari tap Share (□↑), then “Add to Home Screen”. Koshertrivia then opens like an app – no App Store needed, and you can get a reminder every morning.")
+                ? t("Tippe unten in Safari auf Teilen (□↑) und dann auf „Zum Home-Bildschirm“. Dann startet Koshertrivia wie eine App – ohne App Store" + (PUSH_ON ? ", und du kannst dich jeden Morgen erinnern lassen." : "."), "In Safari tap Share (□↑), then “Add to Home Screen”. Koshertrivia then opens like an app – no App Store needed" + (PUSH_ON ? ", and you can get a reminder every morning." : "."))
                 : t("Auf den Startbildschirm legen und wie eine App spielen – ohne App Store. Spiele, die du schon geöffnet hast, gehen auch offline.", "Put it on your home screen and play it like an app – no App Store. Games you opened before also work offline.")}
           </p>
           {note && <p className="mt-2 text-sm font-bold text-[#b3372f]">{note}</p>}
