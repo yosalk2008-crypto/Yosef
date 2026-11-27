@@ -3,12 +3,14 @@
 import Link from "@/components/Link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { streak, useStoreVersion } from "@/lib/daily";
+import { allResults, streak, todayFor, useStoreVersion } from "@/lib/daily";
 import { GAMES, gTitle } from "@/lib/games";
 import { stripLang, useLang, useT } from "@/lib/i18n";
 import NextLink from "next/link";
 import { MAIN_REGIONS, regionLabel } from "@/lib/data/regions";
 import { GameArt } from "./GameArt";
+import { MoreArt } from "./MoreArt";
+import { TILES } from "./MoreBoard";
 import { Logo } from "./Logo";
 import { SOUTHBEACH_ENABLED } from "@/lib/southbeach/flag";
 
@@ -53,103 +55,7 @@ export function SiteHeader() {
         </div>
       </header>
 
-      {open && (
-        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={t("Menü", "Menu")}>
-          <button type="button" className="absolute inset-0 bg-ink/40" onClick={() => setOpen(false)} aria-label={t("Menü schließen", "Close menu")} tabIndex={-1} />
-          <nav className="absolute inset-y-0 left-0 w-full max-w-sm overflow-y-auto bg-paper p-4 shadow-2xl sm:p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <Logo />
-              <button type="button" onClick={() => setOpen(false)} className="grid h-12 w-12 place-items-center rounded-2xl hover:bg-surface" aria-label={t("Menü schließen", "Close menu")} autoFocus>
-                <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" aria-hidden="true">
-                  <path d="M6 6l12 12M18 6L6 18" />
-                </svg>
-              </button>
-            </div>
-            <h2 className="mb-2 mt-2 text-lg font-semibold">{t("Tägliche Spiele", "Daily games")}</h2>
-            <div className="grid grid-cols-2 gap-2.5">
-              {GAMES.map((g) => (
-                <Link
-                  key={g.key}
-                  href={`/taeglich/${g.key}`}
-                  className="chunk !rounded-md flex items-center gap-2 px-2.5 py-2 font-display font-semibold"
-                  style={{ background: g.bg, ["--edge" as string]: g.edge }}
-                >
-                  <GameArt game={g.key} className="h-9 w-12 shrink-0" />
-                  <span className="text-[15px] leading-tight">{gTitle(g, lang)}</span>
-                </Link>
-              ))}
-            </div>
-            <Link href="/tiefgang" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #3f96d6, #0a2656)", ["--edge" as string]: "#061a3d" }}>
-              {t("Tiefgang", "Deep Dive")}
-            </Link>
-            <Link href="/gipfelsturm" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #4a2a6a, #b8486a 70%, #f6935a)", ["--edge" as string]: "#120c1c" }}>
-              {t("Gipfelsturm", "Summit Rush")}
-            </Link>
-            <Link href="/fernweh" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold" style={{ background: "#a9d3dc", ["--edge" as string]: "#7fb0bc" }}>
-              {t("Fernweh", "Wanderlust")}
-            </Link>
-            <Link href="/andere-spiele" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #ff3d7f, #6a1f8a 55%, #1f6fff)", ["--edge" as string]: "#1a0a2e" }}>
-              {t("Andere Spiele", "Other games")}
-              <span className="text-sm font-bold opacity-80">🏎️ ⚽</span>
-            </Link>
-            {SOUTHBEACH_ENABLED && (
-              <Link href="/southbeach" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white" style={{ background: "linear-gradient(160deg, #ff3b6b, #2a0f3a 75%)", ["--edge" as string]: "#12061a" }}>
-                South Beach
-              </Link>
-            )}
-            <Link
-              href="/koscher"
-              className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white"
-              style={{ background: "linear-gradient(160deg, #1f4fd1, #0a1630)", ["--edge" as string]: "#050c1f" }}
-            >
-              {t("Ist das koscher?", "Is it kosher?")}
-            </Link>
-            <Link
-              href="/halal"
-              className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold text-white"
-              style={{ background: "linear-gradient(160deg, #12a06d, #062a20)", ["--edge" as string]: "#03170f" }}
-            >
-              {t("Ist das halal?", "Is it halal?")}
-            </Link>
-            <Link href="/multiplayer" className="chunk !rounded-md mt-3 flex items-center justify-between px-4 py-3 font-display text-lg font-semibold" style={{ background: "#ee8a2f", ["--edge" as string]: "#b9621a" }}>
-              {t("Mit Freunden spielen", "Play with friends")}
-            </Link>
-            <h2 className="mb-2 mt-6 text-lg font-semibold">{t("Quiz nach Region", "Quiz by region")}</h2>
-            <div className="flex flex-wrap gap-2">
-              {MAIN_REGIONS.map((r) => (
-                <Link key={r.key} href={`/quiz?region=${r.key}`} className="chip !rounded-md">
-                  {regionLabel(r, lang)}
-                </Link>
-              ))}
-            </div>
-            <div className="mt-6 grid gap-2">
-              <Link href="/bestenliste" className="btn-ghost justify-start">
-                {t("Bestenliste", "Leaderboard")}
-              </Link>
-              <Link href="/archiv" className="btn-ghost justify-start">
-                {t("Archiv – alle früheren Rätsel", "Archive – all past puzzles")}
-              </Link>
-              <Link href="/quiz" className="btn-ghost justify-start">
-                {t("Alle Quizze", "All quizzes")}
-              </Link>
-              <Link href="/laender" className="btn-ghost justify-start">
-                {t("Alle Länder – Steckbriefe", "All countries – fact sheets")}
-              </Link>
-            </div>
-            <nav className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-muted" aria-label={t("Rechtliches", "Legal")}>
-              <Link href="/impressum" className="hover:text-ink">
-                {t("Impressum", "Legal notice")}
-              </Link>
-              <Link href="/datenschutz" className="hover:text-ink">
-                {t("Datenschutz", "Privacy")}
-              </Link>
-              <Link href="/quellen" className="hover:text-ink">
-                {t("Datenquellen", "Data sources")}
-              </Link>
-            </nav>
-          </nav>
-        </div>
-      )}
+      {open && <Menu onClose={() => setOpen(false)} path={stripLang(path)} />}
     </>
   );
 }
@@ -172,5 +78,161 @@ function LangSwitch() {
     >
       {lang === "en" ? "DE" : "EN"}
     </NextLink>
+  );
+}
+
+const Chevron = () => (
+  <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-muted" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M9 6l6 6-6 6" />
+  </svg>
+);
+
+/** The menu that slides in from the left: daily games (with ✓ once played today), the other games as
+ *  small tiles in their home-page colours, friends + leaderboard, regions and the rest as a plain list. */
+function Menu({ onClose, path }: { onClose: () => void; path: string }) {
+  const lang = useLang();
+  const t = useT();
+  const v = useStoreVersion();
+  const [done, setDone] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const all = allResults();
+    const d: Record<string, string> = {};
+    for (const g of [...GAMES.map((x) => x.key), "gipfelsturm", "fernweh"] as const) {
+      const r = all[todayFor(g as never)]?.[g as never] as { done?: boolean; label?: string } | undefined;
+      if (r?.done) d[g] = r.label || "✓";
+    }
+    setDone(d);
+  }, [v]);
+  const playedCount = GAMES.filter((g) => done[g.key]).length;
+  const here = (href: string) => path === href || path.startsWith(href + "/");
+  const ring = (href: string) => (here(href) ? " outline outline-[3px] outline-offset-2 outline-ink" : "");
+
+  return (
+    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label={t("Menü", "Menu")}>
+      <button type="button" className="menu-fade absolute inset-0 bg-ink/45" onClick={onClose} aria-label={t("Menü schließen", "Close menu")} tabIndex={-1} />
+      <nav className="menu-slide absolute inset-y-0 left-0 flex w-[min(100%,400px)] flex-col bg-paper shadow-2xl">
+        <div className="flex items-center justify-between border-b-2 border-line px-4 py-3 sm:px-5">
+          <Link href="/" aria-label={t("Koshertrivia – Startseite", "Koshertrivia – home")}>
+            <Logo />
+          </Link>
+          <button type="button" onClick={onClose} className="grid h-12 w-12 place-items-center rounded-2xl hover:bg-surface" aria-label={t("Menü schließen", "Close menu")} autoFocus>
+            <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 pb-8 pt-4 sm:px-5">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-xl font-semibold">{t("Tägliche Spiele", "Daily games")}</h2>
+            <span className="text-sm font-bold text-muted">{t(`${playedCount} von ${GAMES.length} gespielt`, `${playedCount} of ${GAMES.length} played`)}</span>
+          </div>
+          <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+            {GAMES.map((g) => {
+              const href = `/taeglich/${g.key}`;
+              return (
+                <Link
+                  key={g.key}
+                  href={href}
+                  className={"chunk !rounded-xl relative flex items-center gap-2 py-2 pl-2 pr-2.5 font-display font-semibold" + ring(href)}
+                  style={{ background: g.bg, ["--edge" as string]: g.edge }}
+                >
+                  <GameArt game={g.key} className="h-9 w-11 shrink-0" />
+                  <span className="min-w-0 flex-1 text-[15px] leading-tight">{gTitle(g, lang)}</span>
+                  {done[g.key] && (
+                    <span className="absolute -right-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full border-2 border-ink bg-white text-[13px] font-extrabold" aria-label={t("heute gespielt", "played today")}>
+                      ✓
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+
+          <h2 className="mt-7 text-xl font-semibold">{t("Weitere Spiele", "More games")}</h2>
+          <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+            {TILES.map((g) => (
+              <Link
+                key={g.key}
+                href={g.href}
+                className={"chunk !rounded-xl relative flex items-center gap-2 py-2 pl-2 pr-2.5 text-white" + ring(g.href)}
+                style={{ background: g.bg, ["--edge" as string]: g.edge }}
+              >
+                <MoreArt game={g.key} className="h-9 w-11 shrink-0 object-contain" />
+                <span className="flex min-w-0 flex-col">
+                  <span className="font-display text-[15px] font-semibold leading-tight">{t(g.de, g.en)}</span>
+                  <span className="truncate text-[11px] font-bold leading-tight text-white/80">{g.daily && done[g.daily] ? `✓ ${done[g.daily]}` : t(g.subDe, g.subEn)}</span>
+                </span>
+              </Link>
+            ))}
+            <Link
+              href="/andere-spiele"
+              className={"chunk !rounded-xl relative flex items-center gap-2 py-2 pl-2 pr-2.5 text-white" + ring("/andere-spiele")}
+              style={{ background: "linear-gradient(110deg, #ff3d7f 0%, #6a1f8a 50%, #1f6fff 100%)", ["--edge" as string]: "#1a0a2e" }}
+            >
+              <MoreArt game="spiele" className="h-9 w-11 shrink-0 object-contain" />
+              <span className="flex min-w-0 flex-col">
+                <span className="font-display text-[15px] font-semibold leading-tight">{t("Andere Spiele", "Other games")}</span>
+                <span className="truncate text-[11px] font-bold leading-tight text-white/80">Cart Race · Rocket Football</span>
+              </span>
+            </Link>
+          </div>
+
+          <div className="mt-7 grid grid-cols-2 gap-2.5">
+            <Link href="/multiplayer" className={"chunk !rounded-xl flex flex-col gap-0.5 px-3.5 py-3" + ring("/multiplayer")} style={{ background: "#ee8a2f", ["--edge" as string]: "#b9621a" }}>
+              <span className="flex -space-x-2" aria-hidden="true">
+                {["#3f86dd", "#3e9a3a", "#d6453d"].map((c, k) => (
+                  <span key={c} className="h-6 w-6 rounded-full border-2 border-ink" style={{ background: c, zIndex: 3 - k }} />
+                ))}
+              </span>
+              <span className="mt-1 font-display text-[17px] font-semibold leading-tight">{t("Mit Freunden", "With friends")}</span>
+              <span className="text-xs font-bold text-ink/70">{t("Server & 1v1", "Servers & 1v1")}</span>
+            </Link>
+            <Link href="/bestenliste" className={"chunk !rounded-xl flex flex-col gap-0.5 px-3.5 py-3" + ring("/bestenliste")} style={{ background: "#f3d272", ["--edge" as string]: "#c9a23c" }}>
+              <span className="text-2xl leading-6" aria-hidden="true">🏆</span>
+              <span className="mt-1 font-display text-[17px] font-semibold leading-tight">{t("Bestenliste", "Leaderboard")}</span>
+              <span className="text-xs font-bold text-ink/70">{t("Wer ist heute vorne?", "Who leads today?")}</span>
+            </Link>
+          </div>
+
+          <h2 className="mt-7 text-xl font-semibold">{t("Quiz nach Region", "Quiz by region")}</h2>
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            {MAIN_REGIONS.map((r) => (
+              <Link key={r.key} href={`/quiz?region=${r.key}`} className="chip !rounded-lg">
+                {regionLabel(r, lang)}
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-7 overflow-hidden rounded-2xl border-2 border-line bg-white">
+            {[
+              ["/quiz", t("Alle Quizze", "All quizzes"), t("Flaggen, Hauptstädte, Umrisse, Karte", "Flags, capitals, outlines, map")],
+              ["/archiv", t("Archiv", "Archive"), t("Alle früheren Tagesrätsel", "All past daily puzzles")],
+              ["/laender", t("Alle Länder", "All countries"), t("Steckbriefe zu jedem Land", "A fact sheet for every country")],
+            ].map(([href, title, sub], k) => (
+              <Link key={href} href={href} className={`flex items-center gap-3 px-4 py-3 hover:bg-surface ${k ? "border-t-2 border-line" : ""} ${here(href) ? "bg-surface" : ""}`}>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="font-display text-[17px] font-semibold leading-tight">{title}</span>
+                  <span className="text-[13px] font-semibold text-muted">{sub}</span>
+                </span>
+                <Chevron />
+              </Link>
+            ))}
+          </div>
+
+          <nav className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-muted" aria-label={t("Rechtliches", "Legal")}>
+            <Link href="/impressum" className="hover:text-ink">
+              {t("Impressum", "Legal notice")}
+            </Link>
+            <Link href="/datenschutz" className="hover:text-ink">
+              {t("Datenschutz", "Privacy")}
+            </Link>
+            <Link href="/quellen" className="hover:text-ink">
+              {t("Datenquellen", "Data sources")}
+            </Link>
+          </nav>
+        </div>
+      </nav>
+    </div>
   );
 }

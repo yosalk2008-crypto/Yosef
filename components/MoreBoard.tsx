@@ -11,7 +11,7 @@ import { useT } from "@/lib/i18n";
 import { MoreArt, type MoreKey } from "./MoreArt";
 import { SOUTHBEACH_ENABLED } from "@/lib/southbeach/flag";
 
-type Tile = { key: MoreKey; href: string; de: string; en: string; subDe: string; subEn: string; bg: string; edge: string; daily?: GameKey; dark?: boolean };
+export type Tile = { key: MoreKey; href: string; de: string; en: string; subDe: string; subEn: string; bg: string; edge: string; daily?: GameKey; dark?: boolean };
 
 const ALL_TILES: Tile[] = [
   { key: "koscher", href: "/koscher", de: "Ist das koscher?", en: "Is it kosher?", subDe: "Erlaubt im Judentum?", subEn: "Allowed in Judaism?", bg: "linear-gradient(160deg, #2f62e0 0%, #16307a 100%)", edge: "#0b1a45", dark: true },
@@ -22,7 +22,7 @@ const ALL_TILES: Tile[] = [
   { key: "sunstate", href: "/southbeach", de: "South Beach", en: "South Beach", subDe: "3D-Open-World", subEn: "3D open world", bg: "linear-gradient(160deg, #ff3b6b 0%, #5a1748 55%, #1a0c2e 100%)", edge: "#12061a", dark: true },
 ];
 // South Beach is paused: its tile is hidden until the flag is switched back on
-const TILES = ALL_TILES.filter((x) => x.key !== "sunstate" || SOUTHBEACH_ENABLED);
+export const TILES = ALL_TILES.filter((x) => x.key !== "sunstate" || SOUTHBEACH_ENABLED);
 
 export function MoreBoard() {
   const t = useT();

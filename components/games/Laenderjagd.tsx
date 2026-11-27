@@ -129,6 +129,20 @@ export function Laenderjagd() {
             </div>
           )}
 
+          {over && !won && (
+            <div className="pop mb-5 flex items-center gap-4 rounded-2xl border-[3px] border-ink bg-[#fff4d6] p-4 shadow-[0_5px_0_#2c2a35] sm:gap-5 sm:p-5" role="status">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={flagUrl(target.iso2)} alt="" className="h-14 w-auto shrink-0 rounded-lg border-2 border-ink sm:h-20" />
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-muted sm:text-base">{t("Die Lösung", "The answer")}</p>
+                <p className="font-display text-[28px] font-semibold leading-tight sm:text-4xl">{cName(target, lang)}</p>
+                <p className="mt-0.5 text-[15px] font-semibold text-ink/75">
+                  {contName(target.cont, lang)}, {t("Hauptstadt", "capital")} {cCap(target, lang)}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4">
             {[...guesses].reverse().map((id, k) => (
               <GuessCard key={id} g={BY_ID[id]} t={target} n={guesses.length - k} lang={lang} />
