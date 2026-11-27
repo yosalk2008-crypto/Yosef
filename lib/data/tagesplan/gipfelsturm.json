@@ -318,5 +318,25 @@
    "FRA",
    "DEU"
   ]
+ },
+ "2026-12-04": {
+  "qs": [
+   "x-uefa-mitglied",
+   "x-schengen",
+   "x-mittelmeer",
+   "kont-Europa+nachbarn5",
+   "sub-Southern Europe+net>90",
+   "sub-Southern Europe+pop>30000000",
+   "sub-Southern Europe+top-coast"
+  ],
+  "path": [
+   "ALB",
+   "AUT",
+   "ESP",
+   "BLR",
+   "AND",
+   "ITA",
+   "GRC"
+  ]
  }
 }
