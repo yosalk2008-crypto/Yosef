@@ -13,8 +13,8 @@ export const meta = (lang: Lang): Metadata => {
   return {
     title: t("Ist das halal?", "Is it halal?"),
     description: t(
-      "Vape, Sportwetten, Zinsen, Kredite: Rate, was im Islam erlaubt ist – 255 Fragen mit Quellen aus Quran, Tafsir, Sahih al-Bukhari und Sahih Muslim.",
-      "Vaping, sports betting, interest, loans: guess what Islam allows – 255 questions with sources from the Quran, Tafsir, Sahih al-Bukhari and Sahih Muslim."
+      "Vape, Sportwetten, Zinsen, Kredite: Rate, was im Islam erlaubt ist – 265 Fragen mit Quellen aus Quran, Tafsir, Sahih al-Bukhari und Sahih Muslim.",
+      "Vaping, sports betting, interest, loans: guess what Islam allows – 265 questions with sources from the Quran, Tafsir, Sahih al-Bukhari and Sahih Muslim."
     ),
   };
 };
