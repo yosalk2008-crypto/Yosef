@@ -338,5 +338,25 @@
    "ITA",
    "GRC"
   ]
+ },
+ "2026-12-05": {
+  "qs": [
+   "x-wm-2022-teilnehmer",
+   "x-em-2024-teilnehmer",
+   "kont-Europa+coast>3000",
+   "kont-Europa+top-life",
+   "kont-Europa+top-tour",
+   "sub-Southeast Europe+grenze-HUN",
+   "sub-Southeast Europe+top-tour"
+  ],
+  "path": [
+   "QAT",
+   "DEU",
+   "DNK",
+   "AND",
+   "FRA",
+   "ROU",
+   "HRV"
+  ]
  }
 }
